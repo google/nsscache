@@ -1,0 +1,5 @@
+include nsscache.conf
+include nsscache.conf.5
+include nsscache.1
+include nsscache.cron
+include COPYING

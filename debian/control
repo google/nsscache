@@ -1,0 +1,17 @@
+Source: nsscache
+Section: admin
+Priority: optional
+Maintainer: Jamie Wilkinson <jaq@google.com>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.1
+
+Package: nsscache
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, libnss-db | libnss-cache, python-ldap, ${python:Depends}
+Suggests: libdb4.3 (>= 4.3.29-gg1)
+Provides: lofsync, nss-cache-update
+Conflicts: lofsync, nss-cache-update
+Replaces: lofsync, nss-cache-update
+Description: NSS cache update tool and library
+ This tool manages NSS cache data in a variety of storage formats, including
+ nss_db, and sources it from a variety of NSS databases, including LDAP.

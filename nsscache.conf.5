@@ -1,0 +1,231 @@
+.TH NSSCACHE.CONF 5 2007-05-15 "nsscache 0.7" "File formats"
+.SH NAME
+nsscache.conf \- NSS local cache synchroniser configuration file
+.SH SYNOPSIS
+.B /etc/nsscache.conf
+.SH DESCRIPTION
+.B nsscache
+synchronises a local NSS cache against a remote data source.
+This approach allows the administrator to separate the network from
+the NSS lookup codepath, improving speed and reliability of name
+services.
+.lp
+The nsscache configuration file comprises of one DEFAULT section,
+followed by zero or more map-specific configuration sections.  The
+file format is similar to that of ".ini" files.
+
+The DEFAULT section must provide at least one
+\fBsource\fP
+keyword, specifying the data source to use, one
+\fBcache\fP
+keyword, specifying the means in which the cache data will be stored
+locally, and one
+\fBmaps\fP
+keyword, specifying which NSS maps should be cached.
+
+Additional global defaults, such as LDAP search parameters, or the
+filesystem location of the cache, may also be included in the DEFAULT
+section.
+
+Additional sections may be included that allow per-map overrides to
+configuration options.  For example, one might specify their global
+LDAP search base as
+\fBou=People\fP
+but want to override that for the
+\fIgroup\fP
+mapping as
+\fBou=Groups\fP
+
+Apart from the \fIsource\fP, \fIcache\fP, and \fImaps\fP configuration
+options, all options are prefixed by the name of the module that they
+configure.
+
+A complete list of configuration options follows.
+
+.SH DEFAULT-only OPTIONS
+
+.TP
+\fBsource\fP
+Specifies the source to use to retrieve NSS data from.
+
+Valid Options:
+.I ldap
+
+.TP
+.B cache
+Specifies the cache method to use to store the data, which will be
+queried by the NSS itself.
+
+Valid options:
+.I nssdb
+Store in a Berkeley DB file, for use with the
+.I nss_db
+NSS module
+
+.I files
+Store in a plain text file, similar in format to
+.I /etc/passwd
+
+.TP
+.B maps
+Specifies the names of the maps that will be queried and cached by
+.I nsscache
+
+Valid options:
+.I passwd
+.I group
+.I shadow
+
+.SH ldap SOURCE OPTIONS
+
+These options configure the behaviour of the
+.I ldap
+source.
+
+.TP
+.B ldap_uri
+The LDAP URI to connect to.
+
+.TP
+.B ldap_base
+The base to perform LDAP searches under.
+
+.TP
+.B ldap_filter
+The search filter to use when querying.
+
+.TP
+.B ldap_scope
+The search scope to use.  Defaults to
+.I one
+
+.TP
+.B ldap_bind_dn
+The bind DN to use when connecting to LDAP.  Emtpy string is an
+anonymous bind.  Defaults to the empty string.
+
+.TP
+.B ldap_bind_password
+The bind password to use when connecting to LDAP.  Empty string is
+used for anonymous binds.  Defaults to the empty string.
+
+.TP
+.B ldap_timelimit
+Timelimit in seconds for search results to return.  -1 means no limit.
+Defaults to -1.
+
+.TP
+.B ldap_retry_max
+Number of retries on soft failures before giving up.  Defaults to 3.
+
+.TP
+.B ldap_retry_delay
+Delay in seconds between retries.  Defaults to 5.
+
+.TP
+.B ldap_tls_require_cert
+Sets expectations for SSL certificates, using TLS.  One
+of 'never', 'hard', 'demand', 'allow', or 'try'.  See
+\fBldap.conf\fP(5) for more information.
+
+.TP
+.B ldap_tls_cacertdir
+Directory for trusted CA certificates.  Defaults to
+.I /usr/share/ssl
+
+.TP
+.B ldap_tls_cacertfile
+Filename containing trusted CA certificates.  Defaults to
+.I /usr/share/ssl/cert.pem
+
+.SH nssdb CACHE OPTIONS
+
+These options configure the behaviour of the
+.I nssdb
+cache.
+
+.TP
+.B nssdb_dir
+Directory to store the Berkeley DB databases.  Defaults to the current
+directory.  Note that
+.B nss_db
+hardcodes the path to
+.I /var/lib/misc
+on Debian systems, and
+.I /var/db
+on Red Hat systems.
+
+.TP
+.B nssdb_makedb
+Path to the \fBmakedb\fP(1) command, which is used by the nssdb cache code
+to ensure that the Berkeley DB version created by the module matches
+that expected by the \fBnss_db\fP NSS module.
+
+.SH files CACHE OPTIONS
+These optiosn configure the behaviour of the
+.I files
+cache.
+
+.TP
+.B files_dir
+Directory location to store the plain text files in.  Defaults to the
+current directory.
+
+.TP
+.B files_timestamp_dir
+Directory location to store the last update and last modification
+timestamps.  Defaults to the same as the
+.B files_dir
+option.
+
+.TP
+.B files_cache_filename_suffix
+A suffix appended to the cache filename to differentiate it from, say,
+system NSS databases.  Defaults to '.cache'.
+
+
+.SH EXAMPLE
+A typical example might look like this:
+
+  [DEFAULT]
+  source = ldap
+  cache = nssdb
+  maps = passwd, group, shadow
+  ldap_uri = ldap://ldap.example.com
+  ldap_base = ou=People,dc=example,dc=com
+  ldap_filter = (objectclass=posixAccount)
+  nssdb_dir = /var/lib/misc
+
+  [group]
+  ldap_base = ou=Group,dc=example,dc=com
+  ldap_filter = (objectclass=posixGroup)
+
+  [shadow]
+  ldap_filter = (objectclass=posixAccount)
+
+And a complementary \fI\|/etc/nsswitch.conf\|\fP might look like this:
+
+  passwd: files db
+  group: files db
+  shadow: files db
+
+.SH FILES
+.TP
+\fI\|/etc/nsscache.conf\|\fP
+The system-wide nsscache configuration file
+.SH "SEE ALSO"
+.TP
+\fInsscache\fP(1)
+.TP
+\fInsswitch.conf\fP(5)
+The system name service switch configuration file
+.TP
+\fIldap.conf\fP(5)
+Details on LDAP configuration options exposed by the LDAP client libraries.
+.SH AUTHOR
+Written by Jamie Wilkinson (jaq@google.com) and Vasilios Hoffman (vasilios@google.com).
+.SH COPYRIGHT
+Copyright \(co 2007 Google, Inc.
+.br
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

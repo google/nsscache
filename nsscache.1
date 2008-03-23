@@ -1,0 +1,103 @@
+.TH NSSCACHE "1" "May 2007" "nsscache 0.7" "User Commands"
+.SH NAME
+nsscache \- synchronise a local NSS cache with an upstream data source
+.SH SYNOPSIS
+.B nsscache
+[\fIglobal options\fR] \fIcommand \fR[\fIcommand options\fR]
+.SH DESCRIPTION
+.B nsscache
+synchronises a local NSS cache against a remote data source.
+This approach allows the administrator to separate the network from
+the NSS lookup codepath, improving speed and reliability of name
+services.
+.SH OPTIONS
+Global options alter general program behaviour:
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+enable verbose output
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enable debugging output
+.TP
+\fB\-c\fR \fIFILE\fR, \fB\-\-config\-file\fR=\fIFILE\fR
+read configuration from FILE
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show this help message and exit
+.SH COMMANDS
+.SS update
+Performs an update of the configured caches from the configured sources.
+.TP
+\fB\-f\fR, \fB\-\-full\fR
+force a full update from the data source
+.TP
+\fB\-\-force\fR
+force the update, overriding any safeguards and checks that would
+otherwise prevent the update from occurring. e.g. normally empty
+results from the data source are ignored as bogus -- this option will
+instruct the program to ignore its intuition and use the empty map
+.TP
+\fB\-m\fR \fIMAPS\fR, \fB\-\-map\fR=\fIMAPS\fR
+NSS map to operate on, can be supplied multiple times
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show help for the
+.B update
+command
+.SS verify
+Perform verification of the built caches and validation of the
+system NSS configuration.
+.TP
+\fB\-m\fR \fIMAPS\fR, \fB\-\-map\fR=\fIMAPS\fR
+NSS map to operate on, can be supplied multiple times
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show help for the
+.B verify
+command
+.SS status
+Show the last update time of each configured cache, and other
+metrics, optionally in a machine-readable format.
+.TP
+\fB\-m\fR \fIMAPS\fR, \fB\-\-map\fR=\fIMAPS\fR
+NSS map to operate on, can be supplied multiple times
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show help for the
+.B status
+command
+.SS repair
+Verify that the configuration is correct, that the source is
+reachable, then perform a full synchronisation of the cache.
+.TP
+\fB\-m\fR \fIMAPS\fR, \fB\-\-map\fR=\fIMAPS\fR
+NSS map to operate on, can be supplied multiple times
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show help for the
+.B repair
+command
+.SS help
+Shows online help for each command.
+.SH "SEE ALSO"
+.TP
+\fInsscache.conf\fP(5)
+.TP
+\fInsswitch.conf\fP(5)
+.SH FILES
+.TP
+\fI\|/etc/nsscache.conf\|\fP
+The system-wide configuration file
+.TP
+\fI\|/etc/nsswitch.conf\|\fP
+The system name service switch configuration file
+.SH AUTHOR
+Written by Jamie Wilkinson (jaq@google.com) and Vasilios Hoffman (vasilios@google.com).
+.SH COPYRIGHT
+Copyright \(co 2007 Google, Inc.
+.br
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

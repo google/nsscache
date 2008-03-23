@@ -1,0 +1,25 @@
+README.Debian for nsscache
+==========================
+
+To complete installation of nsscache:
+
+ * Configure /etc/nsscache.conf
+
+   A basic configuration is given.  You will want to modify the LDAP base
+   as appropriate for your site.
+
+ * Run `nsscache update' once.  The map caches will be built per the
+   configuration.
+
+ * Reconfigure /etc/nsswitch.conf for your new maps.
+
+   Append `db' to each of the maps you are configured for.
+
+   E.g.:
+   passwd = files db
+   shadow = files db
+   group = files db
+
+   Replace `ldap' if you are no longer using that map (recommended).
+
+ -- Jamie Wilkinson <jaq@google.com>, 2007-04-02

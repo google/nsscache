@@ -1,0 +1,12 @@
+# /etc/cron.d/nsscache: crontab entries for the nsscache package
+
+SHELL=/bin/sh
+PATH=/usr/bin
+MAILTO=root
+
+# update the cache 15 minutely
+%MINUTE15%/15 * * * * root /usr/bin/nsscache update
+
+# perform a full update once a day, at a time chosen during package
+# configuration (between 2AM and 5AM)
+%MINUTE% %HOUR% * * * root /usr/bin/nsscache update --full

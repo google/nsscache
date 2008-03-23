@@ -1,0 +1,122 @@
+nsscache (0.7.1-1) unstable; urgency=low
+
+  * New upstream version.
+    - 'verify' command works with non-nssdb backends.
+    - error messages do not print 'None' instead of the nsswitch.conf
+      location.
+    - Fix issue #1 from code.google.com where cache_map was referenced
+      before use.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon,  3 Mar 2008 14:03:41 +1100
+
+nsscache (0.7-1) unstable; urgency=low
+
+  * New upstream version.
+    - 'files' backend has netgroup support
+    - incremental updates run faster when there are no updates
+    - ldapsource module no longer pulls old data on incremental updates
+    - modify-timestamp updates properly on incremental updates
+
+ -- V Hoffman <vasilios@google.com>  Wed, 14 Nov 2007 09:56:09 -0800
+
+nsscache (0.6-1) unstable; urgency=low
+
+  * New upstream version.
+    - 'files' backend for passwd, group, and shadow.
+    - Fixed rollback errors that left temporary files around.
+    - Temporary files now prefixed with 'nsscache' for identification.
+    - Numerous bugfixes and cleanups.
+    - nsscache is now GPL'd.
+    - Added a nsscache.conf.5 manpage with content.
+  * Add libnss-cache as a dependency, OR'd with libnss-db.
+  * Downgrade Recommends libdb4.3 to Suggests now that we also have a files
+    backend and libdb is no longer required for successful operation.
+  * Do not install the cron fragment, but instead package it as an example
+    only.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue,  9 Oct 2007 13:53:39 +1000
+
+nsscache (0.5-2) unstable; urgency=low
+
+  * Change dependency on libdb to Recommends. (jaq)
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 17 Jul 2007 14:14:08 +1000
+
+nsscache (0.5-1) unstable; urgency=low
+
+  * New upstream version.
+    - Lazy-load the cache contents on demand, so that checking the status
+      doesn't take large amounts of time. (jaq)
+    - Add retry-on-connect to LdapSource. (vasilios)
+    - Fail gracefully if the LdapSource source is unreachable.  (vasilios)
+    - Strip quotes from configuration values.  (jaq)
+    - Cast configuration options to floats if possible.  (vasilios)
+    - Clean up temp files if we abort before committing the cache file.  (jaq)
+    - Improve status reporting for monitoring.  (jaq)
+  * Depends on patched libdb to fix memory leak. (vasilios)
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon,  25 Jun 2007 16:51:50 -0700
+
+nsscache (0.4-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon,  4 Jun 2007 16:51:50 -0700
+
+nsscache (0.3.1-1) unstable; urgency=low
+
+  * New upstream release.
+  * Cleaned up debian/rules.
+
+ -- Jamie Wilkinson <jaq@google.com>  Fri, 18 May 2007 11:52:26 +1000
+
+nsscache (0.3-1) unstable; urgency=low
+
+  * New upstream version.
+  * Install manpages nsscache.1 and nsscache.conf.5.
+
+ -- Jamie Wilkinson <jaq@google.com>  Wed, 16 May 2007 11:17:01 +1000
+
+nsscache (0.2-2) unstable; urgency=low
+
+  * Altered cron job edit to not set the 15 minutely job at an initial
+    offset greater than 15 minutes.
+
+ -- Jamie Wilkinson <jaq@google.com>  Thu, 10 May 2007 14:22:09 +1000
+
+nsscache (0.2-1) unstable; urgency=low
+
+  * New upstream version.
+  * Change command for full daily update as it is supported by nsscache
+    directly now.
+  * Set full daily update run time to a random offset between 2AM and 5AM
+    in postinst.
+  * Make the cron fragment an example file, and only copy it over if it
+    doesn't exist.  This is done to satisfy Debian Policy which states
+    that a maintainer script must not alter a conffile otherwise the
+    user would be pestered about changes every time a package upgrades.
+  * Delete the generated cron fragment at package purge time.
+  * Updated debian/rules to clean source on debian clean target.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue,  8 May 2007 19:13:20 +1000
+
+nsscache (0.1-2) unstable; urgency=low
+
+  * Fix logging error causing incremental updates to fail.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 16 Apr 2007 16:42:56 +1000
+
+nsscache (0.1-1) unstable; urgency=low
+
+  * Rename of upstream.
+   - Provide, replace, and conflict with lofsync.
+  * Remove conflicts on nscd.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon,  5 Feb 2007 16:05:28 +1100
+
+lofsync (0.1-1) unstable; urgency=low
+
+  * Initial debian packaging
+
+ -- Iustin Pop <iustin@google.com>  Tue,  8 Aug 2006 17:09:49 +0200
+
