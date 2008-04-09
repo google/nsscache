@@ -177,12 +177,12 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir,
                                         'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
 
@@ -208,7 +208,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir,
                                         'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
@@ -219,7 +219,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     db.sync()
     db.close()
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
@@ -238,7 +238,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     self.assertEqual(0, len(db))
     db.close()
     # TODO(jaq): raising an exception is probably the wrong behaviour
-    self.assertRaises(error.EmptyMap, updater.Verify, map_data)
+    self.assertRaises(error.EmptyMap, updater.Verify, set('foo'))
     os.unlink(temp_filename)
 
 
@@ -375,12 +375,12 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbGroupHandler({'dir': self.workdir,
                                        'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
     os.unlink(updater.cache_filename)
@@ -404,7 +404,7 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbGroupHandler({'dir': self.workdir,
                                        'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
@@ -415,7 +415,7 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     db.sync()
     db.close()
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
@@ -535,12 +535,12 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
                                         'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
     os.unlink(updater.cache_filename)
@@ -563,7 +563,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 
     updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
                                         'makedb': '/usr/bin/makedb'})
-    updater.Write(m)
+    written = updater.Write(m)
 
     self.failUnless(os.path.exists(updater.cache_filename),
                     'updater.Write() did not create a file')
@@ -574,7 +574,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     db.sync()
     db.close()
 
-    retval = updater.Verify(m)
+    retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
@@ -599,7 +599,7 @@ class TestNssDbCache(unittest.TestCase):
     pw.passwd = 'x'
     pw.uid = 1000
     pw.gid = 1000
-    pw.gecos = 'poop'
+    pw.gecos = 'doody'
     pw.dir = '/'
     pw.shell = '/bin/sh'
     self.failUnless(data.Add(pw))
@@ -608,9 +608,10 @@ class TestNssDbCache(unittest.TestCase):
     dummy_config = {'dir': self.workdir}
     cache = nssdb.NssDbPasswdHandler(dummy_config)
 
-    r = cache.Write(data)
+    written = cache.Write(data)
 
-    self.assertEqual(True, r)
+    self.assertTrue('.foo' in written)
+    self.assertTrue('=1000' in written)
 
     # perform test
     db = bsddb.btopen(cache.cache_filename, 'r')

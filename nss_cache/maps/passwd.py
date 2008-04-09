@@ -48,38 +48,26 @@ class PasswdMap(base.Map):
 
 
 class PasswdMapEntry(base.MapEntry):
-  """This class represents NSS passwd map entries.
-  
-  Entries are internally a dict, see the abstract class MapEntry.
-  """
+  """This class represents NSS passwd map entries."""
+  # Using slots saves us over 2x memory on large maps.
+  __slots__ = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
+  _KEY = 'name'
+  _ATTRS = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
   
   def __init__(self, data=None):
     """Construct a PasswdMapEntry, setting reasonable defaults."""
-    
-    # Primary key for this MapEntry is name
-    pkey = 'name'
-    # Required keys, e.g. no reasonable defaults.
-    req_keys = ('name', 'uid', 'gid')
-    # All keys and their expected types.
-    types = {'name': str, 'passwd': str, 'uid': int, 'gid': int, 'gecos': str,
-             'dir': str, 'shell': str}
-    
-    # Seed data with defaults if needed
-    if data is None: data = {}
-    if 'passwd' not in data: data['passwd'] = 'x'
-    if 'gecos' not in data: data['gecos'] = ''
-    if 'dir' not in data: data['dir'] = ''
-    if 'shell' not in data: data['shell'] = ''
+    self.name = None
+    self.uid = None
+    self.gid = None
+    self.passwd = None
+    self.gecos = None
+    self.dir = None
+    self.shell = None
 
-    # Initialize!
-    super(PasswdMapEntry, self).__init__(pkey, req_keys, types, data)
+    super(PasswdMapEntry, self).__init__(data)
 
-  def _VerifyAttr(self, attr):
-    """Verify a single attribute, and return True or raise an exception."""
-    super(PasswdMapEntry, self)._VerifyAttr(attr)
-    value = self._data[attr]
-    # Strings can not have ':' in them.
-    if isinstance(value, str) and value.count(':') > 0:
-      raise AttributeError('Colon in strings not allowed.', attr, value)
-
-    return True
+    # Seed data with defaults if still empty
+    if self.passwd is None: self.passwd = 'x'
+    if self.gecos is None: self.gecos = ''
+    if self.dir is None: self.dir = ''
+    if self.shell is None: self.shell = ''

@@ -18,8 +18,8 @@
 
 """Unit tests for nss_cache/caches/files.py."""
 
-__author__ =  ('jaq@google.com (Jamie Wilkinson)',
-               'vasilios@google.com (Vasilios Hoffman)')
+__author__ = ('jaq@google.com (Jamie Wilkinson)',
+              'vasilios@google.com (Vasilios Hoffman)')
 
 import os
 import pmock
@@ -44,8 +44,12 @@ class TestFilesCache(pmock.MockTestCase):
     self.failIfEqual(None, cache)
 
   def testWrite(self):
-    cache = files.FilesCache(self.config)
-    self.assertEqual(True, cache.Write([]))
+    cache = files.FilesPasswdMapHandler(self.config)
+    entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    pmap = maps.PasswdMap([entry])
+    written = cache.Write(pmap)
+    self.assertTrue('foo' in written)
+    self.assertFalse(entry in pmap)  # we emptied pmap to avoid mem leaks
     os.unlink(cache.cache_filename)
 
   def testCacheFilenameSuffixOption(self):

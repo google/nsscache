@@ -109,12 +109,6 @@ class TestGroupMapEntry(unittest.TestCase):
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
     entry = maps.GroupMapEntry()
-        
-    # Pass bad values for each entry.
-    self.assertRaises(AttributeError, entry.Set, 'name', None)
-    self.assertRaises(AttributeError, entry.Set, 'passwd', None)
-    self.assertRaises(AttributeError, entry.Set, 'gid', None)
-    self.assertRaises(AttributeError, entry.Set, 'members', None)
     
     # Empty object should bomb
     self.failIf(entry.Verify())
@@ -125,10 +119,6 @@ class TestGroupMapEntry(unittest.TestCase):
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
 
-  def testColonCancer(self):
-    """Test that attributes of type string will not accept ':' as valid."""
-    entry = maps.PasswdMapEntry()
-    self.assertRaises(AttributeError, entry.Set, 'name', 'foo:bar')
 
 if __name__ == '__main__':
   unittest.main()

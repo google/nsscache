@@ -1,0 +1,19 @@
+# /etc/cron.d/nsscache: crontab entries for the nsscache package
+#
+# Example crontab for nsscache.
+# Replace the %% text with real values before deploying.
+
+SHELL=/bin/sh
+PATH=/usr/bin
+MAILTO=""
+NSSCACHE=/usr/bin/nsscache
+
+# disable /etc/ldap.conf defaults like the 2 minute timeout.
+LDAPNOINIT=1
+
+# update the cache 15 minutely
+%MINUTE15%-59/15 * * * * root $NSSCACHE -v update --sleep %SECONDS%
+
+# perform a full update once a day, at a time chosen during package
+# configuration (between 2AM and 5AM)
+%MINUTE% %HOUR% * * * root $NSSCACHE -v update --full

@@ -116,11 +116,7 @@ class TestAutomountMapEntry(unittest.TestCase):
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
     entry = maps.AutomountMapEntry()
-    
-    # Pass bad values for each entry.
-    self.assertRaises(AttributeError, entry.Set, 'key', None)
-    self.assertRaises(AttributeError, entry.Set, 'location', None)
-    
+        
     # Empty object should bomb
     self.failIf(entry.Verify())
 

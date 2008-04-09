@@ -301,6 +301,9 @@ class Cache(object):
       raise error.EmptyMap('Source map empty during full update, aborting. '
                            'Use --force-write to override this behaviour.')
 
+    # Here we write out to disk.  Note that for purposes of saving memory on
+    # large maps, the Write() call in _WriteMap() empties the cache_map object
+    # as it writes, so len(source_map) == 0.
     if incremental:
       if cache_map.Merge(source_map):
         return_val = self._WriteMap(cache_map, source_map.GetModifyTimestamp())
@@ -319,19 +322,22 @@ class Cache(object):
 
   def _WriteMap(self, writable_map, new_modify_timestamp):
     """Write a map to disk."""
-    return_val = 0
-    if not self.Write(writable_map):
+
+    entries_written = self.Write(writable_map)
+    # N.B. Write is destructive, len(writable_map) == 0 now.
+    
+    if entries_written is None:
       self.log.warn('cache write failed, exiting')
-      return_val = 1
-    else:
-      if self.Verify(writable_map):
-        # TODO(jaq): in the future we should handle return codes from
-        # Commit()
-        self._Commit(new_modify_timestamp)
-      else:
-        self.log.warn('verification failed, exiting')
-        return_val = 1
-    return return_val
+      return 1
+    
+    if self.Verify(entries_written):
+      # TODO(jaq): in the future we should handle return codes from
+      # Commit()
+      self._Commit(new_modify_timestamp)
+      return 0
+
+    self.log.warn('verification failed, exiting')
+    return 1
 
   def _Commit(self, modify_timestamp):
     """Ensure the cache is now the active data source for NSS.

@@ -446,7 +446,7 @@ class ShadowUpdateGetter(UpdateGetter):
     super(ShadowUpdateGetter, self).__init__()
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
-                  'shadowExpire', 'shadowFlag']
+                  'shadowExpire', 'shadowFlag', 'userPassword']
     self.essential_fields = ['uid']
 
   def CreateMap(self):
@@ -476,6 +476,12 @@ class ShadowUpdateGetter(UpdateGetter):
       shadow_ent.flag = int(obj['shadowFlag'][0])
     if shadow_ent.flag is None:
       shadow_ent.flag = 0
+    if 'userPassword' in obj:
+      passwd = obj['userPassword'][0]
+      if passwd[:7] == "{CRYPT}":
+        shadow_ent.passwd = passwd[7:]
+      else:
+        logging.info('Ignored password that was not in crypt format')
     return shadow_ent
 
 

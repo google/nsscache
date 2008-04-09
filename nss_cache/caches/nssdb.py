@@ -110,36 +110,50 @@ class NssDbCache(base.Cache):
   def Write(self, map_data):
     """Write the map to the cache file.
 
+    Warning -- this destroys map_data as it is written.  This is done to save
+    memory and keep our peak footprint smaller.  We consume memory again
+    on Verify() as we read a new copy of the entries back in.
+
     Args:
       map_data: A Map subclass
 
     Returns:
-      a boolean indicating success or failure.
+      a set() of keys written or None on failure.
     """
     self._Begin()
+    written_keys = set()
+
     try:
       makedb = self._SpawnMakeDb()
-
       enumeration_index = 0
-      for entry in map_data:
-        if makedb.poll() is not None:
-          self.log.error('early exit from makedb! child output: %s',
-                         makedb.stdout.read())
-          # in this case, no matter how the child exited, we return False
-          return False
 
-        self.WriteData(makedb.stdin, entry, enumeration_index)
+      try:
+        while (1):
+          entry = map_data.PopItem()
+          if makedb.poll() is not None:
+            self.log.error('early exit from makedb! child output: %s',
+                           makedb.stdout.read())
+            # in this case, no matter how the child exited, we complain
+            return None
+          self.WriteData(makedb.stdin, entry, enumeration_index)
+          written_keys.update(self.ExpectedKeysForEntry(entry))
+          enumeration_index += 1
+      except KeyError:
+        # expected when PopItem() is done, and breaks our loop for us.
+        pass
 
-        enumeration_index += 1
-
-      self.log.debug('%d entries written', enumeration_index)
+      self.log.debug('%d entries written, %d keys', enumeration_index, len(written_keys))
       makedb.stdin.close()
 
       map_data = makedb.stdout.read()
       if map_data:
         self.log.debug('makedb output: %r', map_data)
 
-      return self._DecodeExitCode(makedb.wait())
+      if self._DecodeExitCode(makedb.wait()):
+        return written_keys
+      
+      return None
+      
     except:
       self._Rollback()
       raise
@@ -148,14 +162,14 @@ class NssDbCache(base.Cache):
     """Helper function to compute if a child exited with code 0 or not."""
     return os.WIFEXITED(code) and (os.WEXITSTATUS(code) == 0)
 
-  def Verify(self, map_data):
+  def Verify(self, written_keys):
     """Verify that the written cache is correct.
 
-    Perform some unit tests on the written data, such as reading it back in
-    and comparing it to the writable data.
+    Perform some unit tests on the written data, such as reading it
+    back and verifying that it loads and has the entries we expect.
 
     Args:
-      map_data: a Map subclass to verify database contents against
+      written_keys: a set() of keys that should have been written to disk.
 
     Returns:
       boolean indicating success.
@@ -167,50 +181,28 @@ class NssDbCache(base.Cache):
     db = bsddb.btopen(self.cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
-    cache_db_keys = set(db)
+    cache_keys = set(db)
     db.close()
 
-    map_entry_count = len(map_data)
-    self.log.debug('key count: %d', map_entry_count)
+    written_key_count = len(written_keys)
+    cache_key_count = len(cache_keys)
+    self.log.debug('%d written keys, %d cache keys', written_key_count,
+                   cache_key_count)
 
-    if map_entry_count <= 0:
-      # TODO(jaq): raising an exception is probably incorrect -- you
-      # may legitimately get an empty map verified against an empty
-      # map.  Instead guard against 0 for the following paragraph,
-      # checking max_enum.
+    if cache_key_count <= 0 and written_key_count > 0:
+      # We have an empty map yet we should have written more.
+      # Uncaught disk full or other error?
       raise error.EmptyMap
 
-    # enum starts at 0, so max enum is one less than count
-    max_enum = '0%d' % (map_entry_count - 1,)
-    if max_enum not in cache_db_keys:
-      self.log.warn('verify failed: %r not a key (max enum)', max_enum)
-      self._Rollback()
-      return False
-
-    if '0%d' % (map_entry_count,) in cache_db_keys:
-      self.log.warn('verify failed: more enumerations than there should be')
-      self._Rollback()
-      return False
-
-    map_expected_keys = set()
-    for entry in map_data:
-      map_expected_keys.update(self.ExpectedKeysForEntry(entry))
-    for i in range(0, map_entry_count):
-      map_expected_keys.add('0%d' % i)
-
-    missing_from_cache = map_expected_keys - cache_db_keys
-    if missing_from_cache:
-      self.log.warn('verify failed: %d keys missing from the on-disk cache',
-                    len(missing_from_cache))
-      self.log.debug('keys missing from cache: %r', missing_from_cache)
-      self._Rollback()
-      return False
-
-    missing_from_map = cache_db_keys - map_expected_keys
-    if missing_from_map:
-      self.log.warn('verify failed: %d keys in the cache that should not be',
-                    len(missing_from_map))
-      self.log.warn('keys missing from map: %r', missing_from_map)
+    # makedb creates new keys internally.  we only care that all the keys
+    # we tried to write out are still there.  so written_keys must be a subset
+    # of cache_keys!
+    if not written_keys.issubset(cache_keys):
+      self.log.warn('verify failed: written keys missing from the on-disk'
+                    ' cache!')
+      intersection = written_keys.intersection(cache_keys)
+      missing_keys = written_keys - intersection
+      self.log.debug('missing: %r', missing_keys)
       self._Rollback()
       return False
 

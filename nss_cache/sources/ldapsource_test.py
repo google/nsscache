@@ -364,6 +364,7 @@ class TestLdapSource(pmock.MockTestCase):
                     'shadowExpire': ['-1'],
                     'shadowFlag': ['134537556'],
                     'modifyTimestamp': ['20070227012807Z'],
+		    'userPassword': ['{CRYPT}p4ssw0rd']
                    })
 
     ldap_conn = self.mock()
@@ -380,7 +381,7 @@ class TestLdapSource(pmock.MockTestCase):
                                           'shadowMin', 'shadowMax',
                                           'shadowWarning', 'shadowInactive',
                                           'shadowExpire', 'shadowFlag',
-                                          'modifyTimestamp']))\
+                                          'userPassword', 'modifyTimestamp']))\
                .will(pmock.return_value(37))
     ldap_conn\
                .expects(pmock.once())\
@@ -406,6 +407,7 @@ class TestLdapSource(pmock.MockTestCase):
     ent = data.PopItem()
 
     self.assertEqual('test', ent.name)
+    self.assertEqual('p4ssw0rd', ent.passwd)
 
   def testGetNetgroupMap(self):
     """Test that GetNetgroupMap returns a sensible map."""

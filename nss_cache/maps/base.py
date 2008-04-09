@@ -43,15 +43,13 @@ class Map(object):
   considered an acceptable restriction as posix semantics imply that
   entries are unique in each map with respect to certain attributes.
 
-  Each time a MapEntry is added to a Map, the Map is registered with
-  the MapEntry so that a change to the MapEntry.Key() attribute is
-  reflected in the MapEntry's containers.  The inverse is done on
-  remove.
-
   A Map also stores two timestamps; a "last update timestamp" which
   is set every time an update/merge operation occurs on a map, and a
   "last modification timestamp", which stores the last time that
   fresh data was merged into the map.
+
+  N.B.  Changing the MapEntry().Key() after adding to a Map() will
+  corrupt the index...so don't do it.
   """
   
   def __init__(self, iterable):
@@ -104,16 +102,7 @@ class Map(object):
       self.log.info('refusing to add entry, verify failed')
       return False
 
-    # Register/Unregister, depending on if we are overwriting an
-    # entry or just adding a new one.  Registering/UnRegistering
-    # does no harm, so if entry == oldentry we don't care.
-    key = entry.Key()
-    if key in self._data:
-      oldentry = self._data[key]
-      oldentry.UnRegister(self)
-    self._data[key] = entry
-    entry.Register(self)
-
+    self._data[entry.Key()] = entry
     return True
 
   def Exists(self, entry):
@@ -166,31 +155,7 @@ class Map(object):
   def PopItem(self):
     """Return a MapEntry object, throw KeyError if none exist."""
     (unused_key, value) = self._data.popitem()  #Throws KeyError if empty.
-    value.UnRegister(self)
     return value
-
-  def Remove(self, entry):
-    """Removes and returns an entry from a Map, if present."""
-    key = entry.Key()
-    try:
-      possible_entry = self._data.pop(key)
-    except KeyError:
-      return None
-    if possible_entry == entry:
-      possible_entry.UnRegister(self)
-      return possible_entry
-    else:
-      self._data[key] = possible_entry  # put it back
-      return None
-
-  def UpdateKey(self, old_key, new_key):
-    """Replace an old_key with a new_key."""
-    try:
-      value = self._data.pop(old_key)
-    except KeyError:
-      return False
-    self._data[new_key] = value
-    return True
 
   def SetModifyTimestamp(self, value):
     """Set the last modify timestamp of this map."""
@@ -216,188 +181,63 @@ class Map(object):
     """Return last update timestamp of this map."""
     return self._last_update_timestamp
 
-  #TODO(v):  write Get() to do an imutable fetch of specific MapEntry.
-
 
 class MapEntry(object):
   """Abstract class for representing an entry in an NSS map.
   
-  Map data is stored internally as a dict, we expect to be contained
-  in MapEntry objects and provide a unique identifier via Key() so
-  that MapEntry objects can properly index us.  See the MapEntry
-  class for more details.
+  We expect to be contained in MapEntry objects and provide a unique identifier
+  via Key() so that Map objects can properly index us.  See the Map class for
+  more details.
   """
+  # Using slots saves us over 2x memory on large maps.
+  __slots__ = ('_KEY', '_ATTRS', 'log')
+  # Overridden in the derived classes
+  _KEY = None
+  _ATTRS = None
 
-  # TODO(v):  clean up req_keys/types/pkey to be less confusing.
-  def __init__(self, pkey, req_keys, types, data=None):
+  def __init__(self, data=None):
     """This is an abstract class.
 
-    We intialize a few private attributes, then add any data to
-    the MapEntry that was handed to us.  Expected private
-    attributes are:
-
     Args:
-      pkey:  Name of an attribute whose value is to be used as our
-      unique identifier.
-      req_keys:  tuple of keys which have no default value, ones that
-      must be present in a MapEntry.
-      types:  dict of attribute names and their expected types.
-      The expected types can be either a single type, e.g. str or
-      int, or it can be a tuple of types.
-      data:  optional dict of attribute, value pairs.
+      data:  optional dict of attribute, value pairs to populate with.
 
     Raises:
       TypeError:  Bad argument, or attempt to instantiate abstract class.
     """
-
     if self.__class__ is MapEntry:
       raise TypeError('MapEntry is an abstract class.')
-
-    # Sanity check arguments.
-    if type(pkey) != str:
-      raise TypeError('pkey is not a string.')
-    else:
-      self._pkey = pkey
-    if type(req_keys) not in (list, tuple):
-      raise TypeError('req_keys neither list nor tuple.')
-    else:
-      self._req_keys = req_keys
-    if type(types) is not dict:
-      raise TypeError('types expected to be dict.')
-    else:
-      self._types = types
-
-    # Initialize internal data structures.
-    self._data = {}
-    self._registered = []
 
     # Initialize from dict, if passed.
     if data is None:
       return
     else:
       for key in data:
-        self.Set(key, data[key])
+        setattr(self, key, data[key])
 
-    # Setup logging.  Note the __setattr__() override below is
-    # necessary to avoid calling self.Set('log', logger) which
-    # will correctly fail.
-    logger = logging.getLogger(self.__class__.__name__)
-    super(MapEntry, self).__setattr__('log', logger)
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def __eq__(self, other):
     """Deep comparison of two MapEntry objects."""
     if type(self) != type(other):
       return False
-    for key in self._types:
-      if self.Get(key) != other.Get(key):
+    for key in self._ATTRS:
+      if getattr(self, key) != getattr(other, key):
         return False
     return True
 
-  def __getattr__(self, name):
-    """Force all attribute reads through self.Get()."""
-    # skip override for private attributes like self._data by using the
-    # parent's getattr method which is unmodified (unlike this one).
-    if name.startswith('_'):
-      return super(MapEntry, self).__getattr__(name)
-    return self.Get(name)
-
-  def __setattr__(self, name, value):
-    """Force all attribute writes through self.Set()."""
-    # skip override for private attributes like self._data by using the
-    # parent's setattr method which is unmodified (unlike this one).
-    if name.startswith('_'):
-      return super(MapEntry, self).__setattr__(name, value)
-    return self.Set(name, value)
-
   def __repr__(self):
     """String representation."""
-    return '<%s : %r>' % (self.__class__.__name__, self._data)
+    rep = ''
+    for key in self._ATTRS:
+      rep = '%r:%r %s' % (key, getattr(self, key), rep)
+    return '<%s : %r>' % (self.__class__.__name__, rep.rstrip())
 
   def Key(self):
     """Return unique identifier for this MapEntry object."""
-    return self.Get(self._pkey)
+    return getattr(self, self._KEY)
 
-  def Get(self, attr):
-    """Get attribute, throw AttributeError if unknown attribute."""
-    if attr in self._data: return self._data[attr]
-    raise AttributeError('Can not get unknown attribute %s' % attr)
-
-  def Register(self, map_object):
-    """Register a map so we can update indexes on primary key changes."""
-    self._registered.append(map_object)
-
-  def Set(self, attr, value):
-    """Set attribute, verify it."""
-
-    # Check for unknown keys
-    if attr not in self._types:
-      raise AttributeError('Can not set unknown attribute %s' % attr)
-
-    # Update any registered maps
-    if attr == self._pkey:
-      for registered in self._registered:
-        if not registered.UpdateKey(self._data[attr], value):
-          raise AttributeError('Unexpected failure updating Map')
-
-    # Set and return!
-    self._data[attr] = value
-    return self.Verify(attr)
-
-  def UnRegister(self, map_object):
-    """Remove a map from a list of registered maps."""
-    self._registered.remove(map_object)
-
-  def Verify(self, attr=None):
-    """Verify either the whole object, or a single attribute."""
-    if attr is not None:
-      return self._VerifyAttr(attr)
-
-    return self._VerifyObj()
-
-  def _VerifyAttr(self, attr):
-    """Verify a single attribute and return True or raise an exception."""
-    types = self._types[attr]
-    value = self._data[attr]
-    
-    if not isinstance(types, tuple):
-      types = (types,)  # set a tuple for below
-      
-    # Verify attribute is of the appropriate type.
-    verified = False  # I hate flags like this
-    for type_value in types:
-      if type_value is None:
-        if value is None: verified = True
-      else:
-        if isinstance(value, type_value):
-          verified = True
-
-    if verified:
-      return True
-
-    raise AttributeError('Bad attribute data for %r: %r', attr, value)
-
-  def _VerifyObj(self):
-    """Verify every attribute in the object."""
-
-    # Verify each attribute.
-    for attr in self._types:
-      try:
-        self.Verify(attr)
-      except AttributeError, e:
-        self.log.debug('attribute %s failed Verify() with error %s'
-                       ' in %s', attr, e, self.__class__)
-        return False
-
-    # Check for required keys.
-    required_keys = 0
-    for key in self._req_keys:
-      if key in self._data:
-        required_keys += 1
-      else:
-        self.log.debug('key "%s" missing or bad in %s', key,
-                       self.__class__)
-
-    if required_keys == len(self._req_keys):
-      return True
-
-    return False
+  def Verify(self):
+    """We have defined the key attribute."""
+    if getattr(self, self._KEY) is None:
+      return False
+    return True

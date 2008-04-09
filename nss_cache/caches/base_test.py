@@ -94,8 +94,10 @@ class TestCache(pmock.MockTestCase):
     class DummyLogger(object):
       def debug(self, message):
         pass
+      
       def info(self, message):
         pass
+      
       def warning(self, message):
         pass
 
@@ -111,10 +113,10 @@ class TestCache(pmock.MockTestCase):
     cache_map\
                        .expects(pmock.once())\
                        .Write(pmock.eq('writable_map'))\
-                       .will(pmock.return_value(True))
+                       .will(pmock.return_value('entries_written'))
     cache_map\
                        .expects(pmock.once())\
-                       .Verify(pmock.eq('writable_map'))\
+                       .Verify(pmock.eq('entries_written'))\
                        .will(pmock.return_value(True))
 
     self.assertEqual(0, cache_map._WriteMap('writable_map', 'modify'))
@@ -163,10 +165,10 @@ class TestCache(pmock.MockTestCase):
     handler\
              .expects(pmock.once())\
              .Write(pmock.eq(cache_map))\
-             .will(pmock.return_value(True))
+             .will(pmock.return_value('entries_written'))
     handler\
                .expects(pmock.once())\
-               .Verify(pmock.eq(cache_map))\
+               .Verify(pmock.eq('entries_written'))\
                .will(pmock.return_value(True))
 
     self.assertEqual(0, handler.Update('source', incremental=True))
@@ -202,10 +204,10 @@ class TestCache(pmock.MockTestCase):
     cache_map_handler\
                        .expects(pmock.once())\
                        .Write(pmock.eq(source_map))\
-                       .will(pmock.return_value(True))
+                       .will(pmock.return_value('entries_written'))
     cache_map_handler\
                        .expects(pmock.once())\
-                       .Verify(pmock.eq(source_map))\
+                       .Verify(pmock.eq('entries_written'))\
                        .will(pmock.return_value(True))
     cache_map_handler\
                        .expects(pmock.once())\
@@ -261,10 +263,10 @@ class TestCache(pmock.MockTestCase):
     handler\
              .expects(pmock.once())\
              .Write(pmock.eq(source_map))\
-             .will(pmock.return_value(True))
+             .will(pmock.return_value('entries_written'))
     handler\
              .expects(pmock.once())\
-             .Verify(pmock.eq(source_map))\
+             .Verify(pmock.eq('entries_written'))\
              .will(pmock.return_value(True))
     handler\
              .expects(pmock.once())\
@@ -365,10 +367,10 @@ class TestCache(pmock.MockTestCase):
     handler\
              .expects(pmock.once())\
              .Write(pmock.eq(source_map))\
-             .will(pmock.return_value(True))
+             .will(pmock.return_value('entries_written'))
     handler\
              .expects(pmock.once())\
-             .Verify(pmock.eq(source_map))\
+             .Verify(pmock.eq('entries_written'),)\
              .will(pmock.return_value(True))
     handler\
              .expects(pmock.once())\
@@ -423,10 +425,10 @@ class TestCache(pmock.MockTestCase):
     handler\
              .expects(pmock.once())\
              .Write(pmock.eq(cache_map))\
-             .will(pmock.return_value(True))
+             .will(pmock.return_value('entries_written'))
     handler\
              .expects(pmock.once())\
-             .Verify(pmock.eq(cache_map))\
+             .Verify(pmock.eq('entries_written'))\
              .will(pmock.return_value(True))
     handler\
              .expects(pmock.once())\

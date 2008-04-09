@@ -260,16 +260,56 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = files\n'
+                    'maps = passwd, group, shadow\n'
+                    'files_cache_filename_suffix = cache')
+    conf_file.close()
+    config.LoadConfig(self.conf)
+    nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
+    nsswitch_file = open(nsswitch_filename, 'w')
+    nsswitch_file.write('passwd: cache\n')
+    nsswitch_file.write('group: cache\n')
+    nsswitch_file.write('shadow: cache\n')
+    nsswitch_file.close()
+    self.assertEquals((0, 0),
+                      config.VerifyConfiguration(self.conf,
+                                                 nsswitch_filename))
+    os.unlink(nsswitch_filename)
+
+  def testVerifyConfigurationWithFiles(self):
+    conf_file = open(self.conf_filename, 'w')
+    conf_file.write('[DEFAULT]\n'
+                    'source = foo\n'
+                    'cache = files\n'
                     'maps = passwd, group, shadow\n')
     conf_file.close()
     config.LoadConfig(self.conf)
     nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
     nsswitch_file = open(nsswitch_filename, 'w')
-    nsswitch_file.write('passwd: files cache\n')
-    nsswitch_file.write('group: files cache\n')
-    nsswitch_file.write('shadow: files cache\n')
+    nsswitch_file.write('passwd: files\n')
+    nsswitch_file.write('group: files\n')
+    nsswitch_file.write('shadow: files\n')
     nsswitch_file.close()
     self.assertEquals((0, 0),
+                      config.VerifyConfiguration(self.conf,
+                                                 nsswitch_filename))
+    os.unlink(nsswitch_filename)
+
+  def testVerifyBadConfigurationWithCache(self):
+    conf_file = open(self.conf_filename, 'w')
+    conf_file.write('[DEFAULT]\n'
+                    'source = foo\n'
+                    'cache = files\n'
+                    'maps = passwd, group, shadow\n'
+                    'files_cache_filename_suffix = cache')
+    conf_file.close()
+    config.LoadConfig(self.conf)
+    nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
+    nsswitch_file = open(nsswitch_filename, 'w')
+    nsswitch_file.write('passwd: files\n')
+    nsswitch_file.write('group: files\n')
+    nsswitch_file.write('shadow: files\n')
+    nsswitch_file.close()
+    self.assertEquals((3, 0),
                       config.VerifyConfiguration(self.conf,
                                                  nsswitch_filename))
     os.unlink(nsswitch_filename)

@@ -48,44 +48,26 @@ class ShadowMap(base.Map):
 
 
 class ShadowMapEntry(base.MapEntry):
-  """This class represents NSS shadow map entries.
+  """This class represents NSS shadow map entries."""
+  __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
+               'expire', 'flag')
+  _KEY = 'name'
+  _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
+            'expire', 'flag')
   
-  Entries are internally a dict, see the abstract class MapEntry.
-  """
-    
   def __init__(self, data=None):
     """Construct a ShadowMapEntry, setting reasonable defaults."""
+    self.name = None
+    self.passwd = None
+    self.lstchg = None
+    self.min = None
+    self.max = None
+    self.warn = None
+    self.inact = None
+    self.expire = None
+    self.flag = None
 
-    # Primary key for this MapEntry is name
-    pkey = 'name'
-    # Required keys, e.g. no reasonable defaults.
-    req_keys = ('name',)
-    # All keys and their expected types.
-    types = {'name': str, 'passwd': str, 'lstchg': (int, None),
-             'min': (int, None), 'max': (int, None),
-             'warn': (int, None), 'inact': (int, None),
-             'expire': (int, None), 'flag': (int, None)}
+    super(ShadowMapEntry, self).__init__(data)
     
     # Seed data with defaults if needed
-    if data is None: data = {}
-    if 'passwd' not in data: data['passwd'] = '!!'
-    if 'lstchg' not in data: data['lstchg'] = None
-    if 'min' not in data: data['min'] = None
-    if 'max' not in data: data['max'] = None
-    if 'warn' not in data: data['warn'] = None
-    if 'inact' not in data: data['inact'] = None
-    if 'expire' not in data: data['expire'] = None
-    if 'flag' not in data: data['flag'] = None
-
-    # Initialize!
-    super(ShadowMapEntry, self).__init__(pkey, req_keys, types, data)
-
-  def _VerifyAttr(self, attr):
-    """Verify a single attribute, and return True or raise an exception."""
-    super(ShadowMapEntry, self)._VerifyAttr(attr)
-    value = self._data[attr]
-    # Strings can not have ':' in them.
-    if isinstance(value, str) and value.count(':') > 0:
-      raise AttributeError('Colon in strings not allowed.', attr, value)
-
-    return True
+    if self.passwd is None: self.passwd = '!!'

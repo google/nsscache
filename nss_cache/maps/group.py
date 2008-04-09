@@ -48,35 +48,21 @@ class GroupMap(base.Map):
 
 
 class GroupMapEntry(base.MapEntry):
-  """This class represents NSS group map entries.
+  """This class represents NSS group map entries."""
+  # Using slots saves us over 2x memory on large maps.
+  __slots__ = ('name', 'passwd', 'gid', 'members')
+  _KEY = 'name'
+  _ATTRS = ('name', 'passwd', 'gid', 'members')
   
-  Entries are internally a dict, see the abstract class MapEntry.
-  """
-
   def __init__(self, data=None):
-    """Construct a GroupMapEntry."""
-
-    # Primary key for this MapEntry is name
-    pkey = 'name'
-    # Required keys, e.g. no reasonble defaults.
-    req_keys = ('name', 'gid')
-    # All keys and their expected types.
-    types = {'name': str, 'passwd': str, 'gid': int, 'members': list}
-
+    """Construct a GroupMapEntry, setting reasonable defaults."""
+    self.name = None
+    self.passwd = None
+    self.gid = None
+    self.members = None
+    
+    super(GroupMapEntry, self).__init__(data)
+    
     # Seed data with defaults if needed
-    if data is None: data = {}
-    if 'passwd' not in data: data['passwd'] = 'x'
-    if 'members' not in data: data['members'] = []
-    
-    super(GroupMapEntry, self).__init__(pkey, req_keys, types, data)
-
-  def _VerifyAttr(self, attr):
-    """Verify a single attribute, and return True or raise an exception."""
-    super(GroupMapEntry, self)._VerifyAttr(attr)
-    
-    value = self._data[attr]
-    # Strings can not have ':' in them.
-    if isinstance(value, str) and value.count(':') > 0:
-      raise AttributeError('Colon in strings not allowed.', attr, value)
-
-    return True
+    if self.passwd is None: self.passwd = 'x'
+    if self.members is None: self.members = []

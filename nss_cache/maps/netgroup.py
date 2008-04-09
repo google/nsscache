@@ -64,8 +64,6 @@ class NetgroupMap(base.Map):
 
 class NetgroupMapEntry(base.MapEntry):
   """This class represents NSS netgroup map entries.
-  
-  Entries are internally a dict, see the abstract class MapEntry.
 
   The entries attribute is a list containing an arbitray mix of either
   strings which are netgroup names, or tuples mapping to (host, user,
@@ -73,19 +71,16 @@ class NetgroupMapEntry(base.MapEntry):
   tuple is the equivalent of a null pointer from getnetgrent(),
   specifically a wildcard.
   """
+  __slots__ = ('name', 'entries')
+  _KEY = 'name'
+  _ATTRS = ('name', 'entries')
 
   def __init__(self, data=None):
     """Construct a NetgroupMapEntry."""
-
-    # Primary key for this MapEntry is name
-    pkey = 'name'
-    # Required keys, e.g. no reasonble defaults.
-    req_keys = ('name',)
-    # All keys and their expected types.
-    types = {'name': str, 'entries': list}
+    self.name = None
+    self.entries = None
+    
+    super(NetgroupMapEntry, self).__init__(data)
 
     # Seed data with defaults if needed
-    if data is None: data = {}
-    if 'entries' not in data: data['entries'] = []
-    
-    super(NetgroupMapEntry, self).__init__(pkey, req_keys, types, data)
+    if self.entries is None: self.entries = []

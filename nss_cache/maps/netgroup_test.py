@@ -99,10 +99,6 @@ class TestNetgroupMapEntry(unittest.TestCase):
     """Test that the object can verify it's attributes and itself."""
     entry = maps.NetgroupMapEntry()
     
-    # Pass bad values for each entry.
-    self.assertRaises(AttributeError, entry.Set, 'name', None)
-    self.assertRaises(AttributeError, entry.Set, 'entries', None)
-    
     # Empty object should bomb
     self.failIf(entry.Verify())
 

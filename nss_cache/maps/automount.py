@@ -81,23 +81,17 @@ class AutomountMap(base.Map):
 
 
 class AutomountMapEntry(base.MapEntry):
-  """This class represents NSS automount map entries.
+  """This class represents NSS automount map entries."""
+  __slots__ = ('key', 'location', 'options')
+  _KEY = 'key'
+  _ATTRS = ('key', 'location', 'options')
   
-  Entries are internally a dict, see the abstract class MapEntry.
-  """
-
   def __init__(self, data=None):
     """Construct a AutomountMapEntry."""
-
-    # Primary key for this MapEntry is name
-    pkey = 'key'
-    # Required keys, e.g. no reasonble defaults.
-    req_keys = ('key', 'location')
-    # All keys and their expected types.
-    types = {'key': str, 'options': (str, None), 'location': str}
-
-    # Seed data with defaults if needed
-    if data is None: data = {}
-    if 'options' not in data: data['options'] = None
+    self.key = None
+    self.location = None
+    self.options = None
     
-    super(AutomountMapEntry, self).__init__(pkey, req_keys, types, data)
+    super(AutomountMapEntry, self).__init__(data)
+    
+

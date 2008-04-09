@@ -76,15 +76,14 @@ class FilesCache(base.Cache):
 
     return data
 
-  def Verify(self, map_data):
+  def Verify(self, written_keys):
     """Verify that the cache is correct.
 
     Perform some unit tests on the written data, such as reading it
-    back and comparing it to the map data.
+    back and verifying that it parses and has the entries we expect.
 
     Args:
-      map_data: A Map subclass containing the map to be verified
-                against.
+      written_keys: a set() of keys that should have been written to disk.
 
     Returns:
       a boolean indicating success.
@@ -93,6 +92,7 @@ class FilesCache(base.Cache):
       error.EmptyMap: see nssdb.py:Verify
     """
     self.log.debug('verification starting on %r', self.cache_filename)
+
     cache_data = self.GetCacheMap(self.cache_filename)
     map_entry_count = len(cache_data)
     self.log.debug('entry count: %d', map_entry_count)
@@ -101,16 +101,17 @@ class FilesCache(base.Cache):
       # See nssdb.py Verify for a comment about this raise
       raise error.EmptyMap
 
-    # TODO(jaq): not a lot of verification yet
     cache_keys = set()
-    for entry in cache_data:
-      cache_keys.update(self._ExpectedKeysForEntry(entry))
+    # Use PopItem() so we free our memory if multiple maps are Verify()ed.
+    try:
+      while (1):
+        entry = cache_data.PopItem()
+        cache_keys.update(self._ExpectedKeysForEntry(entry))
+    except KeyError:
+      # expected when PopItem() is done, and breaks our loop for us.
+      pass
 
-    map_expected_keys = set()
-    for entry in map_data:
-      map_expected_keys.update(self._ExpectedKeysForEntry(entry))
-
-    missing_from_cache = map_expected_keys - cache_keys
+    missing_from_cache = written_keys - cache_keys
     if missing_from_cache:
       self.log.warn('verify failed: %d missing from the on-disk cache',
                     len(missing_from_cache))
@@ -118,7 +119,7 @@ class FilesCache(base.Cache):
       self._Rollback()
       return False
 
-    missing_from_map = cache_keys - map_expected_keys
+    missing_from_map = cache_keys - written_keys
     if missing_from_map:
       self.log.warn('verify failed: %d keys unexpected in the on-disk cache',
                     len(missing_from_map))
@@ -131,23 +132,33 @@ class FilesCache(base.Cache):
   def Write(self, map_data):
     """Write the map to the cache.
 
+    Warning -- this destroys map_data as it is written.  This is done to save
+    memory and keep our peak footprint smaller.  We consume memory again
+    on Verify() as we read a new copy of the entries back in.
+
     Args:
       map_data: A Map subclass containing the entire map to be written.
 
     Returns:
-      a boolean indicating success or failure.
+      a set() of keys written or None on failure.
     """
     self._Begin()
+    written_keys = set()
+    
     try:
-      for entry in map_data:
+      while (1):
+        entry = map_data.PopItem()
         self._WriteData(self.cache_file, entry)
+        written_keys.update(self._ExpectedKeysForEntry(entry))
+    except KeyError:
+      # expected when PopItem() is done, and breaks our loop for us.
       self.cache_file.flush()
       self.cache_file.close()
     except:
       self._Rollback()
       raise
 
-    return True
+    return written_keys
 
   def _GetCacheFilename(self):
     """Return the final destination pathname of the cache file."""

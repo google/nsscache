@@ -69,35 +69,21 @@ class TestPasswdMap(unittest.TestCase):
     gentry.gid = 10
     self.assertRaises(TypeError, pmap.Add, gentry)
 
-  def testAddRegister(self):
-    """Test that Add(MapEntry) calls MapEntry.Register(self)."""
-    pmap = maps.PasswdMap()
-    entry = self._good_entry
-    pmap.Add(entry)
-    self.assertTrue(pmap in entry._registered,
-                    msg='Could not find pmap in registered list')
-    pmap.PopItem()
-    self.assertFalse(pmap in entry._registered,
-                     msg='MapEntry still registered')
-    pmap.Add(entry)
-    pmap.Add(entry)
-    self.assertEquals(len(entry._registered), 1,
-                      msg='Registered twice without UnRegister')
-
   def testContains(self):
     """Verify __contains__ works, and does a deep compare."""
     pentry_good = self._good_entry
+    pentry_likegood = maps.PasswdMapEntry()
+    pentry_likegood.name = 'foo'  # same Key(), but rest of attributes differ
     pentry_bad = maps.PasswdMapEntry()
     pentry_bad.name = 'bar'
-    pentry_likegood = maps.PasswdMapEntry(pentry_good._data)
     
     pmap = maps.PasswdMap([pentry_good])
-    
+
     self.assertTrue(pentry_good in pmap,
                     msg='expected entry to be in map')
     self.assertFalse(pentry_bad in pmap,
                      msg='did not expect entry to be in map')
-    self.assertTrue(pentry_likegood in pmap,
+    self.assertFalse(pentry_likegood in pmap,
                     msg='__contains__ not doing a deep compare')
 
   def testIterate(self):
@@ -133,10 +119,10 @@ class TestPasswdMap(unittest.TestCase):
     """Verify Merge() throws TypeError and correctly merges objects."""
     
     # Setup some MapEntry objects with distinct Key()s
-    pentry1 = maps.PasswdMapEntry(self._good_entry._data)
-    pentry2 = maps.PasswdMapEntry(self._good_entry._data)
+    pentry1 = self._good_entry
+    pentry2 = maps.PasswdMapEntry()
     pentry2.name = 'john'
-    pentry3 = maps.PasswdMapEntry(self._good_entry._data)
+    pentry3 = maps.PasswdMapEntry()
     pentry3.name = 'jane'
 
     # Setup some Map objects
@@ -169,55 +155,6 @@ class TestPasswdMap(unittest.TestCase):
     """Verify you can retrieve MapEntry with PopItem."""
     pmap = maps.PasswdMap([self._good_entry])
     self.assertEquals(pmap.PopItem(), self._good_entry)
-
-  def testRemove(self):
-    """Verify you can remove a specific MapEntry from a Map."""
-
-    # Setup some maps and entries
-    pmap = maps.PasswdMap()
-    pentry_good = self._good_entry
-    pentry_likegood = maps.PasswdMapEntry(pentry_good._data)
-    pentry_bad1 = maps.PasswdMapEntry()
-    pentry_bad1.name = 'bar'
-    pentry_bad1.uid = 10
-    pentry_bad1.gid = 10
-    pentry_bad2 = maps.PasswdMapEntry(pentry_good._data)
-    pentry_bad2.uid = 11
-
-    pmap.Add(pentry_good)
-    self.assertEquals(pmap.Remove(pentry_good), pentry_good,
-                      msg='Failed to remove same entry')
-  
-    pmap.Add(pentry_good)
-    self.assertEquals(pmap.Remove(pentry_bad1), None,
-                      msg='Expected None for pentry_bad1')
-    self.assertEquals(pmap.Remove(pentry_bad2), None,
-                      msg='Expected None for pentry_bad2')
-    self.assertEquals(pmap.Remove(pentry_likegood), pentry_good,
-                      msg='Failed to do deep compare on Remove')
-  
-  def testUpdateKey(self):
-    """Verify that UpdateKey changes the indexed key MapEntry objects."""
-
-    # Setup some maps and entries
-    pmap = maps.PasswdMap()
-    entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    pmap.Add(entry)
-
-    # Test UpdateKey directly
-    entry._data['name'] = 'bar'  # the sneaky way, avoiding Set()!
-    self.assertTrue(pmap.UpdateKey('foo', 'bar'),
-                    msg='failed to update key from foo to bar')
-    self.assertEquals(pmap.Remove(entry), entry,
-                      msg='failed to retrieve modified entry')
-    
-    # Test UpdateKey via Set() and Register()
-    pmap.Add(entry)
-    entry.name = 'jane'
-    self.assertTrue(pmap.Exists(entry),
-                    msg='changed MapEntry, lost index')
-    self.assertEquals(pmap.Remove(entry), entry,
-                      msg='failed to retrieve modified entry')
 
   def testLastModificationTimestamp(self):
     """Test setting/getting of timestamps on maps."""
@@ -293,49 +230,26 @@ class TestPasswdMapEntry(unittest.TestCase):
     
     # Setup some things to compare
     entry_good = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    entry_likegood = maps.PasswdMapEntry(entry_good._data)
-    entry_bad = maps.PasswdMapEntry(entry_good._data)
+    entry_same_as_good = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    entry_like_good = maps.PasswdMapEntry()
+    entry_like_good.name = 'foo'  # same Key(), but rest of attributes differ
+    entry_bad = maps.PasswdMapEntry()
     entry_bad.name = 'bar'
     
     self.assertEquals(entry_good, entry_good,
                       msg='entry_good not equal to itself')
-    self.assertEquals(entry_good, entry_likegood,
+    self.assertEquals(entry_good, entry_same_as_good,
+                      msg='__eq__ not doing deep compare')
+    self.assertNotEqual(entry_good, entry_like_good,
                       msg='__eq__ not doing deep compare')
     self.assertNotEqual(entry_good, entry_bad,
                         msg='unexpected equality')
     
-  def testRegister(self):
-    """Test that we can register a Map with a MapEntry."""
-    pmap = maps.PasswdMap()
-    entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    entry.Register(pmap)
-    self.assertEquals(entry._registered, [pmap],
-                      msg='Unexpected value for _registered')
-
-  def testUnRegister(self):
-    """Test that we can unregister a Map with a MapEntry."""
-    pmap = maps.PasswdMap()
-    entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    entry.Register(pmap)
-    entry.UnRegister(pmap)
-    self.assertEquals(entry._registered, [],
-                      msg='Unexpected value for _registered')
-
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
     entry = maps.PasswdMapEntry()
-    
-    # Pass bad values for each entry.
-    self.assertRaises(AttributeError, entry.Set, 'name', None)
-    self.assertRaises(AttributeError, entry.Set, 'passwd', None)
-    self.assertRaises(AttributeError, entry.Set, 'uid', None)
-    self.assertRaises(AttributeError, entry.Set, 'gid', None)
-    self.assertRaises(AttributeError, entry.Set, 'gecos', None)
-    self.assertRaises(AttributeError, entry.Set, 'dir', None)
-    self.assertRaises(AttributeError, entry.Set, 'shell', None)
-    
-    # Note that the above Set() calls actuall leave bad data behind.
-    # So the emtpy object should bomb below.
+
+    # by leaving _KEY unset, we should bomb.
     self.failIf(entry.Verify())
 
   def testKey(self):
@@ -343,11 +257,6 @@ class TestPasswdMapEntry(unittest.TestCase):
     entry = maps.PasswdMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
-
-  def testColonCancer(self):
-    """Test that attributes of type string will not accept ':' as valid."""
-    entry = maps.PasswdMapEntry()
-    self.assertRaises(AttributeError, entry.Set, 'name', 'foo:bar')
 
 if __name__ == '__main__':
   unittest.main()

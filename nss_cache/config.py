@@ -78,7 +78,7 @@ class Config(object):
       env: dictionary of environment variables (typically os.environ)
     """
     # override constants based on ENV vars
-    if env.has_key('NSSCACHE_CONFIG'):
+    if 'NSSCACHE_CONFIG' in env:
       self.config_file = env['NSSCACHE_CONFIG']
     else:
       self.config_file = self.NSSCACHE_CONFIG
@@ -96,9 +96,9 @@ class Config(object):
     # self.options is of variable length so we are forced to do
     # some fugly concatenation here to print our config in a
     # readable fashion.
-    string = '<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r' \
-             '\n\tlockfile=%r' % (self.command, self.help_command,
-                                  self.maps, self.lockfile)
+    string = ('<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r'
+              '\n\tlockfile=%r') % (self.command, self.help_command,
+                                    self.maps, self.lockfile)
     for key in self.options:
       string = '%s\n\t%s=%r' % (string, key, self.options[key])
     return '%s\n>' % string
@@ -241,8 +241,8 @@ def FixValue(value):
     fixed value
   """
   # Strip quotes if necessary.
-  if (value.startswith('"') and value.endswith('"')) or \
-     (value.startswith('\'') and value.endswith('\'')):
+  if ((value.startswith('"') and value.endswith('"'))
+      or (value.startswith('\'') and value.endswith('\''))):
     value = value[1:-1]
 
   # Convert to float if necessary.  Python converts between floats and ints
@@ -252,12 +252,12 @@ def FixValue(value):
   # for native comparisons to int types, and if an int type is needed
   # explicitly the caller will have to cast.  This is simplist.
   try:
-    try:
-      value = int(value)
-    except ValueError:
-      value = float(value)
+    value = int(value)
   except ValueError:
-    pass
+    try:
+      value = float(value)
+    except ValueError:
+      return value
 
   return value
 
@@ -306,20 +306,25 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
     logging.error('No maps are configured.')
     errors += 1
 
+  # Verify that at least one supported module is configured in nsswitch.conf.
   nsswitch = ParseNSSwitchConf(nsswitch_filename)
   for configured_map in conf.maps:
-    # Determine what the name of the nss module should be
     if conf.options[configured_map].cache['name'] == 'nssdb':
-      module_name = 'db'
+      nss_module_name = 'db'
     if conf.options[configured_map].cache['name'] == 'files':
-      module_name = 'cache'
+      nss_module_name = 'files'
+      if ('cache_filename_suffix' in conf.options[configured_map].cache and
+          conf.options[configured_map].cache['cache_filename_suffix'] ==
+          'cache'):
+        # We are configured for libnss-cache for this map.
+        nss_module_name = 'cache'
     else:
       # TODO(jaq): default due to hysterical raisins
-      module_name = 'db'
+      nss_module_name = 'db'
 
-    if module_name not in nsswitch[configured_map]:
-      logging.warn('nsscache is configured to build maps for %r, ' \
-                   'but NSS is not configured (in %r) to use it',
+    if nss_module_name not in nsswitch[configured_map]:
+      logging.warn(('nsscache is configured to build maps for %r, '
+                    'but NSS is not configured (in %r) to use it'),
                    configured_map, nsswitch_filename)
       warnings += 1
   return (warnings, errors)

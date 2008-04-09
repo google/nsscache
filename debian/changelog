@@ -1,3 +1,24 @@
+nsscache (0.7.3-1) unstable; urgency=low
+
+  * New upstream version.
+    - verify command now recognizes when modules use libnss-cache and when
+      they do not.
+    - Add patch from 'pingu' that synchronises crypted userPassword in
+      the shadow map if available.
+
+ -- V Hoffman <vasilios@google.com>  Tue,  8 Apr 2008 17:55:09 -0700
+
+nsscache (0.7.2-1) unstable; urgency=low
+
+  * New upstream version.
+    - __slots__ used to reduce memory footprint for large maps.
+    - Write() made destructive to reduce memory footprint for large maps.
+    - MapEntry classes no longer use internal dict()s, to reduce memory waste.
+    - Removed unecessary attribute validation in MapEntry classes for speed.
+    - Removed unused methods from the Map API, e.g. Remove() and UpdateKey().
+
+ -- V Hoffman <vasilios@google.com>  Wed, 26 Mar 2008 14:01:10 -0700
+
 nsscache (0.7.1-1) unstable; urgency=low
 
   * New upstream version.
