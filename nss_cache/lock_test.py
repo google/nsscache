@@ -22,6 +22,7 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import errno
 import fcntl
+import logging
 import os
 import re
 import signal
@@ -49,6 +50,7 @@ class TestPidFile(pmock.MockTestCase):
 
   def setUp(self):
     """Create a temporary working dir for unit tests."""
+    logging.disable(logging.CRITICAL)
     self.workdir = tempfile.mkdtemp()
     self.filename = '%s/%s' % (self.workdir, 'pidfile')
 

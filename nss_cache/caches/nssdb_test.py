@@ -23,22 +23,21 @@ __author__ = 'jaq@google.com (Jamie Wilkinson)'
 import bsddb
 import logging
 import os.path
-import stat
 import tempfile
 import time
 import unittest
+import pmock
 
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import nssdb
 
-import pmock
+logging.disable(logging.CRITICAL)
 
 
 class TestNssDbPasswdHandler(pmock.MockTestCase):
 
   def setUp(self):
-    # create a working directory for the test
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
@@ -228,7 +227,6 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
   def testVerifyEmptyMap(self):
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir})
-    map_data = maps.PasswdMap()
     # create a temp file, clag it into the updater object
     (_, temp_filename) = tempfile.mkstemp(prefix='nsscache',
                                           dir=self.workdir)
@@ -245,7 +243,6 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 class TestNssDbGroupHandler(pmock.MockTestCase):
 
   def setUp(self):
-    # create a working directory for the test
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
@@ -426,7 +423,6 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 class TestNssDbShadowHandler(pmock.MockTestCase):
 
   def setUp(self):
-    # create a working directory for the test
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
@@ -585,7 +581,6 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 class TestNssDbCache(unittest.TestCase):
 
   def setUp(self):
-    # create a working directory for the test
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
@@ -654,15 +649,14 @@ class TestNssDbCache(unittest.TestCase):
 
     os.unlink(pass_file)
 
-  def testLoadBdbCacheFileRaisesCacheNotFound(self):
+  def testGetMapRaisesCacheNotFound(self):
     bad_file = os.path.join(self.workdir, 'really_not_going_to_exist_okay')
     self.failIf(os.path.exists(bad_file), 'what the hell, it exists!')
 
     config = {}
     cache = nssdb.NssDbPasswdHandler(config)
     cache.CACHE_FILENAME = bad_file
-    data = cache.GetMap()
-    self.assertRaises(error.CacheNotFound, cache._LoadBdbCacheFile, data)
+    self.assertRaises(error.CacheNotFound, cache.GetMap)
 
   def testBeginRaisesPermissionDenied(self):
     os.chmod(self.workdir, 0)
@@ -670,115 +664,6 @@ class TestNssDbCache(unittest.TestCase):
     cache = nssdb.NssDbPasswdHandler(config)
     self.assertRaises(error.PermissionDenied, cache._Begin)
     os.chmod(self.workdir, 0700)
-
-  def testGetTimestampNoTimestamp(self):
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'nothing.db'
-    timestamp = cache._ReadTimestamp('anything')
-    self.assertEqual(None, timestamp)
-
-  def testGetTimestampFileUnreadable(self):
-    # hide the warning we expect to get
-
-    class TestFilter(logging.Filter):
-      def filter(self, record):
-        return not record.msg.startswith('error opening timestamp file')
-
-    flt = TestFilter()
-    logging.getLogger('NssDbCache').addFilter(flt)
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'passwd.db'
-    ts_filename = os.path.join(self.workdir,
-                               'passwd.db.nsscache-timestamp')
-    ts_file = open(ts_filename, 'w')
-    ts_file.write('\n')
-    ts_file.close()
-    os.chmod(ts_filename, 0)
-    timestamp = cache._ReadTimestamp('nsscache-timestamp')
-    self.failUnlessEqual(None, timestamp)
-    os.chmod(ts_filename, stat.S_IWUSR)
-    os.unlink(ts_filename)
-    logging.getLogger('NssDbCache').removeFilter(flt)
-
-  def testGetTimestamp(self):
-    # we don't guarantee anything better than second resolution in our
-    # timestamps
-    now = int(time.time())
-
-    ts_file = open(os.path.join(self.workdir,
-                                'nothing.db.nsscache-timestamp'), 'w')
-    ts_file.write('%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ',
-                                         time.gmtime(now)))
-    ts_file.close()
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'nothing.db'
-    timestamp = cache._ReadTimestamp('nsscache-timestamp')
-
-    self.assertEqual(now, timestamp)
-    os.unlink(os.path.join(self.workdir, 'nothing.db.nsscache-timestamp'))
-
-  def testGetTimestampBadFormat(self):
-    # hide the warning that we expect to get
-
-    class TestFilter(logging.Filter):
-      def filter(self, record):
-        return not record.msg.startswith('cannot parse timestamp file')
-
-    flt = TestFilter()
-    # attach our filter to the logger attached to our updater
-    logging.getLogger('NssDbCache').addFilter(flt)
-
-    now = time.time()
-    ts_file = open(os.path.join(self.workdir,
-                                'passwd.db.nsscache-timestamp'), 'w')
-    ts_file.write('%s\n' % now)
-    ts_file.close()
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'passwd.db'
-    timestamp = cache._ReadTimestamp('nsscache-timestamp')
-
-    self.assertEqual(None, timestamp)
-    os.unlink(os.path.join(self.workdir, 'passwd.db.nsscache-timestamp'))
-    # no longer hide this message
-    logging.getLogger('NssDbCache').removeFilter(flt)
-
-  def testWriteTimestamp(self):
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'nothing.db'
-    self.assertEquals(True,
-                      cache._WriteTimestamp(0, 'nsscache-update-timestamp'))
-    update_ts_filename = os.path.join(self.workdir,
-                                      'nothing.db.nsscache-update-timestamp')
-    self.failUnless(os.path.exists(update_ts_filename))
-    os.unlink(update_ts_filename)
-
-  def testWriteUpdateTimestamp(self):
-
-    def FakeWriteTimestamp(timestamp, name):
-      self.failIfEqual(None, timestamp)
-      self.assertEqual('nsscache-update-timestamp', name)
-      return True
-
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache._WriteTimestamp = FakeWriteTimestamp
-    self.assertEquals(True, cache.WriteUpdateTimestamp())
-
-  def testHasLastUpdateTimestamp(self):
-    timestamp = int(time.time())
-    update_ts_filename = os.path.join(self.workdir,
-                                      'nothing.db.nsscache-update-timestamp')
-    update_ts_file = open(update_ts_filename, 'w')
-    update_ts_file.write('%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ',
-                                                time.gmtime(timestamp)))
-    update_ts_file.close()
-    db_filename = os.path.join(self.workdir, 'nothing.db')
-    db = bsddb.btopen(db_filename)
-    db.close()
-    cache = nssdb.NssDbCache({'dir': self.workdir})
-    cache.CACHE_FILENAME = 'nothing.db'
-    self.assertEquals(timestamp, cache.GetUpdateTimestamp())
-    os.unlink(update_ts_filename)
-    os.unlink(db_filename)
 
   def testGetMapIsSizedObject(self):
     timestamp = int(time.time())
@@ -792,12 +677,12 @@ class TestNssDbCache(unittest.TestCase):
     db = bsddb.btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
-    cache_map = cache.GetCacheMap()
+    cache_map = cache.GetMap()
     self.assertEquals(0, len(cache_map))
     os.unlink(update_ts_filename)
     os.unlink(db_filename)
 
-  def testGetCacheMapHasMerge(self):
+  def testGetMapHasMerge(self):
     timestamp = int(time.time())
     update_ts_filename = os.path.join(self.workdir,
                                       'passwd.db.nsscache-update-timestamp')
@@ -809,12 +694,12 @@ class TestNssDbCache(unittest.TestCase):
     db = bsddb.btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
-    cache_map = cache.GetCacheMap()
+    cache_map = cache.GetMap()
     self.assertEquals(False, cache_map.Merge(maps.PasswdMap()))
     os.unlink(update_ts_filename)
     os.unlink(db_filename)
 
-  def testGetCacheMapIsIterable(self):
+  def testGetMapIsIterable(self):
     timestamp = int(time.time())
     update_ts_filename = os.path.join(self.workdir,
                                       'passwd.db.nsscache-update-timestamp')
@@ -826,7 +711,7 @@ class TestNssDbCache(unittest.TestCase):
     db = bsddb.btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
-    cache_map = cache.GetCacheMap()
+    cache_map = cache.GetMap()
     self.assertEquals([], list(cache_map))
     os.unlink(update_ts_filename)
     os.unlink(db_filename)

@@ -27,6 +27,8 @@ import unittest
 
 from nss_cache import app
 
+logging.disable(logging.CRITICAL)
+
 
 class TestNssCacheApp(unittest.TestCase):
   """Unit tests for NssCacheApp class."""

@@ -24,6 +24,7 @@ import bsddb
 import os
 import subprocess
 
+from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
@@ -42,27 +43,30 @@ class NssDbCache(base.Cache):
   UPDATE_TIMESTAMP_SUFFIX = 'nsscache-update-timestamp'
   MODIFY_TIMESTAMP_SUFFIX = 'nsscache-timestamp'
 
-  def __init__(self, config):
+  def __init__(self, conf, map_name, automount_info=None):
     """Create a handler for the given map type.
 
     Args:
-     config: a configuration object
+     conf: a configuration object
+     map_name: a string representing the type of map we are
+     automount_info: A string containing the automount mountpoint, used only
+       by automount maps.
 
     Returns: A CacheMapHandler instance.
     """
-    super(NssDbCache, self).__init__(config)
-    self.makedb = config.get('makedb', '/usr/bin/makedb')
+    super(NssDbCache, self).__init__(conf, map_name,
+                                     automount_info=automount_info)
+    self.makedb = conf.get('makedb', '/usr/bin/makedb')
 
-  def GetCacheMap(self):
-    """Loads the 'current' Map from the on-disk bdb cache.
+  def GetMap(self, cache_info=None):
+    """Returns the map from the cache.
 
     Args:
-      None
+      cache_info: unused by this implementation of base.Cache
     Returns:
       a Map containing the map cache
     """
-    # TODO(jaq): this looks like a prime candidate for refactoring!
-    data = self.GetMap()
+    data = self.data
     self._LoadBdbCacheFile(data)
     return data
 
@@ -128,7 +132,7 @@ class NssDbCache(base.Cache):
       enumeration_index = 0
 
       try:
-        while (1):
+        while 1:
           entry = map_data.PopItem()
           if makedb.poll() is not None:
             self.log.error('early exit from makedb! child output: %s',
@@ -142,7 +146,8 @@ class NssDbCache(base.Cache):
         # expected when PopItem() is done, and breaks our loop for us.
         pass
 
-      self.log.debug('%d entries written, %d keys', enumeration_index, len(written_keys))
+      self.log.debug('%d entries written, %d keys', enumeration_index,
+                     len(written_keys))
       makedb.stdin.close()
 
       map_data = makedb.stdout.read()
@@ -160,7 +165,7 @@ class NssDbCache(base.Cache):
 
   def _DecodeExitCode(self, code):
     """Helper function to compute if a child exited with code 0 or not."""
-    return os.WIFEXITED(code) and (os.WEXITSTATUS(code) == 0)
+    return os.WIFEXITED(code) and (os.WEXITSTATUS(code) is 0)
 
   def Verify(self, written_keys):
     """Verify that the written cache is correct.
@@ -210,9 +215,14 @@ class NssDbCache(base.Cache):
     return True
 
 
-class NssDbPasswdHandler(NssDbCache, base.PasswdMapMixin):
+class NssDbPasswdHandler(NssDbCache):
   """Concrete class for updating a nss_db passwd cache."""
   CACHE_FILENAME = 'passwd.db'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_PASSWORD
+    super(NssDbPasswdHandler, self).__init__(conf, map_name,
+                                             automount_info=automount_info)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db passwd map.
@@ -297,9 +307,14 @@ class NssDbPasswdHandler(NssDbCache, base.PasswdMapMixin):
 base.RegisterImplementation('nssdb', 'passwd', NssDbPasswdHandler)
 
 
-class NssDbGroupHandler(NssDbCache, base.GroupMapMixin):
+class NssDbGroupHandler(NssDbCache):
   """Concrete class for updating nss_db group maps."""
   CACHE_FILENAME = 'group.db'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_GROUP
+    super(NssDbGroupHandler, self).__init__(conf, map_name,
+                                            automount_info=automount_info)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db group map.
@@ -376,9 +391,14 @@ class NssDbGroupHandler(NssDbCache, base.GroupMapMixin):
 base.RegisterImplementation('nssdb', 'group', NssDbGroupHandler)
 
 
-class NssDbShadowHandler(NssDbCache, base.ShadowMapMixin):
+class NssDbShadowHandler(NssDbCache):
   """Concrete class for updating nss_db shadow maps."""
   CACHE_FILENAME = 'shadow.db'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_SHADOW
+    super(NssDbShadowHandler, self).__init__(conf, map_name,
+                                             automount_info=automount_info)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db shadow map.
@@ -471,40 +491,3 @@ class NssDbShadowHandler(NssDbCache, base.ShadowMapMixin):
 
 
 base.RegisterImplementation('nssdb', 'shadow', NssDbShadowHandler)
-
-
-class NssDbNetgroupHandler(NssDbCache, base.NetgroupMapMixin):
-  """Concrete class for updating nss_db netgroup caches."""
-  # TODO(jaq): these stubs are untested and exist only to give an overview
-  # of the struture of the code.  They will be docstringged and tested
-  # when they are used.
-
-  def GetMap(self):
-    """Stub method suggesting how the netgroup handler might work."""
-    db = bsddb.btopen(os.path.join(self.config.get('dir'), 'netgroup.db'), 'r')
-    data = []
-
-    for k in db:
-      # only take values keyed without 0
-      if not k.startswith('0'):
-        ent = db[k]
-
-        if ent.endswith('\x00'):
-          ent = ent[:-1]
-
-        #netgr = maps.NetgroupMapEntry()
-
-    db.close()
-    return data
-
-  def WriteLines(self, makedb, data):
-    """Write netgroup map entries to the nss_db cache."""
-    enumeration_index = 0
-
-    for e in data:
-      netgrent = '%s %s' % (e.name, e.members)
-      # write to makedb with each key
-      makedb.stdin.write('%s %s\n' % (e.name, netgrent))
-      makedb.stdin.write('0%d %s\n' % (enumeration_index, netgrent))
-
-      enumeration_index += 1

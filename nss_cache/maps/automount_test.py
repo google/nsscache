@@ -67,20 +67,6 @@ class TestAutomountMap(unittest.TestCase):
     pentry.gid = 10
     self.assertRaises(TypeError, amap.Add, pentry)
 
-  def testExtendedAttributes(self):
-    """Get and Set the extended attributes for the automount map class."""
-    amap = maps.AutomountMap()
-    self.assertEquals(None, amap.GetMountpoint())
-    self.assertEquals(None, amap.GetFilesystemLocation())
-
-    amap.SetMountpoint('/blah')
-    amap.SetFilesystemLocation('/etc/auto.blah')
-    self.assertEquals('/blah', amap.GetMountpoint())
-    self.assertEquals('/etc/auto.blah', amap.GetFilesystemLocation())
-
-    self.assertRaises(TypeError, amap.SetMountpoint, 1)
-    self.assertRaises(TypeError, amap.SetFilesystemLocation, 1)
-
 
 class TestAutomountMapEntry(unittest.TestCase):
   """Tests for the AutomountMapEntry class."""

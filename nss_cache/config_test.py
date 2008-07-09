@@ -20,6 +20,7 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+import logging
 import os
 import shutil
 import tempfile
@@ -63,6 +64,8 @@ class TestClassMethods(unittest.TestCase):
     self.conf = config.Config({})
     self.conf.config_file = self.conf_filename
 
+    logging.disable(logging.CRITICAL)
+
   def tearDown(self):
     os.unlink(self.conf_filename)
     os.rmdir(self.workdir)
@@ -72,7 +75,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = foo\n')
+                    'maps = foo\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
 
     config.LoadConfig(self.conf)
@@ -84,7 +88,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = foo, bar\n')
+                    'maps = foo, bar\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
 
     config.LoadConfig(self.conf)
@@ -96,7 +101,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = foo,  bar  , baz\n')
+                    'maps = foo,  bar  , baz\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
 
     config.LoadConfig(self.conf)
@@ -152,7 +158,8 @@ class TestClassMethods(unittest.TestCase):
                     'source = foo\n'
                     'cache = foo\n'
                     'maps = foo,  bar  , baz\n'
-                    'lockfile = foo\n')
+                    'lockfile = foo\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
 
     config.LoadConfig(self.conf)
@@ -165,6 +172,7 @@ class TestClassMethods(unittest.TestCase):
                     'source = "ldap"\n'  # needs to be ldap due to magic
                     'cache = \'b\'ar\'\n'
                     'maps = quux\n'
+                    'timestamp_dir = foo\n'
                     'ldap_tls_require_cert = \'blah\'\n'
                     '[quux]\n'
                     'ldap_klingon = "qep\'a\' wa\'maH loS\'DIch"\n')
@@ -183,6 +191,7 @@ class TestClassMethods(unittest.TestCase):
                     'source = foo\n'
                     'cache = foo\n'
                     'maps = foo\n'
+                    'timestamp_dir = foo\n'
                     'foo_string = test\n'
                     'foo_float = 1.23\n'
                     'foo_int = 1\n')
@@ -241,7 +250,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = passwd, group, shadow\n')
+                    'maps = passwd, group, shadow\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
     config.LoadConfig(self.conf)
     nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
@@ -261,6 +271,7 @@ class TestClassMethods(unittest.TestCase):
                     'source = foo\n'
                     'cache = files\n'
                     'maps = passwd, group, shadow\n'
+                    'timestamp_dir = foo\n'
                     'files_cache_filename_suffix = cache')
     conf_file.close()
     config.LoadConfig(self.conf)
@@ -280,7 +291,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = files\n'
-                    'maps = passwd, group, shadow\n')
+                    'maps = passwd, group, shadow\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
     config.LoadConfig(self.conf)
     nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
@@ -300,6 +312,7 @@ class TestClassMethods(unittest.TestCase):
                     'source = foo\n'
                     'cache = files\n'
                     'maps = passwd, group, shadow\n'
+                    'timestamp_dir = foo\n'
                     'files_cache_filename_suffix = cache')
     conf_file.close()
     config.LoadConfig(self.conf)
@@ -319,7 +332,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = passwd, group, shadow\n')
+                    'maps = passwd, group, shadow\n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
     config.LoadConfig(self.conf)
     nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
@@ -338,7 +352,8 @@ class TestClassMethods(unittest.TestCase):
     conf_file.write('[DEFAULT]\n'
                     'source = foo\n'
                     'cache = foo\n'
-                    'maps = \n')
+                    'maps = \n'
+                    'timestamp_dir = foo\n')
     conf_file.close()
     config.LoadConfig(self.conf)
     nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')

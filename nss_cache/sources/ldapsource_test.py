@@ -123,22 +123,22 @@ class TestLdapSource(pmock.MockTestCase):
     # get a mocked source, but don't mock _SetDefaults!
     source = self.MockedSource(configuration=None, mock_defaults=False)
 
-    self.assertEquals(source.config['bind_dn'],
+    self.assertEquals(source.conf['bind_dn'],
                       ldapsource.LdapSource.BIND_DN)
-    self.assertEquals(source.config['bind_password'],
+    self.assertEquals(source.conf['bind_password'],
                       ldapsource.LdapSource.BIND_PASSWORD)
-    self.assertEquals(source.config['retry_max'],
+    self.assertEquals(source.conf['retry_max'],
                       ldapsource.LdapSource.RETRY_MAX)
-    self.assertEquals(source.config['retry_delay'],
+    self.assertEquals(source.conf['retry_delay'],
                       ldapsource.LdapSource.RETRY_DELAY)
-    self.assertEquals(source.config['scope'], ldapsource.LdapSource.SCOPE)
-    self.assertEquals(source.config['timelimit'],
+    self.assertEquals(source.conf['scope'], ldapsource.LdapSource.SCOPE)
+    self.assertEquals(source.conf['timelimit'],
                       ldapsource.LdapSource.TIMELIMIT)
-    self.assertEquals(source.config['tls_require_cert'],
+    self.assertEquals(source.conf['tls_require_cert'],
                       ldap.OPT_X_TLS_DEMAND)
-    self.assertEquals(source.config['tls_cacertdir'],
+    self.assertEquals(source.conf['tls_cacertdir'],
                       ldapsource.LdapSource.TLS_CACERTDIR)
-    self.assertEquals(source.config['tls_cacertfile'],
+    self.assertEquals(source.conf['tls_cacertfile'],
                       ldapsource.LdapSource.TLS_CACERTFILE)
 
   def testOverrideDefaults(self):
@@ -163,16 +163,16 @@ class TestLdapSource(pmock.MockTestCase):
     # of working around it another way.
     dir(source.conn._get_match_order_invokables().__iter__())
 
-    self.assertEquals(source.config['scope'], ldap.SCOPE_BASE)
-    self.assertEquals(source.config['bind_dn'], 'TEST_BIND_DN')
-    self.assertEquals(source.config['bind_password'], 'TEST_BIND_PASSWORD')
-    self.assertEquals(source.config['retry_delay'], 'TEST_RETRY_DELAY')
-    self.assertEquals(source.config['retry_max'], 'TEST_RETRY_MAX')
-    self.assertEquals(source.config['timelimit'], 'TEST_TIMELIMIT')
-    self.assertEquals(source.config['tls_require_cert'],
+    self.assertEquals(source.conf['scope'], ldap.SCOPE_BASE)
+    self.assertEquals(source.conf['bind_dn'], 'TEST_BIND_DN')
+    self.assertEquals(source.conf['bind_password'], 'TEST_BIND_PASSWORD')
+    self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
+    self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
+    self.assertEquals(source.conf['timelimit'], 'TEST_TIMELIMIT')
+    self.assertEquals(source.conf['tls_require_cert'],
                       'TEST_TLS_REQUIRE_CERT')
-    self.assertEquals(source.config['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
-    self.assertEquals(source.config['tls_cacertfile'],
+    self.assertEquals(source.conf['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
+    self.assertEquals(source.conf['tls_cacertfile'],
                       'TEST_TLS_CACERTFILE')
 
   def testTrapAndRetryServerDown(self):
@@ -194,7 +194,7 @@ class TestLdapSource(pmock.MockTestCase):
     time.sleep = sleep_mock.sleep
 
     self.assertRaises(error.SourceUnavailable, ldapsource.LdapSource,
-                      config=self.config, conn=self.ConnMock(success=False))
+                      conf=self.config, conn=self.ConnMock(success=False))
 
     time.sleep = original_sleep
 
@@ -256,16 +256,15 @@ class TestLdapSource(pmock.MockTestCase):
 
   def testGetPasswdMap(self):
     """Test that GetPasswdMap returns a sensible passwd map."""
-    testPosixAccount = ('cn=test,ou=People,dc=example,dc=com',
-                        {'uidNumber': [1000],
-                         'gidNumber': [1000],
-                         'uid': ['Testguy McTest'],
-                         'cn': ['test'],
-                         'homeDirectory': ['/home/test'],
-                         'loginShell': ['/bin/sh'],
-                         'userPassword': ['p4ssw0rd'],
-                         'modifyTimestamp': ['20070227012807Z'],
-                        })
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'uidNumber': [1000],
+                           'gidNumber': [1000],
+                           'uid': ['Testguy McTest'],
+                           'cn': ['test'],
+                           'homeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'userPassword': ['p4ssw0rd'],
+                           'modifyTimestamp': ['20070227012807Z']})
 
     ldap_conn = self.mock()
     ldap_conn\
@@ -287,7 +286,7 @@ class TestLdapSource(pmock.MockTestCase):
                        timeout=pmock.eq('TEST_TIMELIMIT'))\
                .after('search')\
                .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [testPosixAccount])))\
+                                         [test_posix_account])))\
                .id('res #1')
     ldap_conn\
                .expects(pmock.once())\
@@ -308,12 +307,11 @@ class TestLdapSource(pmock.MockTestCase):
 
   def testGetGroupMap(self):
     """Test that GetGroupmap returns a sensible map."""
-    testPosixGroup = ('cn=test,ou=Group,dc=example,dc=com',
-                      {'gidNumber': [1000],
-                       'cn': ['testgroup'],
-                       'memberUid': ['testguy', 'fooguy', 'barguy'],
-                       'modifyTimestamp': ['20070227012807Z'],
-                      })
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'gidNumber': [1000],
+                         'cn': ['testgroup'],
+                         'memberUid': ['testguy', 'fooguy', 'barguy'],
+                         'modifyTimestamp': ['20070227012807Z']})
 
     ldap_conn = self.mock()
     ldap_conn\
@@ -334,7 +332,7 @@ class TestLdapSource(pmock.MockTestCase):
                        timeout=pmock.eq('TEST_TIMELIMIT'))\
                .after('search')\
                .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [testPosixGroup])))\
+                                         [test_posix_group])))\
                .id('res #1')
     ldap_conn\
                .expects(pmock.once())\
@@ -364,8 +362,7 @@ class TestLdapSource(pmock.MockTestCase):
                     'shadowExpire': ['-1'],
                     'shadowFlag': ['134537556'],
                     'modifyTimestamp': ['20070227012807Z'],
-		    'userPassword': ['{CRYPT}p4ssw0rd']
-                   })
+                    'userPassword': ['{CRYPT}p4ssw0rd']})
 
     ldap_conn = self.mock()
     ldap_conn\
@@ -411,11 +408,11 @@ class TestLdapSource(pmock.MockTestCase):
 
   def testGetNetgroupMap(self):
     """Test that GetNetgroupMap returns a sensible map."""
-    test_posixNetgroup = ('cn=test,ou=netgroup,dc=example,dc=com',
-                          {'cn': ['test'],
-                           'memberNisNetgroup': ['admins'],
-                           'nisNetgroupTriple': ['(-,hax0r,)'],
-                           'modifyTimestamp': ['20070227012807Z'],
+    test_posix_netgroup = ('cn=test,ou=netgroup,dc=example,dc=com',
+                           {'cn': ['test'],
+                            'memberNisNetgroup': ['admins'],
+                            'nisNetgroupTriple': ['(-,hax0r,)'],
+                            'modifyTimestamp': ['20070227012807Z'],
                            })
 
     ldap_conn = self.mock()
@@ -438,7 +435,7 @@ class TestLdapSource(pmock.MockTestCase):
                        timeout=pmock.eq('TEST_TIMELIMIT'))\
                .after('search')\
                .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_posixNetgroup])))\
+                                         [test_posix_netgroup])))\
                                          .id('res #1')
     ldap_conn\
                .expects(pmock.once())\
@@ -457,6 +454,129 @@ class TestLdapSource(pmock.MockTestCase):
 
     self.assertEqual('test', ent.name)
     self.assertEqual(['admins', '(-,hax0r,)'], ent.entries)
+
+  def testGetAutomountMap(self):
+    """Test that GetAutomountMap returns a sensible map."""
+    test_automount = ('cn=user,ou=auto.home,ou=automounts,dc=example,dc=com',
+                      {'cn': ['user'],
+                       'automountInformation': ['-tcp,rw home:/home/user'],
+                       'modifyTimestamp': ['20070227012807Z'],
+                      })
+
+    ldap_conn = self.mock()
+    ldap_conn\
+               .expects(pmock.once())\
+               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
+                              cred=pmock.eq('TEST_BIND_PASSWORD'))
+    ldap_conn\
+               .expects(pmock.once())\
+               .search(base=pmock.eq('TEST_BASE'),
+                       filterstr=pmock.eq('(objectclass=automount)'),
+                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
+                       attrlist=pmock.eq(['cn', 'automountInformation',
+                                          'modifyTimestamp']))\
+                                          .will(pmock.return_value(37))
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('search')\
+               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
+                                         [test_automount])))\
+                                         .id('res #1')
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('res #1')\
+               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+
+    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+
+    data = source.GetAutomountMap(location='TEST_BASE')
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('user', ent.key)
+    self.assertEqual('-tcp,rw', ent.options)
+    self.assertEqual('home:/home/user', ent.location)
+
+  def testGetAutomountMasterMap(self):
+    """Test that GetAutomountMasterMap returns a sensible map."""
+    test_master_ou = ('ou=auto.master,ou=automounts,dc=example,dc=com',
+                      {'ou': ['auto.master']})
+    test_automount = ('cn=/home,ou=auto.master,ou=automounts,dc=example,dc=com',
+                      {'cn': ['/home'],
+                       'automountInformation': ['ldap:ldap:ou=auto.home,'
+                                                'ou=automounts,dc=example,'
+                                                'dc=com'],
+                       'modifyTimestamp': ['20070227012807Z']})
+
+    ldap_conn = self.mock()
+    # first the search for the dn of ou=auto.master
+    ldap_conn\
+               .expects(pmock.once())\
+               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
+                              cred=pmock.eq('TEST_BIND_PASSWORD'))
+    ldap_conn\
+               .expects(pmock.once())\
+               .search(base=pmock.eq('TEST_BASE'),
+                       filterstr=pmock.eq('(&(objectclass=automountMap)'
+                                          '(ou=auto.master))'),
+                       scope=pmock.eq(ldap.SCOPE_SUBTREE),
+                       attrlist=pmock.eq(['dn']))\
+                       .will(pmock.return_value(37))
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('search')\
+               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
+                                         [test_master_ou])))\
+                                         .id('res #1')
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('res #1')\
+               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    # next the search for the entries under ou=auto.master
+    ldap_conn\
+               .expects(pmock.once())\
+               .search(base=pmock.eq('ou=auto.master,ou=automounts,dc=example'
+                                     ',dc=com'),
+                       filterstr=pmock.eq('(objectclass=automount)'),
+                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
+                       attrlist=pmock.eq(['cn', 'automountInformation',
+                                          'modifyTimestamp']))\
+                       .will(pmock.return_value(37))
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('search')\
+               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
+                                         [test_automount])))\
+                                         .id('res #2')
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('res #2')\
+               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    
+    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+
+    data = source.GetAutomountMasterMap()
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+    self.assertEqual('/home', ent.key)
+    self.assertEqual('ou=auto.home,ou=automounts,dc=example,dc=com',
+                     ent.location)
+    self.assertEqual(None, ent.options)
 
   def testVerify(self):
     ldap_conn = self.mock()
@@ -527,6 +647,15 @@ class TestUpdateGetter(unittest.TestCase):
                              'TEST_FILTER', 'base', None)
 
     self.failUnlessEqual(maps.ShadowMap, type(data))
+
+  def testAutomountEmptySourceGetsUpdates(self):
+    """Test that getUpdates on the AutomountUpdateGetter works."""
+    getter = ldapsource.AutomountUpdateGetter()
+
+    data = getter.GetUpdates(self.source, 'TEST_BASE',
+                             'TEST_FILTER', 'base', None)
+
+    self.failUnlessEqual(maps.AutomountMap, type(data))
 
   def testBadScopeException(self):
     """Test that a bad scope raises a config.ConfigurationError."""

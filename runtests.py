@@ -29,6 +29,7 @@ from nss_cache.caches.nssdb_test import *
 from nss_cache.command_test import *
 from nss_cache.config_test import *
 from nss_cache.error_test import *
+from nss_cache.update_test import *
 from nss_cache.maps.base_test import *
 from nss_cache.maps.group_test import *
 from nss_cache.maps.passwd_test import *

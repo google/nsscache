@@ -1,3 +1,18 @@
+nsscache (0.8.0-1) unstable; urgency=low
+
+  * New upstream version
+    - automount support
+    - fixed bug where we keep re-merging on incremental updates sometimes
+
+ -- V Hoffman <vasilios@google.com>  Wed, 11 Jun 2008 22:01:33 -0700
+
+nsscache (0.7.4-1) unstable; urgency=low
+
+  * New upstream version
+    - netgroup verify generates an info notice not a warning
+
+ -- V Hoffman <vasilios@google.com>  Thu, 10 Apr 2008 17:33:18 -0700
+
 nsscache (0.7.3-1) unstable; urgency=low
 
   * New upstream version.

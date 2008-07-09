@@ -70,6 +70,7 @@ class Config(object):
   OPT_CACHE = 'cache'
   OPT_MAPS = 'maps'
   OPT_LOCKFILE = 'lockfile'
+  OPT_TIMESTAMP_DIR = 'timestamp_dir'
 
   def __init__(self, env):
     """Initialize defaults for data we hold.
@@ -89,6 +90,7 @@ class Config(object):
     self.maps = []
     self.options = {}
     self.lockfile = None
+    self.timestamp_dir = None
     self.log = logging.getLogger('config')
 
   def __repr__(self):
@@ -96,9 +98,10 @@ class Config(object):
     # self.options is of variable length so we are forced to do
     # some fugly concatenation here to print our config in a
     # readable fashion.
-    string = ('<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r'
-              '\n\tlockfile=%r') % (self.command, self.help_command,
-                                    self.maps, self.lockfile)
+    string = (('<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r'
+               '\n\tlockfile=%r\n\ttimestamp_dir=%s') %
+              (self.command, self.help_command, self.maps, self.lockfile,
+               self.timestamp_dir))
     for key in self.options:
       string = '%s\n\t%s=%r' % (string, key, self.options[key])
     return '%s\n>' % string
@@ -147,10 +150,15 @@ def LoadConfig(configuration):
   else:
     raise error.NoConfigFound
 
-  # source, cache, and maps are required defaults
+  # these are required, and used as defaults for each section
   default = 'DEFAULT'
   default_source = FixValue(parser.get(default, Config.OPT_SOURCE))
   default_cache = FixValue(parser.get(default, Config.OPT_CACHE))
+
+  # this is also required, but global only
+  # TODO(v): make this default to /var/lib/nsscache before next release
+  configuration.timestamp_dir = FixValue(parser.get(default,
+                                                    Config.OPT_TIMESTAMP_DIR))
 
   # optional defaults
   if parser.has_option(default, Config.OPT_LOCKFILE):

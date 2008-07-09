@@ -34,50 +34,17 @@ class AutomountMap(base.Map):
   
   Map data is stored as a list of MapEntry objects, see the abstract
   class Map.
-
-  In addition, each set of mapentries has a mountpoint such as /home
-  or /auto, and a location the filesystems are listed such as /etc/auto.home
-  or ldap:ldap.example.com:ou=auto.home,ou=automounts,dc=example,dc=com
-  so the Map itself has attributes to store these.
-
-  Specifically, Map.GetMountpoint() for the mountpoint (e.g. /home) and
-  Map.GetFilesystemLocation() for the filesystem list location.
   """
 
   def __init__(self, iterable=None):
     """Construct a AutomountMap object using optional iterable."""
     super(AutomountMap, self).__init__(iterable)
-    self._mountpoint = None
-    self._filesystem_location = None
     
   def Add(self, entry):
     """Add a new object, verify it is a AutomountMapEntry object."""
     if not isinstance(entry, AutomountMapEntry):
       raise TypeError
     return super(AutomountMap, self).Add(entry)
-
-  def GetMountpoint(self):
-    """Return the parent mountpoint for the automount MapEntry objects."""
-    return self._mountpoint
-
-  def SetMountpoint(self, value):
-    """Set the mountpoint for the automount MapEntry objects."""
-    if value is None or isinstance(value, str):
-      self._mountpoint = value
-    else:
-      raise TypeError('mountpoint can only be str or None, not %r', value)
-
-  def GetFilesystemLocation(self):
-    """Return the location of the filesystem list."""
-    return self._filesystem_location
-
-  def SetFilesystemLocation(self, value):
-    """Set the location of the filesystem list."""
-    if value is None or isinstance(value, str):
-      self._filesystem_location = value
-    else:
-      raise TypeError('filesystem location can only be str or None, not %r',
-                      value)
 
 
 class AutomountMapEntry(base.MapEntry):

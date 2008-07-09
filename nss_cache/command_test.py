@@ -22,6 +22,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import grp
+import logging
 import pwd
 import StringIO
 import sys
@@ -36,8 +37,11 @@ from nss_cache import lock
 from nss_cache import maps
 from nss_cache import nss
 from nss_cache import sources
+from nss_cache import update
 
 import pmock
+
+logging.disable(logging.CRITICAL)
 
 
 class TestCommand(pmock.MockTestCase):
@@ -141,6 +145,14 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     class DummySource(sources.base.Source):
       name = 'dummy'
+      
+      def GetPasswdMap(self, since=None):
+        return maps.passwd.PasswdMap()
+
+    class DummyUpdater(update.Updater):
+
+      def UpdateFromSource(self, source, incremental=True, force_write=False):
+        return 0
 
     # Add dummy source to the set if implementations of sources
     sources.base.RegisterImplementation(DummySource)
@@ -149,14 +161,26 @@ class TestUpdateCommand(pmock.MockTestCase):
     # we can return a pmock cache object.
     self.original_create = caches.base.Create
 
-    self.config = DummyConfig()
-    self.config.options = {config.MAP_PASSWORD: config.MapOptions()}
-    self.config.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
-    self.config.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
-    self.config.lockfile = None
+    # Get our dummy updater to be returned instead
+    self.original_master_map_updater = update.AutomountUpdater
+    self.original_single_map_updater = update.SingleMapUpdater
+    update.AutomountUpdater = DummyUpdater
+    update.SingleMapUpdater = DummyUpdater
+
+    self.conf = DummyConfig()
+    self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
+                           config.MAP_AUTOMOUNT: config.MapOptions()}
+    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
+    self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_AUTOMOUNT].source = {'name': 'dummy'}
+    self.conf.timestamp_dir = ''
+    self.conf.lockfile = None
 
   def tearDown(self):
     caches.base.Create = self.original_create
+    update.AutomountUpdater = self.original_master_map_updater
+    update.SingleMapUpdater = self.original_single_map_updater
 
   def testConstructor(self):
     c = command.Update()
@@ -170,7 +194,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     def FakeUpdateMaps(conf, incremental, force_write, force_lock):
       """Stub routine to test Run()."""
-      self.assertEquals(conf, self.config,
+      self.assertEquals(conf, self.conf,
                         msg='UpdateMaps received wrong config object')
       self.assertTrue(incremental,
                       msg='UpdateMaps received False for incremental')
@@ -183,16 +207,22 @@ class TestUpdateCommand(pmock.MockTestCase):
     c = command.Update()
     c.UpdateMaps = FakeUpdateMaps
 
-    self.assertEquals(0, c.Run(self.config, []))
+    self.assertEquals(0, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Update()
+    # Trap stderr so the unit test runs clean,
+    # since unit test status is printed on stderr.
+    dev_null = StringIO.StringIO()
+    stderr = sys.stderr
+    sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
+    sys.stderr = stderr
 
   def testRunWithFlags(self):
 
     def FakeUpdateMaps(conf, incremental, force_write, force_lock):
-      self.assertEquals(conf, self.config,
+      self.assertEquals(conf, self.conf,
                         msg='UpdateMaps received wrong config object')
       self.assertFalse(incremental,
                        msg='UpdateMaps received True for incremental')
@@ -205,22 +235,17 @@ class TestUpdateCommand(pmock.MockTestCase):
     c = command.Update()
     c.UpdateMaps = FakeUpdateMaps
 
-    self.assertEquals(0, c.Run(self.config,
+    self.assertEquals(0, c.Run(self.conf,
                                ['-m', config.MAP_PASSWORD, '-f',
                                 '--force-write', '--force-lock']))
-    self.assertEqual(['passwd'], self.config.maps)
+    self.assertEqual(['passwd'], self.conf.maps)
 
-  def testUpdateMaps(self):
-    cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-                     .expects(pmock.once())\
-                     .method('Update')\
-                     .will(pmock.return_value(0))
+  def testUpdateSingleMaps(self):
 
     def FakeCreate(conf, map_name):
-      self.assertEquals(conf, self.config.options[map_name].cache)
-      self.assertTrue(map_name in self.config.maps)
-      return cache_map_handler_mock
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
+      return 'cache'
 
     lock_mock = self.mock()
     lock_mock\
@@ -228,24 +253,51 @@ class TestUpdateCommand(pmock.MockTestCase):
                ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
                .will(pmock.return_value(True))
 
-    self.config.maps = [config.MAP_PASSWORD]
-    self.config.cache = 'dummy'
+    self.conf.maps = [config.MAP_PASSWORD]
+    self.conf.cache = 'dummy'
 
     caches.base.Create = FakeCreate
     c = command.Update()
     c._Lock = lock_mock._Lock
-    self.assertEquals(0, c.UpdateMaps(self.config,
+    self.assertEquals(0, c.UpdateMaps(self.conf,
+                                      incremental=True, force_write=False))
+
+  def testUpdateAutomounts(self):
+
+    def FakeCreate(conf, map_name):
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
+      return 'cache'
+
+    lock_mock = self.mock()
+    lock_mock\
+               .expects(pmock.once())\
+               ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
+               .will(pmock.return_value(True))
+
+    self.conf.maps = [config.MAP_AUTOMOUNT]
+    self.conf.cache = 'dummy'
+
+    caches.base.Create = FakeCreate
+    c = command.Update()
+    c._Lock = lock_mock._Lock
+    self.assertEquals(0, c.UpdateMaps(self.conf,
                                       incremental=True, force_write=False))
 
   def testUpdateMapsTrapsPermissionDenied(self):
-    cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-           .expects(pmock.once())\
-           .method('Update')\
-           .will(pmock.raise_exception(error.PermissionDenied))
 
-    def FakeCreate(cache_options, map_name):
-      return cache_map_handler_mock
+    class BrokenUpdater(update.Updater):
+
+      def UpdateFromSource(self, source, incremental=True, force_write=False):
+        raise error.PermissionDenied
+
+    def FakeCreate(conf, map_name):
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
+      return 'cache'
+
+    # tearDown will restore this
+    update.SingleMapUpdater = BrokenUpdater
 
     lock_mock = self.mock()
     lock_mock\
@@ -253,14 +305,14 @@ class TestUpdateCommand(pmock.MockTestCase):
                ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
                .will(pmock.return_value(True))
 
+    self.conf.maps = [config.MAP_PASSWORD]
+    self.conf.cache = 'dummy'
+
     caches.base.Create = FakeCreate
     c = command.Update()
     c._Lock = lock_mock._Lock
-    self.config.maps = [config.MAP_PASSWORD]
-    self.config.cache = 'dummy'
-
-    self.assertEquals(1, c.UpdateMaps(self.config,
-                                      incremental=True, force_write=False))
+    self.assertEquals(1, c.UpdateMaps(self.conf, incremental=True,
+                                      force_write=False))
 
   def testUpdateMapsCanForceLock(self):
     lock_mock = self.mock()
@@ -271,7 +323,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     c = command.Update()
     c._Lock = lock_mock._Lock
-    self.assertEquals(c.UpdateMaps(self.config, False, force_lock=True),
+    self.assertEquals(c.UpdateMaps(self.conf, False, force_lock=True),
                       c.ERR_LOCK)
 
   def testSleep(self):
@@ -282,7 +334,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     def FakeUpdateMaps(conf, incremental, force_write, force_lock):
       """Stub routine proving that we were invoked."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       self.assertEquals(incremental, True)
 
     sleep = time.sleep
@@ -291,7 +343,7 @@ class TestUpdateCommand(pmock.MockTestCase):
     update = command.Update()
     update.UpdateMaps = FakeUpdateMaps
 
-    update.Run(self.config, ['-s', '1'])
+    update.Run(self.conf, ['-s', '1'])
 
     time.sleep = sleep
 
@@ -317,19 +369,12 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 0
 
     c.UpdateMaps = FakeUpdateMaps
-    self.assertEqual(0, c.Run(self.config, ['--force-write']))
+    self.assertEqual(0, c.Run(self.conf, ['--force-write']))
 
   def testForceWriteFlagCallsCacheMapHandlerUpdateWithForceWriteTrue(self):
-    cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-           .expects(pmock.once())\
-           .Update(pmock.functor(lambda x: True),  # ignore first argument
-                   incremental=pmock.eq(True),
-                   force_write=pmock.eq(True))\
-           .will(pmock.return_value(0))
 
     def FakeCreate(cache_options, map_name):
-      return cache_map_handler_mock
+      return 'cache'
 
     lock_mock = self.mock()
     lock_mock\
@@ -340,9 +385,9 @@ class TestUpdateCommand(pmock.MockTestCase):
     caches.base.Create = FakeCreate
     c = command.Update()
     c._Lock = lock_mock._Lock
-    self.config.maps = [config.MAP_PASSWORD]
-    self.config.cache = 'dummy'
-    self.assertEquals(0, c.Run(self.config, ['--force-write']))
+    self.conf.maps = [config.MAP_PASSWORD]
+    self.conf.cache = 'dummy'
+    self.assertEquals(0, c.Run(self.conf, ['--force-write']))
 
   def testForceLockFlagCallsUpdateMapsWithForceLockTrue(self):
     c = command.Update()
@@ -352,7 +397,7 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 0
 
     c.UpdateMaps = FakeUpdateMaps
-    self.assertEqual(0, c.Run(self.config, ['--force-lock']))
+    self.assertEqual(0, c.Run(self.conf, ['--force-lock']))
 
 
 class TestVerifyCommand(pmock.MockTestCase):
@@ -377,10 +422,10 @@ class TestVerifyCommand(pmock.MockTestCase):
     sources.base.RegisterImplementation(DummySource)
 
     # Create a config with a section for a passwd map.
-    self.config = DummyConfig()
-    self.config.options = {config.MAP_PASSWORD: config.MapOptions()}
-    self.config.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
-    self.config.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
+    self.conf = DummyConfig()
+    self.conf.options = {config.MAP_PASSWORD: config.MapOptions()}
+    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
 
     self.original_verify_configuration = config.VerifyConfiguration
     self.original_getmap = nss.GetMap
@@ -426,12 +471,12 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return (0, 0)
 
     def FakeVerifyMaps(conf):
       """Assert that VerifyMaps is called with a config object."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return 0
 
     config.VerifyConfiguration = FakeVerifyConfiguration
@@ -439,24 +484,30 @@ class TestVerifyCommand(pmock.MockTestCase):
     c = command.Verify()
     c.VerifyMaps = FakeVerifyMaps
 
-    self.config.maps = []
+    self.conf.maps = []
 
-    self.assertEquals(1, c.Run(self.config, []))
+    self.assertEquals(1, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Verify()
+    # Trap stderr so the unit test runs clean,
+    # since unit test status is printed on stderr.
+    dev_null = StringIO.StringIO()
+    stderr = sys.stderr
+    sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
+    sys.stderr = stderr
 
   def testRunWithParameters(self):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return (0, 0)
 
     def FakeVerifyMaps(conf):
       """Assert that VerifyMaps is called with a config object."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return 0
 
     config.VerifyConfiguration = FakeVerifyConfiguration
@@ -464,7 +515,7 @@ class TestVerifyCommand(pmock.MockTestCase):
     c = command.Verify()
     c.VerifyMaps = FakeVerifyMaps
 
-    self.assertEquals(0, c.Run(self.config, ['-m',
+    self.assertEquals(0, c.Run(self.conf, ['-m',
                                              config.MAP_PASSWORD]))
 
   def testVerifyMapsSucceedsOnGoodMaps(self):
@@ -477,16 +528,16 @@ class TestVerifyCommand(pmock.MockTestCase):
     cache_map_handler_mock = self.mock()
     cache_map_handler_mock\
                             .expects(pmock.once())\
-                            .GetCacheMap()\
+                            .GetMap()\
                             .will(pmock.return_value(self.small_map))
 
     def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
-      self.assertEquals(conf, self.config.options[map_name].cache)
-      self.assertTrue(map_name in self.config.maps)
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
       return cache_map_handler_mock
 
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
     old_caches_base_create = caches.base.Create
     caches.base.Create = FakeCreate
@@ -495,7 +546,7 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     c = command.Verify()
 
-    self.assertEquals(0, c.VerifyMaps(self.config))
+    self.assertEquals(0, c.VerifyMaps(self.conf))
 
     nss.GetMap = old_nss_getmap
     caches.base.Create = old_caches_base_create
@@ -510,16 +561,16 @@ class TestVerifyCommand(pmock.MockTestCase):
     cache_map_handler_mock = self.mock()
     cache_map_handler_mock\
                             .expects(pmock.once())\
-                            .GetCacheMap()\
+                            .GetMap()\
                             .will(pmock.return_value(self.big_map))
 
     def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
-      self.assertEquals(conf, self.config.options[map_name].cache)
-      self.assertTrue(map_name in self.config.maps)
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
       return cache_map_handler_mock
 
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
     old_caches_base_create = caches.base.Create
     caches.base.Create = FakeCreate
@@ -528,7 +579,7 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     c = command.Verify()
 
-    self.assertEquals(1, c.VerifyMaps(self.config))
+    self.assertEquals(1, c.VerifyMaps(self.conf))
 
     nss.GetMap = old_nss_getmap
     caches.base.Create = old_caches_base_create
@@ -543,18 +594,18 @@ class TestVerifyCommand(pmock.MockTestCase):
     cache_map_handler_mock = self.mock()
     cache_map_handler_mock\
                             .expects(pmock.once())\
-                            .GetCacheMap()\
+                            .GetMap()\
                             .will(pmock.raise_exception(error.CacheNotFound))
 
-    def FakeCreate(config, map_name):
+    def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
-      self.assertEquals(config, self.config.options[map_name].cache)
-      self.assertTrue(map_name in self.config.maps)
-      self.assertEquals(config, self.config.options[map_name].cache)
-      self.assertTrue(map_name in self.config.maps)
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
+      self.assertEquals(conf, self.conf.options[map_name].cache)
+      self.assertTrue(map_name in self.conf.maps)
       return cache_map_handler_mock
 
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
     old_caches_base_create = caches.base.Create
     caches.base.Create = FakeCreate
@@ -563,17 +614,33 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     c = command.Verify()
 
-    self.assertEquals(1, c.VerifyMaps(self.config))
+    self.assertEquals(1, c.VerifyMaps(self.conf))
 
     nss.GetMap = old_nss_getmap
     caches.base.Create = old_caches_base_create
+
+  def testVerifyMapsSkipsNetgroups(self):
+
+    def FakeGetMap(map_name):
+      """We should never get here for netgroups, so fail."""
+      self.fail('GetMap was invoked for netgroups')
+
+    self.conf.maps = [config.MAP_NETGROUP]
+    old_nss_getmap = nss.GetMap
+    nss.GetMap = FakeGetMap
+
+    c = command.Verify()
+
+    self.assertEquals(0, c.VerifyMaps(self.conf))
+
+    nss.GetMap = old_nss_getmap
 
   def testVerifySourcesGood(self):
 
     def FakeCreate(conf):
       """Stub routine returning a pmock to test VerifySources."""
       self.assertEquals(conf,
-                        self.config.options[config.MAP_PASSWORD].source)
+                        self.conf.options[config.MAP_PASSWORD].source)
       return self.source_mock
 
     self.source_mock = self.mock()
@@ -584,22 +651,22 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     old_source_base_create = sources.base.Create
     sources.base.Create = FakeCreate
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
-    self.assertEquals(0, command.Verify().VerifySources(self.config))
+    self.assertEquals(0, command.Verify().VerifySources(self.conf))
 
     sources.base.Create = old_source_base_create
 
   def testVerifySourcesBad(self):
 
-    self.config.maps = []
-    self.assertEquals(1, command.Verify().VerifySources(self.config))
+    self.conf.maps = []
+    self.assertEquals(1, command.Verify().VerifySources(self.conf))
 
     # bad source gives us a bad code
     def FakeCreate(conf):
       """Stub routine returning a pmock to test VerifySources."""
       self.assertEquals(conf,
-                        self.config.options[config.MAP_PASSWORD].source)
+                        self.conf.options[config.MAP_PASSWORD].source)
       return self.source_mock
 
     self.source_mock = self.mock()
@@ -610,27 +677,27 @@ class TestVerifyCommand(pmock.MockTestCase):
 
     old_source_base_create = sources.base.Create
     sources.base.Create = FakeCreate
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
-    self.assertEquals(1, command.Verify().VerifySources(self.config))
+    self.assertEquals(1, command.Verify().VerifySources(self.conf))
 
     sources.base.Create = old_source_base_create
 
   def testVerifySourcesTrapsSourceUnavailable(self):
-    self.config.maps = []
-    self.assertEquals(1, command.Verify().VerifySources(self.config))
+    self.conf.maps = []
+    self.assertEquals(1, command.Verify().VerifySources(self.conf))
 
     def FakeCreate(conf):
       """Stub routine returning a pmock to test VerifySources."""
       self.assertEquals(conf,
-                        self.config.options[config.MAP_PASSWORD].source)
+                        self.conf.options[config.MAP_PASSWORD].source)
       raise error.SourceUnavailable
 
     old_source_base_create = sources.base.Create
     sources.base.Create = FakeCreate
-    self.config.maps = [config.MAP_PASSWORD]
+    self.conf.maps = [config.MAP_PASSWORD]
 
-    self.assertEquals(1, command.Verify().VerifySources(self.config))
+    self.assertEquals(1, command.Verify().VerifySources(self.conf))
 
     sources.base.Create = old_source_base_create
 
@@ -651,10 +718,10 @@ class TestRepairCommand(unittest.TestCase):
     # Add dummy source to the set if implementations of sources
     sources.base.RegisterImplementation(DummySource)
 
-    self.config = DummyConfig()
-    self.config.options = {config.MAP_PASSWORD: config.MapOptions()}
-    self.config.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
-    self.config.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
+    self.conf = DummyConfig()
+    self.conf.options = {config.MAP_PASSWORD: config.MapOptions()}
+    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
 
     self.original_verify_configuration = config.VerifyConfiguration
 
@@ -674,31 +741,37 @@ class TestRepairCommand(unittest.TestCase):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return (0, 1)
 
     config.VerifyConfiguration = FakeVerifyConfiguration
 
-    self.config.maps = []
+    self.conf.maps = []
 
-    self.assertEquals(1, c.Run(self.config, []))
+    self.assertEquals(1, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Repair()
+    # Trap stderr so the unit test runs clean,
+    # since unit test status is printed on stderr.
+    dev_null = StringIO.StringIO()
+    stderr = sys.stderr
+    sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
+    sys.stderr = stderr
 
   def testRunWithParameters(self):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.config)
+      self.assertEquals(conf, self.conf)
       return (0, 1)
 
     config.VerifyConfiguration = FakeVerifyConfiguration
 
     c = command.Repair()
 
-    self.assertEquals(1, c.Run(self.config, ['-m',
+    self.assertEquals(1, c.Run(self.conf, ['-m',
                                              config.MAP_PASSWORD]))
 
 
@@ -730,20 +803,37 @@ class TestStatusCommand(pmock.MockTestCase):
       def Verify(self):
         return 0
 
+    # stub out parts of update.SingleMapUpdater
+    class DummyUpdater(update.SingleMapUpdater):
+      def GetModifyTimestamp(self):
+        return 1
+      
+      def GetUpdateTimestamp(self):
+        return 2
+
     # Add dummy source to the set if implementations of sources
     sources.base.RegisterImplementation(DummySource)
 
-    self.config = DummyConfig()
-    self.config.options = {config.MAP_PASSWORD: config.MapOptions()}
-    self.config.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
-    self.config.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
+    self.conf = DummyConfig()
+    self.conf.timestamp_dir = 'TEST_DIR'
+    self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
+                         config.MAP_AUTOMOUNT: config.MapOptions()}
+    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
+    self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_AUTOMOUNT].source = {'name': 'dummy'}
 
     self.original_verify_configuration = config.VerifyConfiguration
     self.original_create = caches.base.Create
+    self.original_updater = update.SingleMapUpdater
+
+    # stub this out for all tests
+    update.SingleMapUpdater = DummyUpdater
 
   def tearDown(self):
     config.VerifyConfiguration = self.original_verify_configuration
     caches.base.Create = self.original_create
+    update.SingleMapUpdater = self.original_updater
 
   def testHelp(self):
     c = command.Status()
@@ -751,12 +841,18 @@ class TestStatusCommand(pmock.MockTestCase):
 
   def testRunWithNoParameters(self):
     c = command.Status()
-    self.config.maps = []
-    self.assertEquals(0, c.Run(self.config, []))
+    self.conf.maps = []
+    self.assertEquals(0, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Status()
+    # Trap stderr so the unit test runs clean,
+    # since unit test status is printed on stderr.
+    dev_null = StringIO.StringIO()
+    stderr = sys.stderr
+    sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
+    sys.stderr = stderr
 
   def testValuesOnlyParameter(self):
     c = command.Status()
@@ -775,27 +871,13 @@ class TestStatusCommand(pmock.MockTestCase):
 
   def testObeysMapsFlag(self):
 
-    def FakeCreate(conf, map_name):
-      """Stub routine returning a mock object to test status output."""
-      self.assertEquals(self.config.options[map_name].cache, conf)
-      self.failUnless(map_name in self.config.maps)
-      return cache_mock
-
     stdout_buffer = StringIO.StringIO()
-    dummy_map = maps.PasswdMap()
-    cache_mock = self.mock()
-    cache_mock\
-                .expects(pmock.once())\
-                .method('GetModifyTimestamp')
-    cache_mock\
-                .expects(pmock.once())\
-                .method('GetUpdateTimestamp')
-    self.config.maps = [config.MAP_PASSWORD, config.MAP_GROUP]
-    caches.base.Create = FakeCreate
+
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
+    
     c = command.Status()
-    self.assertEqual(0, c.Run(self.config, ['-m', 'passwd']))
+    self.assertEqual(0, c.Run(self.conf, ['-m', 'passwd']))
     sys.stdout = old_stdout
 
     self.failIfEqual(0, len(stdout_buffer.getvalue()))
@@ -827,71 +909,91 @@ class TestStatusCommand(pmock.MockTestCase):
     self.failUnless(template.find('%(last-modify-timestamp)s') >= 0)
     self.failIf(template.find('\n') >= 0, 'too many lines returned')
 
-  def testGetMapMetadata(self):
+  def testGetSingleMapMetadata(self):
+    # test both automount and non-automount maps.
+
+    # cache mock is returned by FakeCreate() for automount maps
     cache_mock = self.mock()
     cache_mock\
                 .expects(pmock.once())\
-                .GetModifyTimestamp()
-    cache_mock\
-                .expects(pmock.once())\
-                .GetUpdateTimestamp()
+                .GetMapLocation()\
+                .will(pmock.return_value('/etc/auto.master'))
+    self.cache_mock = cache_mock
 
-    def FakeCreate(conf, map_name):
-      self.assertEquals(self.config.options[map_name].cache, conf)
-      self.failUnless(map_name in self.config.maps)
-      return cache_mock
+    # FakeCreate() is to be called by GetSingleMapMetadata for automount maps
+    def FakeCreate(conf, map_name, automount_info=None):
+      self.assertEquals(map_name, config.MAP_AUTOMOUNT)
+      self.assertEquals(automount_info, 'automount_info')
+      return self.cache_mock
 
-    self.config.maps = [config.MAP_PASSWORD]
     caches.base.Create = FakeCreate
+    
     c = command.Status()
-    value_dict = c.GetMapMetadata('passwd', self.config)
+    
+    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf)
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
 
-  def testGetMapMetadataTimestampEpoch(self):
-    cache_mock = self.mock()
-    cache_mock\
-                .expects(pmock.once())\
-                .GetModifyTimestamp()
-    cache_mock\
-                .expects(pmock.once())\
-                .GetUpdateTimestamp()
+    value_dict = c.GetSingleMapMetadata(config.MAP_AUTOMOUNT, self.conf,
+                                        automount_info='automount_info')
 
-    def FakeCreate(conf, map_name):
-      self.assertEquals(self.config.options[map_name].cache, conf)
-      self.failUnless(map_name in self.config.maps)
-      return cache_mock
-
-    self.config.maps = [config.MAP_PASSWORD]
-    caches.base.Create = FakeCreate
-    c = command.Status()
-    value_dict = c.GetMapMetadata('passwd', self.config, epoch=True)
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
-    self.failUnlessEqual(None, value_dict['last-modify-timestamp'])
+    
+  def testGetSingleMapMetadataTimestampEpoch(self):
+    c = command.Status()
+    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=True)
+    self.failUnless('map' in value_dict)
+    self.failUnless('last-modify-timestamp' in value_dict)
+    self.failUnless('last-update-timestamp' in value_dict)
+    # values below are returned by dummyupdater
+    self.assertEqual(1, value_dict['last-modify-timestamp'])
+    self.assertEqual(2, value_dict['last-update-timestamp'])
 
-  def testGetMapMetadataTimestampEpochFalse(self):
+  def testGetSingleMapMetadataTimestampEpochFalse(self):
+    c = command.Status()
+    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=False)
+    self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
+                         value_dict['last-update-timestamp'])
+
+  def testGetAutomountMapMetadata(self):
+    # need to stub out GetSingleMapMetadata (tested above) and then
+    # stub out caches.base.Create to return a cache mock that spits
+    # out an iterable map for the function to use.
+    
+    # stub out GetSingleMapMetadata
+    class DummyStatus(command.Status):
+      def GetSingleMapMetadata(self, unused_map_name, unused_conf,
+                               automount_info=None, epoch=False):
+        return {'map': 'map_name', 'last-modify-timestamp': 'foo',
+                'last-update-timestamp': 'bar'}
+
+    # the master map to loop over
+    master_map = maps.AutomountMap()
+    master_map.Add(maps.AutomountMapEntry({'key': '/home',
+                                           'location': '/etc/auto.home'}))
+    master_map.Add(maps.AutomountMapEntry({'key': '/auto',
+                                           'location': '/etc/auto.auto'}))
+                   
+    # mock out a cache to return the master map
     cache_mock = self.mock()
     cache_mock\
                 .expects(pmock.once())\
-                .GetModifyTimestamp()
-    cache_mock\
-                .expects(pmock.once())\
-                .GetUpdateTimestamp()
+                .will(pmock.return_value(master_map))
+    self.cache_mock = cache_mock
+    
+    # stub out caches.base.Create(), is restored in tearDown()
+    def FakeCreate(unused_cache_options, unused_map_name, automount_info=None):
+      return self.cache_mock
 
-    def FakeCreate(conf, map_name):
-      self.assertEquals(self.config.options[map_name].cache, conf)
-      self.failUnless(map_name in self.config.maps)
-      return cache_mock
-
-    self.config.maps = [config.MAP_PASSWORD]
     caches.base.Create = FakeCreate
-    c = command.Status()
-    value_dict = c.GetMapMetadata('passwd', self.config, epoch=False)
-    self.failUnlessEqual('Unknown', value_dict['last-update-timestamp'])
 
+    c = DummyStatus()
+    value_list = c.GetAutomountMapMetadata(self.conf)
+
+    self.assertEqual(len(value_list), 3)
 
 if __name__ == '__main__':
   unittest.main()

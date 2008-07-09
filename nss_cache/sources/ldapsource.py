@@ -26,6 +26,7 @@ import logging
 import time
 import ldap
 
+from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.sources import base
@@ -56,30 +57,31 @@ class LdapSource(base.Source):
   # for registration
   name = 'ldap'
 
-  def __init__(self, config, conn=None):
+  def __init__(self, conf, conn=None):
     """Initialise the LDAP Data Source.
 
     Args:
-      config: config.Config instance
+      conf: config.Config instance
       conn: An instance of ldap.LDAPObject that'll be used as the connection.
     """
-    super(LdapSource, self).__init__(config)
-
-    self._SetDefaults(config)
+    super(LdapSource, self).__init__(conf)
+    self._dn_requested = False  # dn is a special-cased attribute
+    
+    self._SetDefaults(conf)
 
     if conn is None:
       # ReconnectLDAPObject should handle interrupted ldap transactions.
       # also, ugh
       rlo = ldap.ldapobject.ReconnectLDAPObject
-      self.conn = rlo(uri=config['uri'],
-                      retry_max=config['retry_max'],
-                      retry_delay=config['retry_delay'])
+      self.conn = rlo(uri=conf['uri'],
+                      retry_max=conf['retry_max'],
+                      retry_delay=conf['retry_delay'])
     else:
       self.conn = conn
 
     # TODO(v): We should bind on-demand instead.
     # (although binding here makes it easier to simulate a dropped network)
-    self.Bind(config)
+    self.Bind(conf)
 
   def _SetDefaults(self, configuration):
     """Set defaults if necessary."""
@@ -163,6 +165,7 @@ class LdapSource(base.Source):
     """
     self.log.debug('searching for base=%r, filter=%r, scope=%r, attrs=%r',
                    search_base, search_filter, search_scope, attrs)
+    if 'dn' in attrs: self._dn_requested = True  # special cased attribute
     self.message_id = self.conn.search(base=search_base,
                                        filterstr=search_filter,
                                        scope=search_scope, attrlist=attrs)
@@ -177,7 +180,7 @@ class LdapSource(base.Source):
     """
     while True:
       result_type, data = self.conn.result(self.message_id, all=0,
-                                           timeout=self.config['timelimit'])
+                                           timeout=self.conf['timelimit'])
 
       if result_type == ldap.RES_SEARCH_RESULT:
         self.log.debug('Returning due to RES_SEARCH_RESULT')
@@ -191,9 +194,14 @@ class LdapSource(base.Source):
         return
 
       for record in data:
-        # Ignore the DN, which is the first element of each record tuple,
-        # and yield only the payload
-        yield record[1]
+        # If the dn is requested, return it along with the payload,
+        # otherwise ignore it.
+        if self._dn_requested:
+          merged_records = {'dn':record[0]}
+          merged_records.update(record[1])
+          yield merged_records
+        else:
+          yield record[1]
 
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
@@ -206,9 +214,9 @@ class LdapSource(base.Source):
       instance of maps.PasswdMap
     """
     return PasswdUpdateGetter().GetUpdates(source=self,
-                                           search_base=self.config['base'],
-                                           search_filter=self.config['filter'],
-                                           search_scope=self.config['scope'],
+                                           search_base=self.conf['base'],
+                                           search_filter=self.conf['filter'],
+                                           search_scope=self.conf['scope'],
                                            since=since)
 
   def GetGroupMap(self, since=None):
@@ -222,9 +230,9 @@ class LdapSource(base.Source):
       instance of maps.GroupMap
     """
     return GroupUpdateGetter().GetUpdates(source=self,
-                                          search_base=self.config['base'],
-                                          search_filter=self.config['filter'],
-                                          search_scope=self.config['scope'],
+                                          search_base=self.conf['base'],
+                                          search_filter=self.conf['filter'],
+                                          search_scope=self.conf['scope'],
                                           since=since)
 
   def GetShadowMap(self, since=None):
@@ -238,9 +246,9 @@ class LdapSource(base.Source):
       instance of ShadowMap
     """
     return ShadowUpdateGetter().GetUpdates(source=self,
-                                           search_base=self.config['base'],
-                                           search_filter=self.config['filter'],
-                                           search_scope=self.config['scope'],
+                                           search_base=self.conf['base'],
+                                           search_filter=self.conf['filter'],
+                                           search_scope=self.conf['scope'],
                                            since=since)
 
   def GetNetgroupMap(self, since=None):
@@ -254,13 +262,81 @@ class LdapSource(base.Source):
       instance of NetgroupMap
     """
     return NetgroupUpdateGetter().GetUpdates(source=self,
-                                             search_base=self.config['base'],
-                                             search_filter=self.config['filter'],
-                                             search_scope=self.config['scope'],
+                                             search_base=self.conf['base'],
+                                             search_filter=self.conf['filter'],
+                                             search_scope=self.conf['scope'],
                                              since=since)
 
-  def GetAutomount(self):
-    pass
+  def GetAutomountMap(self, since=None, location=None):
+    """Return an automount map from this source.
+
+    Note that autmount maps are stored in multiple locations, thus we expect
+    a caller to provide a location.  We also follow the automount spec and
+    set our search scope to be 'one'.
+
+    Args:
+      location: Currently a string containing our search base, later we
+        may support hostname and additional parameters.
+      since: Get data only changed since this timestamp (inclusive) or None
+        for all data.
+        
+    Returns:
+      instance of AutomountMap
+    """
+    if location is None:
+      self.log.error('A location is required to retrieve an automount map!')
+      raise error.EmptyMap
+
+    autofs_filter = '(objectclass=automount)'
+    return AutomountUpdateGetter().GetUpdates(source=self,
+                                              search_base=location,
+                                              search_filter=autofs_filter,
+                                              search_scope='one',
+                                              since=since)
+
+  def GetAutomountMasterMap(self):
+    """Return the autmount master map from this source.
+
+    The automount master map is a special-case map which points to a dynamic
+    list of additional maps. We currently support only the schema outlined at
+    http://docs.sun.com/source/806-4251-10/mapping.htm commonly used by linux
+    automount clients, namely ou=auto.master and objectclass=automount entries.
+
+    Returns:
+      an instance of maps.AutomountMap
+    """
+    search_base = self.conf['base']
+    search_scope = ldap.SCOPE_SUBTREE
+
+    # auto.master is stored under ou=auto.master with objectclass=automountMap
+    search_filter = '(&(objectclass=automountMap)(ou=auto.master))'
+    self.log.debug('retrieving automount master map.')
+    self.Search(search_base=search_base, search_filter=search_filter,
+                  search_scope=search_scope, attrs=['dn'])
+
+    search_base = None
+    for obj in self:
+      # the dn of the matched object is our search base
+      search_base = obj['dn']
+
+    if search_base is None:
+      self.log.critical('Could not find automount master map!')
+      raise error.EmptyMap
+
+    self.log.debug('found ou=auto.master at %s', search_base)
+    master_map =  self.GetAutomountMap(location=search_base)
+
+    # fix our location attribute to contain the data we
+    # expect returned to us later, namely the new search base(s)
+    for map_entry in master_map:
+      # we currently ignore hostname and just look for the dn which will
+      # be the search_base for this map.  third field, colon delimited.
+      map_entry.location = map_entry.location.split(':')[2]
+      # and strip the space seperated options
+      map_entry.location = map_entry.location.split(' ')[0]
+      self.log.debug('master map has: %s' % map_entry.location)
+                     
+    return master_map
 
   def Verify(self, since=None):
     """Verify that this source is contactable and can be queried for data."""
@@ -508,6 +584,36 @@ class NetgroupUpdateGetter(UpdateGetter):
       netgroup_ent.entries.extend(obj['nisNetgroupTriple'])
 
     return netgroup_ent
+
+
+class AutomountUpdateGetter(UpdateGetter):
+  """Get specific automount maps."""
+
+  def __init__(self):
+    super(AutomountUpdateGetter, self).__init__()
+    self.attrs = ['cn', 'automountInformation']
+    self.essential_fields = ['cn']
+
+  def CreateMap(self):
+    """Return a AutomountMap instance."""
+    return maps.AutomountMap()
+
+  def Transform(self, obj):
+    """Transforms an LDAP automount object into an autofs(5) entry."""
+    automount_ent = maps.AutomountMapEntry()
+    automount_ent.key = obj['cn'][0]
+
+    automount_information = obj['automountInformation'][0]
+
+    if automount_information.startswith('ldap'):
+      # we are creating an autmount master map, pointing to other maps in LDAP
+      automount_ent.location = automount_information
+    else:
+      # we are creating normal automount maps, with filesystems and options
+      automount_ent.options = automount_information.split(' ')[0]
+      automount_ent.location = automount_information.split(' ')[1]
+
+    return automount_ent
 
 
 # Finally, register the Source

@@ -24,6 +24,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 import os.path
 import re
 
+from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
@@ -33,34 +34,40 @@ class FilesCache(base.Cache):
   """An implementation of a Cache specific to nss_files module.
 
   This implementation creates, updates, and verifies map caches used by
-  nss_files module..
+  nss_files module.
   """
-  UPDATE_TIMESTAMP_SUFFIX = 'nsscache-files-update-timestamp'
-  MODIFY_TIMESTAMP_SUFFIX = 'nsscache-files-modify-timestamp'
 
-  def __init__(self, config):
+  def __init__(self, conf, map_name, automount_info=None):
     """Create a handler for the given map type.
 
     Args:
-     config: a configuration object
+     conf: a configuration object
+     map_name: a string representing the type of map we are
+     automount_info: A string containing the automount mountpoint, used only
+       by automount maps.
     """
-    super(FilesCache, self).__init__(config)
+    super(FilesCache, self).__init__(conf, map_name,
+                                     automount_info=automount_info)
+    
     # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
-    self.cache_filename_suffix = config.get('cache_filename_suffix', 'cache')
+    self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
 
-  def GetCacheMap(self, cache_file=None):
-    """Loads the cache into a map.
+  def GetMap(self, cache_info=None):
+    """Returns the map from the cache.
 
     Args:
-      file:  alternative file to read, optional.
+      cache_info:  alternative file to read, optional.
     Returns:
       A child of Map containing the cache data.
     Raises:
       CacheNotFound: The cache file we expected to read from does not exist.
     """
-    data = self.GetMap()
-    if cache_file is None:
+    data = self.data
+    if cache_info is not None:
+      cache_file = cache_info
+    else:
       cache_file = self._GetCacheFilename()
+      
     if not os.path.exists(cache_file):
       self.log.debug('cache file %r does not exist', cache_file)
       raise error.CacheNotFound('cache file %r does not exist' %
@@ -93,7 +100,7 @@ class FilesCache(base.Cache):
     """
     self.log.debug('verification starting on %r', self.cache_filename)
 
-    cache_data = self.GetCacheMap(self.cache_filename)
+    cache_data = self.GetMap(cache_info=self.cache_filename)
     map_entry_count = len(cache_data)
     self.log.debug('entry count: %d', map_entry_count)
     
@@ -104,7 +111,7 @@ class FilesCache(base.Cache):
     cache_keys = set()
     # Use PopItem() so we free our memory if multiple maps are Verify()ed.
     try:
-      while (1):
+      while 1:
         entry = cache_data.PopItem()
         cache_keys.update(self._ExpectedKeysForEntry(entry))
     except KeyError:
@@ -146,7 +153,7 @@ class FilesCache(base.Cache):
     written_keys = set()
     
     try:
-      while (1):
+      while 1:
         entry = map_data.PopItem()
         self._WriteData(self.cache_file, entry)
         written_keys.update(self._ExpectedKeysForEntry(entry))
@@ -168,9 +175,14 @@ class FilesCache(base.Cache):
     return os.path.join(self.output_dir, cache_filename_target)
 
 
-class FilesPasswdMapHandler(FilesCache, base.PasswdMapMixin):
+class FilesPasswdMapHandler(FilesCache):
   """Concrete class for updating a nss_files module passwd cache."""
   CACHE_FILENAME = 'passwd'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_PASSWORD
+    super(FilesPasswdMapHandler, self).__init__(conf, map_name,
+                                                automount_info=automount_info)
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -209,9 +221,14 @@ class FilesPasswdMapHandler(FilesCache, base.PasswdMapMixin):
 base.RegisterImplementation('files', 'passwd', FilesPasswdMapHandler)
 
 
-class FilesGroupMapHandler(FilesCache, base.GroupMapMixin):
+class FilesGroupMapHandler(FilesCache):
   """Concrete class for updating a nss_files module group cache."""
   CACHE_FILENAME = 'group'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_GROUP
+    super(FilesGroupMapHandler, self).__init__(conf, map_name,
+                                               automount_info=automount_info)
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -245,9 +262,14 @@ class FilesGroupMapHandler(FilesCache, base.GroupMapMixin):
 base.RegisterImplementation('files', 'group', FilesGroupMapHandler)
 
 
-class FilesShadowMapHandler(FilesCache, base.ShadowMapMixin):
+class FilesShadowMapHandler(FilesCache):
   """Concrete class for updating a nss_files module shadow cache."""
   CACHE_FILENAME = 'shadow'
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_SHADOW
+    super(FilesShadowMapHandler, self).__init__(conf, map_name,
+                                                automount_info=automount_info)
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -300,10 +322,15 @@ class FilesShadowMapHandler(FilesCache, base.ShadowMapMixin):
 base.RegisterImplementation('files', 'shadow', FilesShadowMapHandler)
 
 
-class FilesNetgroupMapHandler(FilesCache, base.NetgroupMapMixin):
+class FilesNetgroupMapHandler(FilesCache):
   """Concrete class for updating a nss_files module netgroup cache."""
   CACHE_FILENAME = 'netgroup'
   _TUPLE_RE = re.compile('^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_NETGROUP
+    super(FilesNetgroupMapHandler, self).__init__(conf, map_name,
+                                                  automount_info=automount_info)
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -359,3 +386,57 @@ class FilesNetgroupMapHandler(FilesCache, base.NetgroupMapMixin):
 
 
 base.RegisterImplementation('files', 'netgroup', FilesNetgroupMapHandler)
+
+
+class FilesAutomountMapHandler(FilesCache):
+  """Concrete class for updating a nss_files module automount cache."""
+  CACHE_FILENAME = None  # we have multiple files, set as we update.
+
+  def __init__(self, conf, map_name=None, automount_info=None):
+    if map_name is None: map_name = config.MAP_AUTOMOUNT
+    super(FilesAutomountMapHandler, self).__init__(
+      conf, map_name, automount_info=automount_info)
+    
+    if automount_info is None:
+      # we are dealing with the master map
+      self.CACHE_FILENAME = 'auto.master'
+    else:
+      # turn /auto into auto.auto, and /usr/local into /auto.usr_local
+      automount_info = automount_info.lstrip('/')
+      self.CACHE_FILENAME = 'auto.%s' % automount_info.replace('/','_')
+
+  def _ExpectedKeysForEntry(self, entry):
+    """Generate a list of expected cache keys for this type of map.
+    
+    Args:
+      entry: A AutomountMapEntry
+
+    Returns:
+      A list of strings
+    """
+    return [entry.key]
+
+  def _WriteData(self, target, entry):
+    """Write an AutomountMapEntry to the target cache."""
+    automount_entry = '%s %s %s' % (entry.key,
+                                    entry.options or '',
+                                    entry.location)
+    target.write(automount_entry + '\n')
+
+  def _ReadEntry(self, line):
+    """Return an AutomountMapEntry from a record in the target cache."""
+    line = line.split(' ')
+    map_entry = maps.AutomountMapEntry()
+    map_entry.key = line[0]
+    if len(line) > 2:
+      map_entry.options = line[1]
+      map_entry.location = line[2]
+    else:
+      map_entry.location = line[1]
+    return map_entry
+
+  def GetMapLocation(self):
+    """Get the location of this map for the automount master map."""
+    return self._GetCacheFilename()
+    
+base.RegisterImplementation('files', 'automount', FilesAutomountMapHandler)

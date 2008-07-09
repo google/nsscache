@@ -33,6 +33,7 @@ from nss_cache import error
 from nss_cache import lock
 from nss_cache import nss
 from nss_cache import sources
+from nss_cache import update
 
 
 class Command(object):
@@ -252,8 +253,14 @@ class Update(Command):
       cache_options = conf.options[map_name].cache
       source_options = conf.options[map_name].source
 
-      cache_map_handler = caches.base.Create(cache_options, map_name)
       source = sources.base.Create(source_options)
+      
+      if map_name == config.MAP_AUTOMOUNT:
+        updater = update.AutomountUpdater(map_name, conf.timestamp_dir,
+                                          cache_options)
+      else:
+        updater = update.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                          cache_options)
 
       if incremental:
         self.log.info('Updating and verifying %s cache.', map_name)
@@ -261,8 +268,7 @@ class Update(Command):
         self.log.info('Rebuilding and verifying %s cache.', map_name)
 
       try:
-        retval = cache_map_handler.Update(source, incremental=incremental,
-                                          force_write=force_write)
+        retval = updater.UpdateFromSource(source, incremental=incremental, force_write=force_write)
       except error.PermissionDenied:
         self.log.error('Permission denied: could not update map %r.  Aborting',
                        map_name)
@@ -346,6 +352,22 @@ class Verify(Command):
     for map_name in conf.maps:
       self.log.info('Verifying map: %s.', map_name)
 
+      # The netgroup map does not have an enumerator, 
+      # to test this we'd have to loop over the loaded cache map
+      # and verify each entry is retrievable via getent directly.
+      # TODO: apply fix from comment to allow for netgroup checking
+      if map_name == config.MAP_NETGROUP:
+        self.log.info(('The netgroup map does not support enumeration, '
+                       'skipping.'))
+        continue
+
+      # Automount maps do not support getent, we'll have to come up with
+      # a good way to verify these.
+      if map_name == config.MAP_AUTOMOUNT:
+        self.log.info(('The automount map does not support enumeration, '
+                       'skipping.'))
+        continue
+
       try:
         nss_map = nss.GetMap(map_name)
       except error.UnsupportedMap:
@@ -355,12 +377,12 @@ class Verify(Command):
       self.log.debug('built NSS map of %d entries', len(nss_map))
 
       cache_options = conf.options[map_name].cache
-      cache_map_handler = caches.base.Create(cache_options, map_name)
+      cache = caches.base.Create(cache_options, map_name)
 
       try:
-        cache_map = cache_map_handler.GetCacheMap()
+        cache_map = cache.GetMap()
       except error.CacheNotFound:
-        self.log.error('CacheNotFound raised')
+        self.log.error('Cache missing!')
         retval +=1
         continue
 
@@ -549,9 +571,18 @@ class Status(Command):
     for map_name in conf.maps:
       if len(conf.maps) > 1 and not options.values_only:
         print 'NSS map:', map_name
-      value_dict = self.GetMapMetadata(map_name, conf, options.epoch)
-      output = template % value_dict
-      print output
+      if map_name == config.MAP_AUTOMOUNT:
+        value_list = self.GetAutomountMapMetadata(conf, epoch=options.epoch)
+        for value_dict in value_list:
+          if not options.values_only:
+            print 'Automount map:', value_dict['map']
+          output = template % value_dict
+          print output
+      else:
+        value_dict = self.GetSingleMapMetadata(map_name, conf,
+                                             epoch=options.epoch)
+        output = template % value_dict
+        print output
 
     return 0
 
@@ -589,29 +620,35 @@ class Status(Command):
 
     return '\n'.join(template)
 
-  def GetMapMetadata(self, map_name, conf, epoch=False):
+  def GetSingleMapMetadata(self, map_name, conf, automount_info=None,
+                           epoch=False):
     """Return metadata from map specified.
 
     Args:
       map_name: name of map to extract data from
       conf: a config.Config object
+      automount_info: information necessary for automount maps
       epoch: return times as an integer epoch (time_t) instead of a
         human readable name
 
     Returns:
       a dict of metadata key/value pairs
     """
-    value_dict = {'map': map_name}
-
     cache_options = conf.options[map_name].cache
-    cache = caches.base.Create(cache_options, map_name)
 
-    # really now we want cache to have all the metadata for each map
-    # Cache shold be a container for Maps.
-    #cache_map = cache.GetCacheMap()
+    updater = update.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                      cache_options, automount_info)
 
-    last_modify_timestamp = cache.GetModifyTimestamp()
-    last_update_timestamp = cache.GetUpdateTimestamp()
+    if map_name == config.MAP_AUTOMOUNT:
+      # have to find out *which* automount map from a cache object!
+      cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
+                                 automount_info=automount_info)
+      value_dict = {'map': cache.GetMapLocation()}
+    else:
+      value_dict = {'map': map_name}
+
+    last_modify_timestamp = updater.GetModifyTimestamp()
+    last_update_timestamp = updater.GetUpdateTimestamp()
 
     if not epoch:
       if last_modify_timestamp is not None:
@@ -627,3 +664,41 @@ class Status(Command):
     value_dict['last-update-timestamp'] = last_update_timestamp
 
     return value_dict
+
+  def GetAutomountMapMetadata(self, conf, epoch=False):
+    """Return status of automount master map and all listed automount maps.
+
+    We retrieve the automount master map, and build a list of dicts which
+    are used by the caller to print the status output.
+
+    Args:
+      conf: a config.Config object
+      epoch: return times as an integer epoch (time_t) instead of a
+        human readable name
+
+    Returns:
+      a list of dicts of metadata key/value pairs
+    """
+    map_name = config.MAP_AUTOMOUNT
+    cache_options = conf.options[map_name].cache
+    value_list = []    
+
+    # get the value_dict for the master map, note that automount_info=None
+    # defaults to the master map!
+    value_dict = self.GetSingleMapMetadata(map_name, conf, automount_info=None,
+                                           epoch=epoch)
+    value_list.append(value_dict)
+
+    # now get the contents of the master map, and get the status for each map
+    # we find
+    cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
+                               automount_info=None)
+    master_map = cache.GetMap()
+
+    for map_entry in master_map:
+      value_dict = self.GetSingleMapMetadata(map_name, conf,
+                                             automount_info=map_entry.key,
+                                             epoch=epoch)
+      value_list.append(value_dict)
+
+    return value_list

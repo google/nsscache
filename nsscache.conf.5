@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2007-05-15 "nsscache 0.7" "File formats"
+.TH NSSCACHE.CONF 5 2007-05-15 "nsscache 0.8" "File formats"
 .SH NAME
 nsscache.conf \- NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -21,7 +21,10 @@ keyword, specifying the data source to use, one
 keyword, specifying the means in which the cache data will be stored
 locally, and one
 \fBmaps\fP
-keyword, specifying which NSS maps should be cached.
+keyword, specifying which NSS maps should be cached, and one
+\fBtimestamp_dir\fP
+keyword, specifying the location of the timestamps used for
+incremental updates.
 
 Additional global defaults, such as LDAP search parameters, or the
 filesystem location of the cache, may also be included in the DEFAULT
@@ -75,6 +78,12 @@ Valid options:
 .I passwd
 .I group
 .I shadow
+.I netgroup
+.I automount
+
+.TP
+.B timestamp_dir
+Specifies the directory where update and modify timestamps are stored.
 
 .SH ldap SOURCE OPTIONS
 
@@ -170,13 +179,6 @@ cache.
 .B files_dir
 Directory location to store the plain text files in.  Defaults to the
 current directory.
-
-.TP
-.B files_timestamp_dir
-Directory location to store the last update and last modification
-timestamps.  Defaults to the same as the
-.B files_dir
-option.
 
 .TP
 .B files_cache_filename_suffix

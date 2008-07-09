@@ -18,9 +18,13 @@
 
 """Base class of data source object for nss_cache."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = ('jaq@google.com (Jamie Wilkinson)',
+              'vasilios@google.com (Vasilios Hoffman)')
 
 import logging
+
+from nss_cache import config
+from nss_cache import error
 
 _source_implementations = {}
 
@@ -49,11 +53,11 @@ def RegisterImplementation(source):
   _source_implementations[source.name] = source
 
 
-def Create(config):
+def Create(conf):
   """Source creation factory method.
 
   Args:
-   config: a dictionary of configuration key/value pairs, including one
+   conf: a dictionary of configuration key/value pairs, including one
            required attribute 'name'.
 
   Returns:
@@ -65,33 +69,60 @@ def Create(config):
   if not _source_implementations:
     raise RuntimeError('no source implementations exist')
 
-  source_name = config['name']
+  source_name = conf['name']
 
   if source_name not in _source_implementations.keys():
     raise RuntimeError('source not implemented: %r' % (source_name,))
 
-  return _source_implementations[source_name](config)
+  return _source_implementations[source_name](conf)
 
 
 class Source(object):
   """Abstract base class for map data sources."""
 
-  def __init__(self, config):
+  def __init__(self, conf):
     """Initialise the Source object.
 
     Args:
-      config: A dictionary of key/value pairs.
+      conf: A dictionary of key/value pairs.
 
     Raises:
       RuntimeError: object wasn't initialised with a dict
     """
-    if not isinstance(config, dict):
+    if not isinstance(conf, dict):
       raise RuntimeError('Source constructor not passed a dictionary')
 
-    self.config = config
+    self.conf = conf
 
     # create a logger for our children
     self.log = logging.getLogger(self.__class__.__name__)
+
+  def GetMap(self, map_name, since=None, location=None):
+    """Get a specific map from this source.
+
+    Args:
+      map_name: A string representation of the map you want
+      since: optional timestamp for incremental query
+      location: optional field used by automounts to indicate a specific map
+
+    Returns:
+      A Map child class for the map requested.
+
+    Raises:
+      UnsupportedMap: for unknown source maps
+    """
+    if map_name == config.MAP_PASSWORD:
+      return self.GetPasswdMap(since)
+    elif map_name == config.MAP_GROUP:
+      return self.GetGroupMap(since)
+    elif map_name == config.MAP_SHADOW:
+      return self.GetShadowMap(since)
+    elif map_name == config.MAP_NETGROUP:
+      return self.GetNetgroupMap(since)
+    elif map_name == config.MAP_AUTOMOUNT:
+      return self.GetAutomountMap(since, location=location)
+
+    raise error.UnsupportedMap('Source can not fetch %s' % map_name)
 
   def Verify(self):
     """Perform verification of the source availability.

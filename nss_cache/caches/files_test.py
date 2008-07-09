@@ -22,12 +22,13 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import os
-import pmock
 import tempfile
+import pmock
 import unittest
 
-from nss_cache.caches import files
+from nss_cache import config
 from nss_cache import maps
+from nss_cache.caches import files
 
 
 class TestFilesCache(pmock.MockTestCase):
@@ -40,7 +41,7 @@ class TestFilesCache(pmock.MockTestCase):
     os.rmdir(self.workdir)
 
   def testInstantiation(self):
-    cache = files.FilesCache(self.config)
+    cache = files.FilesCache(self.config, config.MAP_PASSWORD)
     self.failIfEqual(None, cache)
 
   def testWrite(self):
@@ -55,7 +56,7 @@ class TestFilesCache(pmock.MockTestCase):
   def testCacheFilenameSuffixOption(self):
     new_config = {'cache_filename_suffix': 'blarg'}
     new_config.update(self.config)
-    cache = files.FilesCache(new_config)
+    cache = files.FilesCache(new_config, config.MAP_PASSWORD)
 
     cache.CACHE_FILENAME = 'test'
     self.assertEqual(os.path.join(self.workdir, 'test.blarg'),
@@ -65,13 +66,11 @@ class TestFilesCache(pmock.MockTestCase):
     cache.cache_file.write('\n')
     cache.cache_filename = os.path.join(self.workdir,
                                         'pre-commit')
-    cache._Commit(0)
+    cache._Commit()
     expected_cache_filename = os.path.join(self.workdir,
                                            'test.blarg')
     self.failUnless(os.path.exists(expected_cache_filename))
     os.unlink(expected_cache_filename)
-    os.unlink(os.path.join(self.workdir,
-                           'test.nsscache-files-modify-timestamp'))
 
   def testReadPasswdEntry(self):
     """We correctly parse a typical entry in /etc/passwd format."""
@@ -182,6 +181,41 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry.entries.append('(-,zero_cool,)')
     cache._WriteData(file_mock, map_entry)
 
+  def testReadAutomountEntry(self):
+    """We correctly parse a typical entry in /etc/auto.* format."""
+    cache = files.FilesAutomountMapHandler(self.config)
+    file_entry = 'scratch -tcp,rw,intr,bg fileserver:/scratch'
+    map_entry = cache._ReadEntry(file_entry)
+
+    self.assertEqual(map_entry.key, 'scratch')
+    self.assertEqual(map_entry.options, '-tcp,rw,intr,bg')
+    self.assertEqual(map_entry.location, 'fileserver:/scratch')
+
+  def testWriteAutomountEntry(self):
+    """We correctly write a typical entry in /etc/auto.* format."""
+    cache = files.FilesAutomountMapHandler(self.config)
+    file_mock = self.mock()
+    file_mock\
+               .expects(pmock.once())\
+               .write(pmock.eq('scratch -tcp,rw,intr,bg fileserver:/scratch\n'))
+    map_entry = maps.AutomountMapEntry()
+    map_entry.key = 'scratch'
+    map_entry.options = '-tcp,rw,intr,bg'
+    map_entry.location = 'fileserver:/scratch'
+    cache._WriteData(file_mock, map_entry)
+
+  def testAutomountSetsFilename(self):
+    """We set the correct filename based on mountpoint information."""
+    # also tests GetMapLocation() because it uses it :)
+    conf = {'dir': self.workdir, 'cache_filename_suffix': ''}
+    cache = files.FilesAutomountMapHandler(conf)
+    self.assertEquals(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
+
+    cache = files.FilesAutomountMapHandler(conf, automount_info='/home')
+    self.assertEquals(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
+
+    cache = files.FilesAutomountMapHandler(conf, automount_info='/usr/meh')
+    self.assertEquals(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
 
 if __name__ == '__main__':
   unittest.main()
