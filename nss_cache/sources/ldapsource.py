@@ -578,10 +578,14 @@ class NetgroupUpdateGetter(UpdateGetter):
     netgroup_ent = maps.NetgroupMapEntry()
     netgroup_ent.name = obj['cn'][0]
 
+    entries = []
     if 'memberNisNetgroup' in obj:
-      netgroup_ent.entries.extend(obj['memberNisNetgroup'])
+      entries.extend(obj['memberNisNetgroup'])
     if 'nisNetgroupTriple' in obj:
-      netgroup_ent.entries.extend(obj['nisNetgroupTriple'])
+      entries.extend(obj['nisNetgroupTriple'])  
+
+    # final data is stored as a string in the object
+    netgroup_ent.entries = ' '.join(entries)
 
     return netgroup_ent
 

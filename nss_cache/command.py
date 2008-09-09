@@ -24,6 +24,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 import inspect
 import logging
 import optparse
+import os
 import StringIO
 import time
 
@@ -254,7 +255,7 @@ class Update(Command):
       source_options = conf.options[map_name].source
 
       source = sources.base.Create(source_options)
-      
+
       if map_name == config.MAP_AUTOMOUNT:
         updater = update.AutomountUpdater(map_name, conf.timestamp_dir,
                                           cache_options)
@@ -352,7 +353,7 @@ class Verify(Command):
     for map_name in conf.maps:
       self.log.info('Verifying map: %s.', map_name)
 
-      # The netgroup map does not have an enumerator, 
+      # The netgroup map does not have an enumerator,
       # to test this we'd have to loop over the loaded cache map
       # and verify each entry is retrievable via getent directly.
       # TODO: apply fix from comment to allow for netgroup checking
@@ -559,6 +560,7 @@ class Status(Command):
     try:
       (options, args) = self.parser.parse_args(args)
     except SystemExit, e:
+      # See app.NssCacheApp.Run()
       return e.code
 
     if options.maps:
@@ -571,6 +573,7 @@ class Status(Command):
     for map_name in conf.maps:
       if len(conf.maps) > 1 and not options.values_only:
         print 'NSS map:', map_name
+      # Hardcoded to support the two-tier structure of automount maps
       if map_name == config.MAP_AUTOMOUNT:
         value_list = self.GetAutomountMapMetadata(conf, epoch=options.epoch)
         for value_dict in value_list:
@@ -580,11 +583,11 @@ class Status(Command):
           print output
       else:
         value_dict = self.GetSingleMapMetadata(map_name, conf,
-                                             epoch=options.epoch)
+                                               epoch=options.epoch)
         output = template % value_dict
         print output
 
-    return 0
+    return os.EX_OK
 
   def GetOutputTemplate(self, values_only=False, only_key=None):
     """Build a template for outputting status information.
@@ -681,7 +684,7 @@ class Status(Command):
     """
     map_name = config.MAP_AUTOMOUNT
     cache_options = conf.options[map_name].cache
-    value_list = []    
+    value_list = []
 
     # get the value_dict for the master map, note that automount_info=None
     # defaults to the master map!

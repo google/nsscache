@@ -345,43 +345,33 @@ class FilesNetgroupMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write a NetgroupMapEntry to the target cache."""
-    netgroup_entry = entry.name
-    for item in entry.entries:
-      if isinstance(item, tuple):
-        (host, user, domain) = item
-        if host is None: host = ''
-        if user is None: user = ''
-        if domain is None: domain = ''
-        item = '(%s,%s,%s)' % (host, user, domain)
-      netgroup_entry = '%s %s' % (netgroup_entry, item)
-
+    if len(entry.entries):
+      netgroup_entry = '%s %s' % (entry.name, entry.entries)
+    else:
+      netgroup_entry = entry.name
     target.write(netgroup_entry + '\n')
 
   def _ReadEntry(self, line):
     """Return a NetgroupMapEntry from a record in the target cache."""
     map_entry = maps.NetgroupMapEntry()
 
-    # hax0red stream parsing...
-    tokens = line.split()
+    # the first word is our name, but since the whole line is space delimited
+    # avoid .split(' ') since groups can have thousands of members.
+    index = line.find(' ')
 
-    # first entry is our name
-    try:
-      name = tokens.pop(0)
-    except IndexError:
+    if index == -1:
+      if len(line):
+        # empty group is OK, as long as the line isn't blank
+        map_entry.name = line
+        return map_entry
       raise RuntimeError('Failed to parse entry: %s' % line)
+    
+    map_entry.name = line[0:index]
 
-    map_entry.name = name
-
-    # now build the entries list.
-    #
-    # TODO(v):  handle parsing spaces out of tuples.  we are fortunate right
-    # now to test against data sources that look like (-,foo,) instead of
-    # (-, foo, ) but this should be fixed or we might end up with mismatches on
-    # verify.
-    while tokens:
-      token = tokens.pop(0)
-      map_entry.entries.append(token)
-        
+    # the rest is our entries, and for better or for worse this preserves extra
+    # leading spaces
+    map_entry.entries = line[index + 1:]
+    
     return map_entry
 
 

@@ -1,3 +1,30 @@
+nsscache (0.8.3-1) unstable; urgency=low
+
+  * New upstream version
+    - Uses posix exit codes.  (jaq)
+
+ -- Jamie Wilkinson <jaq@debian.org>  Mon, 11 Aug 2008 12:41:33 +1000
+
+nsscache (0.8.2-1) unstable; urgency=low
+
+  * nsscache instantiation no longer fails if syslog's /dev/log cannot be
+    accessed.
+
+ -- Matt T. Proud <mtp@google.com>  Thu, 31 Jul 2008 09:25:40 -0700
+
+nsscache (0.8.1-2) unstable; urgency=low
+
+  * rebuild for hardy under a new package number
+
+ -- V Hoffman <vasilios@google.com>  Wed, 30 Jul 2008 17:20:08 -0700
+
+nsscache (0.8.1-1) unstable; urgency=low
+
+  * New upstream version
+    - netgroup entries use str instead of list for speed and memory benefits
+
+ -- V Hoffman <vasilios@google.com>  Mon, 28 Jul 2008 20:15:54 -0700
+
 nsscache (0.8.0-1) unstable; urgency=low
 
   * New upstream version

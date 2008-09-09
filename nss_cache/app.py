@@ -29,6 +29,7 @@ import logging
 import logging.handlers
 import optparse
 import os
+import socket
 import sys
 
 import nss_cache
@@ -75,12 +76,18 @@ class NssCacheApp(object):
       logging.basicConfig(level=logging.WARN)
     else:
       facility = logging.handlers.SysLogHandler.LOG_DAEMON
-      syslog = logging.handlers.SysLogHandler(address='/dev/log',
-                                              facility=facility)
+      try:
+        handler = logging.handlers.SysLogHandler(address='/dev/log',
+                                                 facility=facility)
+      except socket.error:
+        print '/dev/log could not be opened; falling back on stderr.'
+        # Omitting an argument to StreamHandler results in sys.stderr being
+        # used.
+        handler = logging.StreamHandler()
       fmt = logging.Formatter('%s: %s' % (sys.argv[0], '%(message)s'))
-      syslog.setFormatter(fmt)
-      syslog.setLevel(level=logging.INFO)
-      logging.getLogger('').addHandler(syslog)
+      handler.setFormatter(fmt)
+      handler.setLevel(level=logging.INFO)
+      logging.getLogger('').addHandler(handler)
 
     self.log = logging.getLogger('NSSCacheApp')
     self.parser = self._GetParser()
@@ -160,18 +167,18 @@ class NssCacheApp(object):
     Args:
       args: list of command line arguments
       env: dictionary of environment variables
+
     Returns:
-      # int maps to program exit status
-      int
+      POSIX exit status
     """
     # Parse the commandline.
     try:
       (options, args) = self.parser.parse_args(args)
     except SystemExit, e:
       # OptionParser objects raise SystemExit (error() calls exit()
-            # calls sys.exit()) upon a parser error.
-            # This can be handled better by overriding error or monkeypatching
-            # our parser.
+      # calls sys.exit()) upon a parser error.
+      # This can be handled better by overriding error or monkeypatching
+      # our parser.
       return e.code
     # Initialize a configuration object.
     conf = config.Config(env)
@@ -194,11 +201,11 @@ class NssCacheApp(object):
     if not args:
       print 'No command given'
       self.parser.print_help()
-      return 1
+      return os.EX_USAGE
     # print global help if command is 'help' with no argument
     if len(args) == 1 and args[0] == 'help':
       self.parser.print_help()
-      return 0
+      return os.EX_OK
     self.log.debug('args: %r' % args)
     command_name = args.pop(0)
     self.log.debug('command: %r' % command_name)
@@ -213,12 +220,12 @@ class NssCacheApp(object):
       self.log.warn('%s is not implemented', command_name)
       print 'command %r is not implemented' % command_name
       self.parser.print_help()
-      return 1
+      return os.EX_SOFTWARE
 
     try:
       retval = command_callable().Run(conf=conf, args=args)
     except error.SourceUnavailable, e:
       self.log.error('Problem with configured data source: %s', e)
-      return 2
+      return os.EX_TEMPFAIL
 
     return retval

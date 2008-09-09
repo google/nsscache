@@ -83,4 +83,4 @@ class NetgroupMapEntry(base.MapEntry):
     super(NetgroupMapEntry, self).__init__(data)
 
     # Seed data with defaults if needed
-    if self.entries is None: self.entries = []
+    if self.entries is None: self.entries = ''

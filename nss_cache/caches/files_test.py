@@ -163,8 +163,17 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry = cache._ReadEntry(file_entry)
 
     self.assertEqual(map_entry.name, 'administrators')
-    self.assertEqual(map_entry.entries, ['unix_admins', 'noc_monkeys',
-                                         '(-,zero_cool,)'])
+    self.assertEqual(map_entry.entries,
+                     'unix_admins noc_monkeys (-,zero_cool,)')
+
+  def testReadEmptyNetgroupEntry(self):
+    """We correctly parse a memberless netgroup entry."""
+    cache = files.FilesNetgroupMapHandler(self.config)
+    file_entry = 'administrators'
+    map_entry = cache._ReadEntry(file_entry)
+
+    self.assertEqual(map_entry.name, 'administrators')
+    self.assertEqual(map_entry.entries, '')
     
   def testWriteNetgroupEntry(self):
     """We correctly write a typical entry in /etc/netgroup format."""
@@ -176,9 +185,7 @@ class TestFilesCache(pmock.MockTestCase):
                    'administrators unix_admins noc_monkeys (-,zero_cool,)\n'))
     map_entry = maps.NetgroupMapEntry()
     map_entry.name = 'administrators'
-    map_entry.entries.append('unix_admins')
-    map_entry.entries.append('noc_monkeys')
-    map_entry.entries.append('(-,zero_cool,)')
+    map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
     cache._WriteData(file_mock, map_entry)
 
   def testReadAutomountEntry(self):

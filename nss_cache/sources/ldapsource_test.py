@@ -453,7 +453,7 @@ class TestLdapSource(pmock.MockTestCase):
     ent = data.PopItem()
 
     self.assertEqual('test', ent.name)
-    self.assertEqual(['admins', '(-,hax0r,)'], ent.entries)
+    self.assertEqual('admins (-,hax0r,)', ent.entries)
 
   def testGetAutomountMap(self):
     """Test that GetAutomountMap returns a sensible map."""

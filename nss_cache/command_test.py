@@ -145,7 +145,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     class DummySource(sources.base.Source):
       name = 'dummy'
-      
+
       def GetPasswdMap(self, since=None):
         return maps.passwd.PasswdMap()
 
@@ -807,7 +807,7 @@ class TestStatusCommand(pmock.MockTestCase):
     class DummyUpdater(update.SingleMapUpdater):
       def GetModifyTimestamp(self):
         return 1
-      
+
       def GetUpdateTimestamp(self):
         return 2
 
@@ -875,7 +875,7 @@ class TestStatusCommand(pmock.MockTestCase):
 
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
-    
+
     c = command.Status()
     self.assertEqual(0, c.Run(self.conf, ['-m', 'passwd']))
     sys.stdout = old_stdout
@@ -927,9 +927,9 @@ class TestStatusCommand(pmock.MockTestCase):
       return self.cache_mock
 
     caches.base.Create = FakeCreate
-    
+
     c = command.Status()
-    
+
     value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf)
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
@@ -941,10 +941,11 @@ class TestStatusCommand(pmock.MockTestCase):
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
-    
+
   def testGetSingleMapMetadataTimestampEpoch(self):
     c = command.Status()
-    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=True)
+    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
+                                        epoch=True)
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
@@ -962,7 +963,7 @@ class TestStatusCommand(pmock.MockTestCase):
     # need to stub out GetSingleMapMetadata (tested above) and then
     # stub out caches.base.Create to return a cache mock that spits
     # out an iterable map for the function to use.
-    
+
     # stub out GetSingleMapMetadata
     class DummyStatus(command.Status):
       def GetSingleMapMetadata(self, unused_map_name, unused_conf,
@@ -976,14 +977,14 @@ class TestStatusCommand(pmock.MockTestCase):
                                            'location': '/etc/auto.home'}))
     master_map.Add(maps.AutomountMapEntry({'key': '/auto',
                                            'location': '/etc/auto.auto'}))
-                   
+
     # mock out a cache to return the master map
     cache_mock = self.mock()
     cache_mock\
                 .expects(pmock.once())\
                 .will(pmock.return_value(master_map))
     self.cache_mock = cache_mock
-    
+
     # stub out caches.base.Create(), is restored in tearDown()
     def FakeCreate(unused_cache_options, unused_map_name, automount_info=None):
       return self.cache_mock

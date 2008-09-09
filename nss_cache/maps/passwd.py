@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 #
 # Copyright 2007 Google Inc.
+# All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,12 +37,18 @@ class PasswdMap(base.Map):
   class Map.
   """
 
-  def __init__(self, iterable=None):
-    """Construct a PasswdMap object from optional iterable."""
-    super(PasswdMap, self).__init__(iterable)
-
   def Add(self, entry):
-    """Add a new object, verify it is a PasswdMapEntry object."""
+    """Add a new object, verify it is a PasswdMapEntry instance.
+
+    Args:
+      entry: A PasswdMapEntry instance.
+
+    Returns:
+      True if added successfully, False otherwise.
+
+    Raises:
+      TypeError: The argument is of the wrong type.
+    """
     if not isinstance(entry, PasswdMapEntry):
       raise TypeError
     return super(PasswdMap, self).Add(entry)

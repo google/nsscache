@@ -21,6 +21,7 @@
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
+import os
 import StringIO
 import sys
 import unittest
@@ -35,7 +36,7 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testRun(self):
     return_code = app.NssCacheApp().Run([], {})
-    self.assertEquals(1, return_code)
+    self.assertEquals(os.EX_USAGE, return_code)
 
   def testParseGlobalOptions(self):
     a = app.NssCacheApp()

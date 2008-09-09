@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 #
 # Copyright 2007 Google Inc.
+# All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,7 +17,15 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Update class, used for manipulating source and cache data."""
+"""Update class, used for manipulating source and cache data.
+
+These classes contains all the business logic for updating cache objects.
+They also contain the code for reading, writing, and updating timestamps.
+
+Updater:  Base class with setup and timestamp code.
+SingleMapUpdater:  Class used for all single map caches.
+AutomountMapUpdater:  Class used for updating automount map caches.
+"""
 
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
@@ -33,16 +42,30 @@ from nss_cache import error
 
 
 class Updater(object):
-  """Base class used for all the update logic.
+  """Base class which holds the setup and timestamp logic.
 
-  It holds all the timestamp manipulation, as well as forcing the child
-  classes to implement the public methods.
+  This class holds all the timestamp manipulation used by child classes and
+  callers.
+
+  Attributes:
+    log: logging.Logger instance used for output.
+    map_name: A string representing the type of the map we are an Updater for.
+    timestamp_dir: A string with the directory containing our timestamp files.
+    cache_options: A dict containing the options for any caches we create.
+    modify_file: A string with our last modified timestamp filename.
+    update_file: A string with our last updated timestamp filename.
   """
-  MODIFY_SUFFIX = '-modify'
-  UPDATE_SUFFIX = '-update'
 
   def __init__(self, map_name, timestamp_dir, cache_options,
                automount_info=None):
+    """Construct an updater object.
+
+    Args:
+      map_name: A string representing the type of the map we are an Updater for.
+      timestamp_dir: A string with the directory containing our timestamp files.
+      cache_options: A dict containing the options for any caches we create.
+      automount_info: An optional string containing automount path info.
+    """
     super(Updater, self).__init__()
     
     # Set up a logger
@@ -60,14 +83,18 @@ class Updater(object):
     else:
       # turn /auto into auto.auto, and /usr/local into /auto.usr_local
       automount_info = automount_info.lstrip('/')
-      automount_info = automount_info.replace('/','_')
+      automount_info = automount_info.replace('/', '_')
       timestamp_prefix = '%s/timestamp-%s-%s' % (timestamp_dir, map_name,
                                                  automount_info)
     self.modify_file = '%s-modify' % timestamp_prefix
     self.update_file = '%s-update' % timestamp_prefix
 
+    # Timestamp info is cached here
+    self.modify_time = None
+    self.update_time = None
+
   def _ReadTimestamp(self, filename):
-    """Return the named timestamp for this map.
+    """Return a timestamp from a file.
 
     The timestamp file format is a single line, containing a string in the
     ISO-8601 format YYYY-MM-DDThh:mm:ssZ (i.e. UTC time).  We do not support
@@ -76,10 +103,10 @@ class Updater(object):
     Timestamps internal to nss_cache deliberately do not carry milliseconds.
      
     Args:
-      filename:  the name of the file to read a timestamp from
+      filename:  A String naming the file to read from.
 
     Returns:
-      number of seconds since epoch, or None if the timestamp
+      An int with the number of seconds since epoch, or None if the timestamp
       file doesn't exist or has errors.
     """
     if not os.path.exists(filename):
@@ -114,14 +141,18 @@ class Updater(object):
     return timestamp
 
   def _WriteTimestamp(self, timestamp, filename):
-    """Write the current time as the time of last update.
+    """Write a given timestamp out to a file, converting to the ISO-8601 format.
+
+    We convert internal timestamp format (epoch) to ISO-8601 format, i.e.
+    YYYY-MM-DDThh:mm:ssZ which is basically UTC time, then write it out to a
+    file.
 
     Args:
-      timestamp: nss_cache internal timestamp format, aka time_t
-      filename: name of the file to write to.
+      timestamp: A String in nss_cache internal timestamp format, aka time_t.
+      filename: A String naming the file to write to.
 
     Returns:
-       Boolean indicating success of write
+       A boolean indicating success of write.
     """
     (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache',
                                                  dir=self.timestamp_dir)
@@ -144,14 +175,14 @@ class Updater(object):
 
   def GetUpdateTimestamp(self):
     """Return the timestamp of the last cache update.
-    
-    Args: None
 
     Returns:
-      number of seconds since epoch, or None if the timestamp
+      An int with the number of seconds since epoch, or None if the timestamp
       file doesn't exist or has errors.
     """
-    return self._ReadTimestamp(self.update_file)
+    if self.update_time is None:
+      self.update_time = self._ReadTimestamp(self.update_file)
+    return self.update_time
 
   def GetModifyTimestamp(self):
     """Return the timestamp of the last cache modification.
@@ -159,31 +190,62 @@ class Updater(object):
     Args: None
 
     Returns:
-      number of seconds since epoch, or None if the timestamp
+      An int with the number of seconds since epoch, or None if the timestamp
       file doesn't exist or has errors.
     """
-    return self._ReadTimestamp(self.modify_file)
+    if self.modify_time is None:
+      self.modify_time = self._ReadTimestamp(self.modify_file)
+    return self.modify_time
 
   def WriteUpdateTimestamp(self, update_timestamp=None):
     """Convenience method for writing the last update timestamp.
     
     Args:
-      update_timestamp: nss_cache internal timestamp format, aka time_t
-      defaulting to the current time if not specified
+      update_timestamp: An int with the number of seconds since epoch,
+        defaulting to the current time if None.
                          
     Returns:
-      boolean indicating success of write.
+      A boolean indicating success of the write.
     """
+    # blow away our cached value
+    self.update_time = None
+
+    # default to now
     if update_timestamp is None:
       update_timestamp = int(time.time())
     return self._WriteTimestamp(update_timestamp, self.update_file)
 
   def WriteModifyTimestamp(self, timestamp):
-    """Convenience method for writing the last modify timestamp."""
+    """Convenience method for writing the last modify timestamp.
+
+    Args:
+      timestamp:  An int with the number of seconds since epoch.
+      
+    Returns:
+      A boolean indicating success of the write.
+    """
+    # blow away our cached value
+    self.modify_time = None
+    
     return self._WriteTimestamp(timestamp, self.modify_file)
 
   def UpdateFromSource(self, source, incremental=True, force_write=False):
-    """Raise an exception if the child class fails to implement."""
+    """Raise an exception if the child class fails to implement.
+
+    The implementation should fetch the appropriate data for a given map (as
+    specified self.map_name) from the source object and create or update the
+    local cache copy of that data.
+
+    Args:
+      source: A sources.Source instance to update from.
+      incremental: A boolean where True is an incremental update, defaults to
+        True.
+      force_write: A boolean causing emtpy maps to be written on update when
+        True, defaults to False.
+
+    Raises:
+      NotImplementedError: A child class fails to define this method.
+    """
     raise NotImplementedError
 
 
@@ -198,37 +260,38 @@ class SingleMapUpdater(Updater):
     UpdateCacheFromSource() with that cache.
 
     Note that AutomountUpdater also calls UpdateCacheFromSource() for each
-    cache it is writing.
+    cache it is writing, hence the distinct seperation.
 
     Args:
-      source: a nss_cache.sources.Source
-      incremental: a boolean flag indicating that an incremental update
-        should be performed
-      force_write: a boolean flag forcing empty map updates
+      source: A nss_cache.sources.Source object.
+      incremental: A boolean flag indicating that an incremental update should
+        be performed, defaults to True.
+      force_write: A boolean flag forcing empty map updates, defaults to False.
 
     Returns:
-      Integer indicating success of update (0 == good, fail otherwise)
+      An int indicating success of update (0 == good, fail otherwise).
     """
-    # Create the single cache we write to:
+    # Create the single cache we write to
     cache = caches.base.Create(self.cache_options, self.map_name)
 
     return self.UpdateCacheFromSource(cache, source, incremental,
                                       force_write, location=None)
 
   def UpdateCacheFromSource(self, cache, source, incremental, force_write,
-                            location):
-    """Update a single cache, from a source.
+                            location=None):
+    """Update a single cache, from a given source.
 
     Args:
-      source: a nss_cache.sources.Source
-      incremental: a boolean flag indicating that an incremental update
-        should be performed
-      force_write: a boolean flag forcing empty map updates
-      location: the optional location in the source of this map, used by
-        automount to specify which automount map to get
+      cache: A nss_cache.caches.Cache object.
+      source: A nss_cache.sources.Source object.
+      incremental: A boolean flag indicating that an incremental update
+        should be performed if True.
+      force_write: A boolean flag forcing empty map updates if True.
+      location: The optional location in the source of this map used by
+        automount to specify which automount map to get, defaults to None.
 
     Returns:
-      Integer indicating success of update (0 == good, fail otherwise)
+      An int indicating the success of an update (0 == good, fail otherwise).
     """
     return_val = 0
     
@@ -257,17 +320,17 @@ class SingleMapUpdater(Updater):
     return return_val
 
   def IncrementalUpdateFromMap(self, cache, new_map):
-    """Merge a new map into the provided cache.
+    """Merge a given map into the provided cache.
 
     Args:
-      cache: a nss_cache.caches.Cache
-      new_map: a nss_cache.maps.Map class
+      cache: A nss_cache.caches.Cache object.
+      new_map: A nss_cache.maps.Map object.
 
     Returns:
-      Integer indicating success of update (0 == good, fail otherwise)
+      An int indicating the success of an update (0 == good, fail otherwise).
 
     Raises:
-      EmptyMap: if no cache map to merge with
+      EmptyMap: We're trying to merge into cache with an emtpy map.
     """
     return_val = 0
     
@@ -297,7 +360,20 @@ class SingleMapUpdater(Updater):
     return return_val
 
   def FullUpdateFromMap(self, cache, new_map, force_write=False):
-    """Write a new map into the provided cache (overwrites)."""
+    """Write a new map into the provided cache (overwrites).
+
+    Args:
+      cache: A nss_cache.caches.Cache object.
+      new_map: A nss_cache.maps.Map object.
+      force_write: A boolean indicating empty maps are okay to write, defaults
+        to False which means do not write them.
+
+    Returns:
+      0 if succesful, non-zero indicating number of failures otherwise.
+
+    Raises:
+      EmptyMap: Update is an empty map, not raised if force_write=True.
+    """
     return_val = 0
     
     if len(new_map) is 0 and not force_write:
@@ -322,12 +398,13 @@ class AutomountUpdater(Updater):
   of maps and updating each map as well as the list of maps.
 
   This class is written to re-use the individual update code in the
-  SingleMapUpdater class."""
+  SingleMapUpdater class.
+  """
 
   def UpdateFromSource(self, source, incremental=True, force_write=False):
     """Update the automount master map, and every map it points to.
 
-    We fetch a full copy of the master map everytime, and then uses the
+    We fetch a full copy of the master map everytime, and then use the
     SingleMapUpdater to write each map the master map points to, as well
     as the master map itself.
 
@@ -352,13 +429,14 @@ class AutomountUpdater(Updater):
     the correct cache location from the key.
         
     Args:
-      source: a nss_cache.sources.Source
-      incremental: a boolean flag indicating that an incremental update
-      should be performed
-      force_write: a boolean flag forcing empty map updates
+      source: An nss_cache.sources.Source object.
+      incremental: A boolean flag indicating that an incremental update
+        should be performed when True, defaults to True.
+      force_write: A boolean flag forcing empty map updates when False,
+        defaults to False.
 
     Returns:
-      Integer indicating success of update (0 == good, fail otherwise)
+      An int indicating success of update (0 == good, fail otherwise).
     """
     return_val = 0
     
@@ -369,7 +447,7 @@ class AutomountUpdater(Updater):
     for map_entry in master_map:
       
       source_location = map_entry.location  # e.g. ou=auto.auto in ldap
-      automount_info = map_entry.key  # e.g. /auto mountpoint
+      automount_info = map_entry.key        # e.g. /auto mountpoint
       self.log.info('Updating %s mount.', automount_info)
       
       # create the cache to update

@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 #
 # Copyright 2007 Google Inc.
+# All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,15 +24,15 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 import time
 import unittest
 
+from nss_cache import error
 from nss_cache import maps
 
 
 class TestPasswdMap(unittest.TestCase):
   """Tests for the PasswdMap class."""
 
-  def __init__(self, obj):
+  def setUp(self):
     """Set some default avalible data for testing."""
-    super(TestPasswdMap, self).__init__(obj)
     self._good_entry = maps.PasswdMapEntry()
     self._good_entry.name = 'foo'
     self._good_entry.passwd = 'x'
@@ -72,8 +73,8 @@ class TestPasswdMap(unittest.TestCase):
   def testContains(self):
     """Verify __contains__ works, and does a deep compare."""
     pentry_good = self._good_entry
-    pentry_likegood = maps.PasswdMapEntry()
-    pentry_likegood.name = 'foo'  # same Key(), but rest of attributes differ
+    pentry_like_good = maps.PasswdMapEntry()
+    pentry_like_good.name = 'foo'  # same Key(), but rest of attributes differ
     pentry_bad = maps.PasswdMapEntry()
     pentry_bad.name = 'bar'
     
@@ -83,8 +84,8 @@ class TestPasswdMap(unittest.TestCase):
                     msg='expected entry to be in map')
     self.assertFalse(pentry_bad in pmap,
                      msg='did not expect entry to be in map')
-    self.assertFalse(pentry_likegood in pmap,
-                    msg='__contains__ not doing a deep compare')
+    self.assertFalse(pentry_like_good in pmap,
+                     msg='__contains__ not doing a deep compare')
 
   def testIterate(self):
     """Check that we can iterate over PasswdMap."""
@@ -116,7 +117,7 @@ class TestPasswdMap(unittest.TestCase):
     self.assertTrue(pmap.Exists(entry))
 
   def testMerge(self):
-    """Verify Merge() throws TypeError and correctly merges objects."""
+    """Verify Merge() throws the right exceptions and correctly merges."""
     
     # Setup some MapEntry objects with distinct Key()s
     pentry1 = self._good_entry
@@ -151,6 +152,14 @@ class TestPasswdMap(unittest.TestCase):
     gmap = maps.GroupMap()
     self.assertRaises(TypeError, pmap_big.Merge, gmap)
 
+    # Merge an older map should throw an UnsupportedMap
+    old_map = maps.PasswdMap(modify_time=1)
+    new_map = maps.PasswdMap(modify_time=2)
+    self.assertRaises(error.UnsupportedMap, new_map.Merge, old_map)
+    old_map = maps.PasswdMap(update_time=1)
+    new_map = maps.PasswdMap(update_time=2)
+    self.assertRaises(error.UnsupportedMap, new_map.Merge, old_map)
+
   def testPopItem(self):
     """Verify you can retrieve MapEntry with PopItem."""
     pmap = maps.PasswdMap([self._good_entry])
@@ -158,18 +167,14 @@ class TestPasswdMap(unittest.TestCase):
 
   def testLastModificationTimestamp(self):
     """Test setting/getting of timestamps on maps."""
-    
     m = maps.PasswdMap()
-    
     # we only work in whole-second resolution
     now = int(time.time())
     
     m.SetModifyTimestamp(now)
-    
     self.assertEqual(now, m._last_modification_timestamp)
 
     ts = m.GetModifyTimestamp()
-    
     self.assertEqual(now, ts)
 
 
@@ -181,7 +186,8 @@ class TestPasswdMapEntry(unittest.TestCase):
     entry = maps.PasswdMapEntry()
     self.assertEquals(type(entry), maps.PasswdMapEntry,
                       msg='Could not create empty PasswdMapEntry')
-    seed = {'name': 'foo', 'uid': 10, 'gid': 10}
+    seed = {'name': 'foo', 'passwd': 'x', 'uid': 10, 'gid': 10, 'gecos': '',
+            'dir': '', 'shell': ''}
     entry = maps.PasswdMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded PasswdMapEntry')
@@ -230,7 +236,9 @@ class TestPasswdMapEntry(unittest.TestCase):
     
     # Setup some things to compare
     entry_good = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    entry_same_as_good = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    entry_same_as_good = maps.PasswdMapEntry({'name': 'foo',
+                                              'uid': 10,
+                                              'gid': 10})
     entry_like_good = maps.PasswdMapEntry()
     entry_like_good.name = 'foo'  # same Key(), but rest of attributes differ
     entry_bad = maps.PasswdMapEntry()
@@ -241,7 +249,7 @@ class TestPasswdMapEntry(unittest.TestCase):
     self.assertEquals(entry_good, entry_same_as_good,
                       msg='__eq__ not doing deep compare')
     self.assertNotEqual(entry_good, entry_like_good,
-                      msg='__eq__ not doing deep compare')
+                        msg='__eq__ not doing deep compare')
     self.assertNotEqual(entry_good, entry_bad,
                         msg='unexpected equality')
     
@@ -257,6 +265,7 @@ class TestPasswdMapEntry(unittest.TestCase):
     entry = maps.PasswdMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
+
 
 if __name__ == '__main__':
   unittest.main()

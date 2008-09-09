@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 #
 # Copyright 2007 Google Inc.
+# All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,11 +19,8 @@
 
 """Unit test for base.py.
 
-TestMap:  Tests the Map class.
-  test_IsAbstract():  Class should refuse to instantiate.
-
-TestMapEntry():  Tests the MapEntry class.
-  test_IsAbstract():  Class should refuse to instantiate.
+Since these are abstract classes, the bulk of the functionality in base.py is
+specifically tested in passwd_test.py instead.
 """
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -40,8 +38,6 @@ class TestMap(unittest.TestCase):
   def testIsAbstract(self):
     """Creating a Map should raise a TypeError."""
     self.assertRaises(TypeError, base.Map)
-
-  # Remaining functionality tested in subclasses, e.g. append(), etc.
 
 
 class TestMapEntry(unittest.TestCase):
