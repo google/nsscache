@@ -90,9 +90,9 @@ class TestFilesCache(pmock.MockTestCase):
     """We correctly write a typical entry in /etc/passwd format."""
     cache = files.FilesPasswdMapHandler(self.config)
     file_mock = self.mock()
-    file_mock\
-               .expects(pmock.once())\
-               .write(pmock.eq('root:x:0:0:Rootsy:/root:/bin/bash\n'))
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(pmock.eq('root:x:0:0:Rootsy:/root:/bin/bash\n'))
+    
     map_entry = maps.PasswdMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
@@ -118,9 +118,9 @@ class TestFilesCache(pmock.MockTestCase):
     """We correctly write a typical entry in /etc/group format."""
     cache = files.FilesGroupMapHandler(self.config)
     file_mock = self.mock()
-    file_mock\
-               .expects(pmock.once())\
-               .write(pmock.eq('root:x:0:zero_cool,acid_burn\n'))
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(pmock.eq('root:x:0:zero_cool,acid_burn\n'))
+    
     map_entry = maps.GroupMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
@@ -148,9 +148,9 @@ class TestFilesCache(pmock.MockTestCase):
     """We correctly write a typical entry in /etc/shadow format."""
     cache = files.FilesShadowMapHandler(self.config)
     file_mock = self.mock()
-    file_mock\
-               .expects(pmock.once())\
-               .write(pmock.eq('root:$1$zomgmd5support:::::::\n'))
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(pmock.eq('root:$1$zomgmd5support:::::::\n'))
+    
     map_entry = maps.ShadowMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = '$1$zomgmd5support'
@@ -179,10 +179,10 @@ class TestFilesCache(pmock.MockTestCase):
     """We correctly write a typical entry in /etc/netgroup format."""
     cache = files.FilesNetgroupMapHandler(self.config)
     file_mock = self.mock()
-    file_mock\
-               .expects(pmock.once())\
-               .write(pmock.eq(
-                   'administrators unix_admins noc_monkeys (-,zero_cool,)\n'))
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(
+        pmock.eq('administrators unix_admins noc_monkeys (-,zero_cool,)\n'))
+    
     map_entry = maps.NetgroupMapEntry()
     map_entry.name = 'administrators'
     map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
@@ -198,16 +198,36 @@ class TestFilesCache(pmock.MockTestCase):
     self.assertEqual(map_entry.options, '-tcp,rw,intr,bg')
     self.assertEqual(map_entry.location, 'fileserver:/scratch')
 
+  def testReadAutmountEntryWithExtraWhitespace(self):
+    """Extra whitespace doesn't break the parsing."""
+    cache = files.FilesAutomountMapHandler(self.config)
+    file_entry = 'scratch  fileserver:/scratch'
+    map_entry = cache._ReadEntry(file_entry)
+
+    self.assertEqual(map_entry.key, 'scratch')
+    self.assertEqual(map_entry.options, None)
+    self.assertEqual(map_entry.location, 'fileserver:/scratch')
+
   def testWriteAutomountEntry(self):
     """We correctly write a typical entry in /etc/auto.* format."""
     cache = files.FilesAutomountMapHandler(self.config)
     file_mock = self.mock()
-    file_mock\
-               .expects(pmock.once())\
-               .write(pmock.eq('scratch -tcp,rw,intr,bg fileserver:/scratch\n'))
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(pmock.eq('scratch -tcp,rw,intr,bg fileserver:/scratch\n'))
+    
     map_entry = maps.AutomountMapEntry()
     map_entry.key = 'scratch'
     map_entry.options = '-tcp,rw,intr,bg'
+    map_entry.location = 'fileserver:/scratch'
+    cache._WriteData(file_mock, map_entry)
+
+    file_mock = self.mock()
+    invocation = file_mock.expects(pmock.once())
+    invocation.write(pmock.eq('scratch fileserver:/scratch\n'))
+    
+    map_entry = maps.AutomountMapEntry()
+    map_entry.key = 'scratch'
+    map_entry.options = None
     map_entry.location = 'fileserver:/scratch'
     cache._WriteData(file_mock, map_entry)
 

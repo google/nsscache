@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4 -E
+#!/usr/bin/python -E
 #
 # Copyright 2007 Google Inc.
 #
@@ -21,21 +21,15 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import logging
 import os
 import sys
-import traceback
 
 from nss_cache import app
 
 if __name__ == '__main__':
-  try:
-    app = app.NssCacheApp()
-    return_value = app.Run(sys.argv[1:], os.environ)
-  except:
-    for line in traceback.format_exception(*sys.exc_info()):
-      app.log.critical(line.rstrip('\n'))
-    raise
-
-  app.log.info('Exiting nsscache')
-  app.log.debug('with value %d', return_value)
+  nsscache_app = app.NssCacheApp()
+  return_value = nsscache_app.Run(sys.argv[1:], os.environ)
+  nsscache_app.log.info('Exiting nsscache')
+  nsscache_app.log.debug('with value %d', return_value)
   sys.exit(return_value)

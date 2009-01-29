@@ -22,12 +22,19 @@ __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import bsddb
 import os
-import subprocess
+import popen2
 
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
+
+# python2.3 has no builtin set() class
+try:
+  Set = set
+except NameError:
+  import sets
+  Set = sets.Set
 
 
 class NssDbCache(base.Cache):
@@ -100,16 +107,16 @@ class NssDbCache(base.Cache):
     """Run 'makedb' in a subprocess and return it to use for streaming.
 
     Returns:
-      makedb: a subprocess object
+      (tochild, fromchild): stdin and stdout of makedb subprocess
     """
+    # TODO(jaq): this should probably raise a better exception and be handled
+    # gracefully
+    if not os.path.exists(self.makedb):
+      self.log.warn('makedb binary %s does not exist, cannot generate '
+                    'bdb map', self.makedb)
     self.log.debug('executing makedb: %s - %s',
                    self.makedb, self.cache_filename)
-    makedb = subprocess.Popen([self.makedb, '-', self.cache_filename],
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              close_fds=True)
-    return makedb
+    return popen2.Popen4([self.makedb, '-', self.cache_filename])
 
   def Write(self, map_data):
     """Write the map to the cache file.
@@ -122,10 +129,10 @@ class NssDbCache(base.Cache):
       map_data: A Map subclass
 
     Returns:
-      a set() of keys written or None on failure.
+      a Set() of keys written or None on failure.
     """
     self._Begin()
-    written_keys = set()
+    written_keys = Set()
 
     try:
       makedb = self._SpawnMakeDb()
@@ -134,31 +141,32 @@ class NssDbCache(base.Cache):
       try:
         while 1:
           entry = map_data.PopItem()
-          if makedb.poll() is not None:
+          if makedb.poll() != -1:
             self.log.error('early exit from makedb! child output: %s',
-                           makedb.stdout.read())
+                           makedb.fromchild.read())
             # in this case, no matter how the child exited, we complain
             return None
-          self.WriteData(makedb.stdin, entry, enumeration_index)
+          self.WriteData(makedb.tochild, entry, enumeration_index)
           written_keys.update(self.ExpectedKeysForEntry(entry))
           enumeration_index += 1
       except KeyError:
         # expected when PopItem() is done, and breaks our loop for us.
         pass
 
+      makedb.tochild.close()
       self.log.debug('%d entries written, %d keys', enumeration_index,
                      len(written_keys))
-      makedb.stdin.close()
 
-      map_data = makedb.stdout.read()
+      map_data = makedb.fromchild.read()
+      makedb.fromchild.close()
       if map_data:
         self.log.debug('makedb output: %r', map_data)
 
       if self._DecodeExitCode(makedb.wait()):
         return written_keys
-      
+
       return None
-      
+
     except:
       self._Rollback()
       raise
@@ -174,7 +182,7 @@ class NssDbCache(base.Cache):
     back and verifying that it loads and has the entries we expect.
 
     Args:
-      written_keys: a set() of keys that should have been written to disk.
+      written_keys: a Set() of keys that should have been written to disk.
 
     Returns:
       boolean indicating success.
@@ -186,7 +194,7 @@ class NssDbCache(base.Cache):
     db = bsddb.btopen(self.cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
-    cache_keys = set(db)
+    cache_keys = Set(db)
     db.close()
 
     written_key_count = len(written_keys)

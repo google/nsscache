@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2007-05-15 "nsscache 0.8" "File formats"
+.TH NSSCACHE.CONF 5 2008-11-19 "nsscache 0.8.5" "File formats"
 .SH NAME
 nsscache.conf \- NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -185,6 +185,13 @@ current directory.
 A suffix appended to the cache filename to differentiate it from, say,
 system NSS databases.  Defaults to '.cache'.
 
+.TP
+.B files_local_automount_master
+A yes/no field only used for automount maps.  A 'yes' value will cause nsscache
+to update the auto.master file with the master map from the source.  A 'no'
+value will cause nsscache to leave auto.master alone, allowing the system to
+manage this file in other ways.  When set to 'no', nsscache will only update
+other automount maps defined both locally and in the source.  Defaults to 'yes'.
 
 .SH EXAMPLE
 A typical example might look like this:

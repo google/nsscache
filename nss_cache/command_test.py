@@ -23,6 +23,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import grp
 import logging
+import os
 import pwd
 import StringIO
 import sys
@@ -66,17 +67,16 @@ class TestCommand(pmock.MockTestCase):
       self.assertEquals(filename, None)
       return self.mock_lock
 
-    self.mock_lock = self.mock()
-    self.mock_lock\
-                    .expects(pmock.once())\
-                    .Lock(force=pmock.eq(False))\
-                    .will(pmock.return_value('LOCK'))\
-                    .id('first')
-    self.mock_lock\
-                    .expects(pmock.once())\
-                    .Lock(force=pmock.eq(False))\
-                    .will(pmock.return_value('MORLOCK'))\
-                    .after('first')
+    mock_lock = self.mock()
+    invocation = mock_lock.expects(pmock.once())
+    invocation = invocation.Lock(force=pmock.eq(False))
+    invocation.will(pmock.return_value('LOCK')).id('first')
+    
+    invocation = mock_lock.expects(pmock.once())
+    invocation = invocation.Lock(force=pmock.eq(False))
+    invocation.will(pmock.return_value('MORLOCK')).after('first')
+
+    self.mock_lock = mock_lock
 
     original_pidfile = lock.PidFile
     lock.PidFile = FakePidFile
@@ -94,11 +94,12 @@ class TestCommand(pmock.MockTestCase):
     c.lock = None
 
   def testForceLock(self):
+    
     mock_lock = self.mock()
-    mock_lock\
-               .expects(pmock.once())\
-               .Lock(force=pmock.eq(True))\
-               .will(pmock.return_value('LOCK'))\
+
+    invocation = mock_lock.expects(pmock.once())
+    invocation = invocation.Lock(force=pmock.eq(True))
+    invocation.will(pmock.return_value('LOCK'))
 
     c = command.Command()
     c.lock = mock_lock
@@ -169,7 +170,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     self.conf = DummyConfig()
     self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
-                           config.MAP_AUTOMOUNT: config.MapOptions()}
+                         config.MAP_AUTOMOUNT: config.MapOptions()}
     self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
     self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
     self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy'}
@@ -248,11 +249,10 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 'cache'
 
     lock_mock = self.mock()
-    lock_mock\
-               .expects(pmock.once())\
-               ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
-               .will(pmock.return_value(True))
-
+    invocation = lock_mock.expects(pmock.once())
+    invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(False))
+    invocation.will(pmock.return_value(True))
+    
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
 
@@ -270,10 +270,9 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 'cache'
 
     lock_mock = self.mock()
-    lock_mock\
-               .expects(pmock.once())\
-               ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
-               .will(pmock.return_value(True))
+    invocation = lock_mock.expects(pmock.once())
+    invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(False))
+    invocation.will(pmock.return_value(True))
 
     self.conf.maps = [config.MAP_AUTOMOUNT]
     self.conf.cache = 'dummy'
@@ -300,10 +299,9 @@ class TestUpdateCommand(pmock.MockTestCase):
     update.SingleMapUpdater = BrokenUpdater
 
     lock_mock = self.mock()
-    lock_mock\
-               .expects(pmock.once())\
-               ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
-               .will(pmock.return_value(True))
+    invocation = lock_mock.expects(pmock.once())
+    invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(False))
+    invocation.will(pmock.return_value(True))
 
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
@@ -316,11 +314,10 @@ class TestUpdateCommand(pmock.MockTestCase):
 
   def testUpdateMapsCanForceLock(self):
     lock_mock = self.mock()
-    lock_mock\
-               .expects(pmock.once())\
-               ._Lock(path=pmock.eq(None), force=pmock.eq(True))\
-               .will(pmock.return_value(False))
-
+    invocation = lock_mock.expects(pmock.once())
+    invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(True))
+    invocation.will(pmock.return_value(False))
+    
     c = command.Update()
     c._Lock = lock_mock._Lock
     self.assertEquals(c.UpdateMaps(self.conf, False, force_lock=True),
@@ -340,10 +337,10 @@ class TestUpdateCommand(pmock.MockTestCase):
     sleep = time.sleep
     time.sleep = FakeSleep
 
-    update = command.Update()
-    update.UpdateMaps = FakeUpdateMaps
+    c = command.Update()
+    c.UpdateMaps = FakeUpdateMaps
 
-    update.Run(self.conf, ['-s', '1'])
+    c.Run(self.conf, ['-s', '1'])
 
     time.sleep = sleep
 
@@ -377,10 +374,9 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 'cache'
 
     lock_mock = self.mock()
-    lock_mock\
-               .expects(pmock.once())\
-               ._Lock(path=pmock.eq(None), force=pmock.eq(False))\
-               .will(pmock.return_value(True))
+    invocation = lock_mock.expects(pmock.once())
+    invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(False))
+    invocation.will(pmock.return_value(True))
 
     caches.base.Create = FakeCreate
     c = command.Update()
@@ -516,7 +512,7 @@ class TestVerifyCommand(pmock.MockTestCase):
     c.VerifyMaps = FakeVerifyMaps
 
     self.assertEquals(0, c.Run(self.conf, ['-m',
-                                             config.MAP_PASSWORD]))
+                                           config.MAP_PASSWORD]))
 
   def testVerifyMapsSucceedsOnGoodMaps(self):
 
@@ -526,10 +522,8 @@ class TestVerifyCommand(pmock.MockTestCase):
       return self.big_map
 
     cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-                            .expects(pmock.once())\
-                            .GetMap()\
-                            .will(pmock.return_value(self.small_map))
+    invocation = cache_map_handler_mock.expects(pmock.once())
+    invocation.GetMap().will(pmock.return_value(self.small_map))
 
     def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
@@ -559,10 +553,8 @@ class TestVerifyCommand(pmock.MockTestCase):
       return self.small_map
 
     cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-                            .expects(pmock.once())\
-                            .GetMap()\
-                            .will(pmock.return_value(self.big_map))
+    invocation = cache_map_handler_mock.expects(pmock.once())
+    invocation.GetMap().will(pmock.return_value(self.big_map))
 
     def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
@@ -592,10 +584,8 @@ class TestVerifyCommand(pmock.MockTestCase):
       return self.small_map
 
     cache_map_handler_mock = self.mock()
-    cache_map_handler_mock\
-                            .expects(pmock.once())\
-                            .GetMap()\
-                            .will(pmock.raise_exception(error.CacheNotFound))
+    invocation = cache_map_handler_mock.expects(pmock.once())
+    invocation.GetMap().will(pmock.raise_exception(error.CacheNotFound))
 
     def FakeCreate(conf, map_name):
       """Stub routine returning a pmock to test VerifyMaps."""
@@ -643,11 +633,11 @@ class TestVerifyCommand(pmock.MockTestCase):
                         self.conf.options[config.MAP_PASSWORD].source)
       return self.source_mock
 
-    self.source_mock = self.mock()
-    self.source_mock\
-                      .expects(pmock.once())\
-                      .Verify()\
-                      .will(pmock.return_value(0))
+    source_mock = self.mock()
+    invocation = source_mock.expects(pmock.once())
+    invocation.Verify().will(pmock.return_value(0))
+
+    self.source_mock = source_mock
 
     old_source_base_create = sources.base.Create
     sources.base.Create = FakeCreate
@@ -669,11 +659,11 @@ class TestVerifyCommand(pmock.MockTestCase):
                         self.conf.options[config.MAP_PASSWORD].source)
       return self.source_mock
 
-    self.source_mock = self.mock()
-    self.source_mock\
-                      .expects(pmock.once())\
-                      .Verify()\
-                      .will(pmock.return_value(1))
+    source_mock = self.mock()
+    invocation = source_mock.expects(pmock.once())
+    invocation.Verify().will(pmock.return_value(1))
+
+    self.source_mock = source_mock
 
     old_source_base_create = sources.base.Create
     sources.base.Create = FakeCreate
@@ -772,7 +762,7 @@ class TestRepairCommand(unittest.TestCase):
     c = command.Repair()
 
     self.assertEquals(1, c.Run(self.conf, ['-m',
-                                             config.MAP_PASSWORD]))
+                                           config.MAP_PASSWORD]))
 
 
 class TestHelpCommand(unittest.TestCase):
@@ -914,10 +904,9 @@ class TestStatusCommand(pmock.MockTestCase):
 
     # cache mock is returned by FakeCreate() for automount maps
     cache_mock = self.mock()
-    cache_mock\
-                .expects(pmock.once())\
-                .GetMapLocation()\
-                .will(pmock.return_value('/etc/auto.master'))
+    invocation = cache_mock.expects(pmock.once())
+    invocation.GetMapLocation().will(pmock.return_value('/etc/auto.master'))
+    
     self.cache_mock = cache_mock
 
     # FakeCreate() is to be called by GetSingleMapMetadata for automount maps
@@ -954,8 +943,13 @@ class TestStatusCommand(pmock.MockTestCase):
     self.assertEqual(2, value_dict['last-update-timestamp'])
 
   def testGetSingleMapMetadataTimestampEpochFalse(self):
+    # set the timezone so we get a consistent return value
+    os.environ['TZ'] = 'US/Pacific'
+    time.tzset()
+
     c = command.Status()
-    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=False)
+    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
+                                        epoch=False)
     self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
                          value_dict['last-update-timestamp'])
 
@@ -980,9 +974,8 @@ class TestStatusCommand(pmock.MockTestCase):
 
     # mock out a cache to return the master map
     cache_mock = self.mock()
-    cache_mock\
-                .expects(pmock.once())\
-                .will(pmock.return_value(master_map))
+    invocation = cache_mock.expects(pmock.once())
+    invocation.will(pmock.return_value(master_map))
     self.cache_mock = cache_mock
 
     # stub out caches.base.Create(), is restored in tearDown()

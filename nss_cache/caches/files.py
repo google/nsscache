@@ -29,6 +29,12 @@ from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
 
+try:
+  SetType = set
+except NameError:
+  import sets
+  SetType = sets.Set
+
 
 class FilesCache(base.Cache):
   """An implementation of a Cache specific to nss_files module.
@@ -90,7 +96,7 @@ class FilesCache(base.Cache):
     back and verifying that it parses and has the entries we expect.
 
     Args:
-      written_keys: a set() of keys that should have been written to disk.
+      written_keys: a set of keys that should have been written to disk.
 
     Returns:
       a boolean indicating success.
@@ -108,7 +114,7 @@ class FilesCache(base.Cache):
       # See nssdb.py Verify for a comment about this raise
       raise error.EmptyMap
 
-    cache_keys = set()
+    cache_keys = SetType()
     # Use PopItem() so we free our memory if multiple maps are Verify()ed.
     try:
       while 1:
@@ -147,10 +153,10 @@ class FilesCache(base.Cache):
       map_data: A Map subclass containing the entire map to be written.
 
     Returns:
-      a set() of keys written or None on failure.
+      a set of keys written or None on failure.
     """
     self._Begin()
-    written_keys = set()
+    written_keys = SetType()
     
     try:
       while 1:
@@ -345,7 +351,7 @@ class FilesNetgroupMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write a NetgroupMapEntry to the target cache."""
-    if len(entry.entries):
+    if entry.entries:
       netgroup_entry = '%s %s' % (entry.name, entry.entries)
     else:
       netgroup_entry = entry.name
@@ -360,7 +366,7 @@ class FilesNetgroupMapHandler(FilesCache):
     index = line.find(' ')
 
     if index == -1:
-      if len(line):
+      if line:
         # empty group is OK, as long as the line isn't blank
         map_entry.name = line
         return map_entry
@@ -384,8 +390,8 @@ class FilesAutomountMapHandler(FilesCache):
 
   def __init__(self, conf, map_name=None, automount_info=None):
     if map_name is None: map_name = config.MAP_AUTOMOUNT
-    super(FilesAutomountMapHandler, self).__init__(
-      conf, map_name, automount_info=automount_info)
+    super(FilesAutomountMapHandler,
+          self).__init__(conf, map_name, automount_info=automount_info)
     
     if automount_info is None:
       # we are dealing with the master map
@@ -393,7 +399,7 @@ class FilesAutomountMapHandler(FilesCache):
     else:
       # turn /auto into auto.auto, and /usr/local into /auto.usr_local
       automount_info = automount_info.lstrip('/')
-      self.CACHE_FILENAME = 'auto.%s' % automount_info.replace('/','_')
+      self.CACHE_FILENAME = 'auto.%s' % automount_info.replace('/', '_')
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -408,14 +414,15 @@ class FilesAutomountMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write an AutomountMapEntry to the target cache."""
-    automount_entry = '%s %s %s' % (entry.key,
-                                    entry.options or '',
-                                    entry.location)
+    if entry.options is not None:
+      automount_entry = '%s %s %s' % (entry.key, entry.options, entry.location)
+    else:
+      automount_entry = '%s %s' % (entry.key, entry.location)
     target.write(automount_entry + '\n')
 
   def _ReadEntry(self, line):
     """Return an AutomountMapEntry from a record in the target cache."""
-    line = line.split(' ')
+    line = line.split()
     map_entry = maps.AutomountMapEntry()
     map_entry.key = line[0]
     if len(line) > 2:

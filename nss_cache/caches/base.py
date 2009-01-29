@@ -59,7 +59,7 @@ def Create(conf, map_name, automount_info=None):
    map_name: a string identifying the map name to handle
    automount_info: A string containing the automount mountpoint, used only
      by automount maps.
-   
+
   Returns:
     an instance of a Cache
 
@@ -118,7 +118,7 @@ class Cache(object):
     # Store config info
     self.conf = conf
     self.output_dir = conf.get('dir', '.')
-    
+
     # Setup the map we may be asked to load our cache into.
     if map_name == config.MAP_PASSWORD:
       self.data = maps.PasswdMap()
@@ -167,6 +167,8 @@ class Cache(object):
     # new cache, but we might instead want to reserve the space on
     # disk for a timestamp first -- thus needing a write/commit pair
     # of functions for a timestamp.  Edge case, so not bothering for now.
+    self.cache_file.flush()
+    os.fsync(self.cache_file.fileno())
     self.cache_file.close()
     os.chmod(self.cache_filename,
              stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
@@ -197,7 +199,7 @@ class Cache(object):
 
     This is used by automount maps so far, and must be implemented in the
     child class only if it is to support automount maps.
-    
+
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
@@ -209,7 +211,7 @@ class Cache(object):
 
     Args:
       map_data: optional Map object to overwrite our current data with.
-      
+
     Returns:
       0 if succesful, 1 if not
     """
@@ -220,11 +222,11 @@ class Cache(object):
 
     entries_written = self.Write(writable_map)
     # N.B. Write is destructive, len(writable_map) == 0 now.
-    
+
     if entries_written is None:
       self.log.warn('cache write failed, exiting')
       return 1
-    
+
     if self.Verify(entries_written):
       # TODO(jaq): in the future we should handle return codes from
       # Commit()

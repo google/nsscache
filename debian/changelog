@@ -1,3 +1,30 @@
+nsscache (0.8.6-1) hardy; urgency=low
+
+  * Worked around set(), subprocess, ConfigParser, and logging to allow
+    nsscache to run on python2.3 systems.  (code.google.com issue #15)
+  * Call flush after write and fsync before close on timestamps
+    and temporary files to ensure data is committed to disk before
+    renaming to overwrite old data, reducing chance of data loss.
+
+ -- Jamie Wilkinson <jaq@google.com>  Thu, 29 Jan 2009 13:16:00 +1100
+
+nsscache (0.8.5-1) hardy; urgency=low
+
+  * add local_automaster flag to the automount section of the files backend,
+    to allow for local control over which automount masters are enabled and
+    updated
+  * fix files backend to not write extra whitespace with empty automount
+    options, and to properly parse extra whitespace on read
+
+ -- V Hoffman <vasilios@google.com>  Wed, 19 Nov 2008 16:24:58 +0900
+
+nsscache (0.8.4-1) hardy; urgency=low
+
+  * some style cleanups as I encountered them
+  * fixed timezone dependancy in unit test
+
+ -- V Hoffman <vasilios@google.com>  Wed, 12 Nov 2008 18:08:59 +0900
+
 nsscache (0.8.3-1) unstable; urgency=low
 
   * New upstream version

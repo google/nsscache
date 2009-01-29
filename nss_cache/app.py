@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -38,7 +38,14 @@ from nss_cache import config
 from nss_cache import error
 
 
-class NssCacheLogger(logging.getLoggerClass()):
+# Hack to support python 2.3's logging module
+try:
+  BaseLoggingClass = logging.getLoggerClass()
+except AttributeError:
+  BaseLoggingClass = logging.Logger
+
+
+class NssCacheLogger(BaseLoggingClass):
   """Custom logger class for nss_cache.
 
   This class defines two extra logging levels, VERBOSE which is for
@@ -73,7 +80,10 @@ class NssCacheApp(object):
     """
     # default to syslog unless on a tty
     if os.isatty(sys.stdin.fileno()):
-      logging.basicConfig(level=logging.WARN)
+      logging.basicConfig()
+      # python2.3's basicConfig doesn't let you set the default level
+      logger = logging.getLogger()
+      logger.setLevel(logging.WARN)
     else:
       facility = logging.handlers.SysLogHandler.LOG_DAEMON
       try:

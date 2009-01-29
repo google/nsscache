@@ -1,7 +1,6 @@
 #!/usr/bin/python2.4
 #
 # Copyright 2007 Google Inc.
-# All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -287,7 +286,7 @@ class AutomountUpdaterTest(pmock.MockTestCase):
 
   def setUp(self):
     # register a dummy SingleMapUpdater, because that is tested above,
-          
+    
     self.original_single_map_updater = update.SingleMapUpdater
     update.SingleMapUpdater = AutomountUpdaterTest.DummyUpdater
 
@@ -296,6 +295,19 @@ class AutomountUpdaterTest(pmock.MockTestCase):
   def tearDown(self):
     update.SingleMapUpdater = self.original_single_map_updater
     os.rmdir(self.workdir)
+
+  def testInit(self):
+    """An automount object correctly sets map-specific attributes."""
+    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
+    self.assertEqual(updater.local_master, False)
+
+    conf = {update.AutomountUpdater.OPT_LOCAL_MASTER: 'yes'}
+    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    self.assertEqual(updater.local_master, True)
+    
+    conf = {update.AutomountUpdater.OPT_LOCAL_MASTER: 'no'}
+    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    self.assertEqual(updater.local_master, False)
 
   def testUpdate(self):
     """An update gets a master map and updates each entry."""
@@ -363,6 +375,72 @@ class AutomountUpdaterTest(pmock.MockTestCase):
 
     self.assertEqual(map_entry1.location, '/etc/auto.home')
     self.assertEqual(map_entry2.location, '/etc/auto.auto')
+
+  def testUpdateNoMaster(self):
+    """An update skips updating the master map, and approprate sub maps."""
+    source_entry1 = maps.AutomountMapEntry()
+    source_entry2 = maps.AutomountMapEntry()
+    source_entry1.key = '/home'
+    source_entry2.key = '/auto'
+    source_entry1.location = 'ou=auto.home,ou=automounts'
+    source_entry2.location = 'ou=auto.auto,ou=automounts'
+    source_master = maps.AutomountMap([source_entry1, source_entry2])
+
+    local_entry1 = maps.AutomountMapEntry()
+    local_entry2 = maps.AutomountMapEntry()
+    local_entry1.key = '/home'
+    local_entry2.key = '/auto'
+    local_entry1.location = '/etc/auto.home'
+    local_entry2.location = '/etc/auto.null'
+    local_master = maps.AutomountMap([local_entry1, local_entry2])
     
+    source_mock = self.mock()
+    # return the source master map
+    invocation = source_mock.expects(pmock.once())
+    invocation = invocation.GetAutomountMasterMap()
+    invocation.will(pmock.return_value(source_master))
+    # we should get called inside the DummyUpdater, too.
+    invocation = source_mock.expects(pmock.once())
+    invocation._CalledUpdateCacheFromSource()
+
+    # the auto.home cache
+    cache_mock1 = self.mock()
+    # GetMapLocation() is called, and set to the master map map_entry
+    invocation = cache_mock1.expects(pmock.once()).GetMapLocation()
+    invocation.will(pmock.return_value('/etc/auto.home'))
+    # we should get called inside the DummyUpdater
+    cache_mock1.expects(pmock.once())._CalledUpdateCacheFromSource()
+
+    # the auto.auto cache
+    cache_mock2 = self.mock()
+    # GetMapLocation() is called, and set to the master map map_entry
+    invocation = cache_mock2.expects(pmock.once()).GetMapLocation()
+    invocation.will(pmock.return_value('/etc/auto.auto'))    
+
+    # the auto.master cache, which should not be written to
+    cache_mock3 = self.mock()
+    invocation = cache_mock3.expects(pmock.once())
+    invocation = invocation.GetMap()
+    invocation.will(pmock.return_value(local_master))
+
+    cache_mocks = {'/home': cache_mock1, '/auto': cache_mock2,
+                   None: cache_mock3}
+    
+    # Create needs to return our mock_caches
+    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+      # the order of the master_map iterable is not predictable, so we use the
+      # automount_info as the key to return the right one.
+      return cache_mocks[automount_info]
+
+    original_create = caches.base.Create
+    caches.base.Create = DummyCreate
+
+    skip = update.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+                                      {skip: 'yes'})
+    updater.UpdateFromSource(source_mock)
+
+    caches.base.Create = original_create
+
 if __name__ == '__main__':
   unittest.main()

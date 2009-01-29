@@ -165,8 +165,8 @@ class TestNSS(pmock.MockTestCase):
                .read()\
                .will(pmock.return_value(None))
 
-    self.mock_getent.stdout = lines
-    self.mock_getent.stderr = mock_read
+    self.mock_getent.fromchild = lines
+    self.mock_getent.childerr = mock_read
 
     entry1 = maps.ShadowMapEntry()
     entry1.name = 'foo'

@@ -142,6 +142,7 @@ class LdapSource(base.Source):
       except ldap.SERVER_DOWN, e:
         retry_count += 1
         self.log.warning('Failed LDAP connection: attempt #%s.', retry_count)
+        self.log.debug('ldap error is %r', e)
         if retry_count == configuration['retry_max']:
           self.log.debug('max retries hit')
           raise error.SourceUnavailable(e)

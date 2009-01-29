@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -143,12 +143,7 @@ def LoadConfig(configuration):
   # load config file
   configuration.log.debug('Attempting to parse configuration file: %s',
                           configuration.config_file)
-  loaded = parser.read(configuration.config_file)
-  if loaded:
-    configuration.log.debug('Succesfully parsed configuration file: %s',
-                            configuration.config_file)
-  else:
-    raise error.NoConfigFound
+  parser.read(configuration.config_file)
 
   # these are required, and used as defaults for each section
   default = 'DEFAULT'

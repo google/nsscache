@@ -36,6 +36,13 @@ from nss_cache import nss
 from nss_cache import sources
 from nss_cache import update
 
+# python2.3 has no builtin set() class
+try:
+  Set = set
+except NameError:
+  import sets
+  Set = sets.Set
+
 
 class Command(object):
   """Base class for commands.
@@ -395,7 +402,7 @@ class Verify(Command):
       for map_entry in cache_map:
         if map_entry not in nss_map:
           self.log.info('The following entry is present in the cache '
-                        'but not availible via NSS: %s!', map_entry.name)
+                        'but not availible via NSS! %s', map_entry.name)
           self.log.debug('missing entry data: %s', map_entry)
           missing_entries += 1
 
@@ -408,7 +415,7 @@ class Verify(Command):
 
   def VerifySources(self, conf):
     """Verify each possible source and return the appropriate retval."""
-    possible_sources = set()
+    possible_sources = Set()
     retval = 0
 
     for map_name in conf.maps:

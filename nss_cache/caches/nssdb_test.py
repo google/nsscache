@@ -35,6 +35,10 @@ from nss_cache.caches import nssdb
 logging.disable(logging.CRITICAL)
 
 
+class TestSkipped(Exception):
+  """Exception to raise if a test cannot be run."""
+
+
 class TestNssDbPasswdHandler(pmock.MockTestCase):
 
   def setUp(self):
@@ -128,6 +132,9 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
                    .expects(pmock.once())\
                    .read()\
                    .will(pmock.return_value(''))
+    makedb_stdout\
+                   .expects(pmock.once())\
+                   .method('close')
 
     m = maps.PasswdMap()
     pw = maps.PasswdMapEntry()
@@ -146,12 +153,12 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return None
+        return -1
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.stdin = makedb_stdin
-      makedb.stdout = makedb_stdout
+      makedb.tochild = makedb_stdin
+      makedb.fromchild = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbPasswdHandler({'makedb': '/usr/bin/makedb',
@@ -166,6 +173,9 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     writer._Rollback()
 
   def testVerify(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     # create a map
     m = maps.PasswdMap()
     e = maps.PasswdMapEntry()
@@ -188,6 +198,9 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     os.unlink(updater.cache_filename)
 
   def testVerifyFailure(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     # Hide the warning that we expect to get
 
     class TestFilter(logging.Filter):
@@ -328,6 +341,9 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
                    .expects(pmock.once())\
                    .read()\
                    .will(pmock.return_value(''))
+    makedb_stdout\
+                   .expects(pmock.once())\
+                   .method('close')
 
     m = maps.GroupMap()
     g = maps.GroupMapEntry()
@@ -343,12 +359,12 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return None
+        return -1
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.stdin = makedb_stdin
-      makedb.stdout = makedb_stdout
+      makedb.tochild = makedb_stdin
+      makedb.fromchild = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbGroupHandler({'makedb': '/usr/bin/makedb',
@@ -363,6 +379,9 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     writer._Rollback()
 
   def testVerify(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     # create a map
     m = maps.GroupMap()
     e = maps.GroupMapEntry()
@@ -383,6 +402,9 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     os.unlink(updater.cache_filename)
 
   def testVerifyFailure(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     # Hide the warning that we expect to get
 
     class TestFilter(logging.Filter):
@@ -491,6 +513,9 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 
     makedb_stdout = self.mock()
     makedb_stdout.expects(pmock.once()).read().will(pmock.return_value(''))
+    makedb_stdout\
+                   .expects(pmock.once())\
+                   .method('close')
 
     m = maps.ShadowMap()
     s = maps.ShadowMapEntry()
@@ -504,12 +529,12 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return None
+        return -1
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.stdin = makedb_stdin
-      makedb.stdout = makedb_stdout
+      makedb.tochild = makedb_stdin
+      makedb.fromchild = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbShadowHandler({'makedb': '/usr/bin/makedb',
@@ -524,6 +549,9 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     writer._Rollback()
 
   def testVerify(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     m = maps.ShadowMap()
     s = maps.ShadowMapEntry()
     s.name = 'foo'
@@ -542,6 +570,11 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     os.unlink(updater.cache_filename)
 
   def testVerifyFailure(self):
+
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
+
     # Hide the warning that we expect to get
 
     class TestFilter(logging.Filter):
@@ -588,6 +621,9 @@ class TestNssDbCache(unittest.TestCase):
     os.rmdir(self.workdir)
 
   def testWriteTestBdb(self):
+    # Can't test if no makedb
+    if not os.path.exists('/usr/bin/makedb'):
+      raise TestSkipped('no /usr/bin/makedb')
     data = maps.PasswdMap()
     pw = maps.PasswdMapEntry()
     pw.name = 'foo'
