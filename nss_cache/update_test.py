@@ -442,5 +442,40 @@ class AutomountUpdaterTest(pmock.MockTestCase):
 
     caches.base.Create = original_create
 
+  def testUpdateCatchesMissingMaster(self):
+    """Gracefully handle a missing local master map."""
+    # use an empty master map from the source, to avoid mocking out already
+    # tested code
+    master_map = maps.AutomountMap()
+
+    source_mock = self.mock()
+    invocation = source_mock.expects(pmock.once())
+    invocation = invocation.GetAutomountMasterMap()
+    invocation.will(pmock.return_value(master_map))
+
+    cache_mock = self.mock()
+    # raise error on GetMap()
+    invocation = cache_mock.expects(pmock.once()).GetMap()
+    invocation.will(pmock.raise_exception(error.CacheNotFound))
+
+    # Create needs to return our mock_cache
+    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+      # the order of the master_map iterable is not predictable, so we use the
+      # automount_info as the key to return the right one.
+      return cache_mock
+
+    original_create = caches.base.Create
+    caches.base.Create = DummyCreate
+
+    skip = update.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+                                      {skip: 'yes'})
+
+    return_value = updater.UpdateFromSource(source_mock)
+
+    self.assertEqual(return_value, 1)
+
+    caches.base.Create = original_create
+
 if __name__ == '__main__':
   unittest.main()

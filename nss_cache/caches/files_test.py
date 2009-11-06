@@ -51,6 +51,7 @@ class TestFilesCache(pmock.MockTestCase):
     written = cache.Write(pmap)
     self.assertTrue('foo' in written)
     self.assertFalse(entry in pmap)  # we emptied pmap to avoid mem leaks
+    self.assertFalse(cache.cache_file.closed)
     os.unlink(cache.cache_filename)
 
   def testCacheFilenameSuffixOption(self):

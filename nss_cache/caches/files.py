@@ -54,7 +54,7 @@ class FilesCache(base.Cache):
     """
     super(FilesCache, self).__init__(conf, map_name,
                                      automount_info=automount_info)
-    
+
     # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
 
@@ -73,7 +73,7 @@ class FilesCache(base.Cache):
       cache_file = cache_info
     else:
       cache_file = self._GetCacheFilename()
-      
+
     if not os.path.exists(cache_file):
       self.log.debug('cache file %r does not exist', cache_file)
       raise error.CacheNotFound('cache file %r does not exist' %
@@ -81,7 +81,7 @@ class FilesCache(base.Cache):
 
     for line in open(cache_file):
       line = line.rstrip('\n')
-      if not line:
+      if not line or line[0] == '#':
         continue
       entry = self._ReadEntry(line)
       if not data.Add(entry):
@@ -157,7 +157,7 @@ class FilesCache(base.Cache):
     """
     self._Begin()
     written_keys = SetType()
-    
+
     try:
       while 1:
         entry = map_data.PopItem()
@@ -166,7 +166,6 @@ class FilesCache(base.Cache):
     except KeyError:
       # expected when PopItem() is done, and breaks our loop for us.
       self.cache_file.flush()
-      self.cache_file.close()
     except:
       self._Rollback()
       raise
@@ -371,13 +370,13 @@ class FilesNetgroupMapHandler(FilesCache):
         map_entry.name = line
         return map_entry
       raise RuntimeError('Failed to parse entry: %s' % line)
-    
+
     map_entry.name = line[0:index]
 
     # the rest is our entries, and for better or for worse this preserves extra
     # leading spaces
     map_entry.entries = line[index + 1:]
-    
+
     return map_entry
 
 
@@ -392,7 +391,7 @@ class FilesAutomountMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_AUTOMOUNT
     super(FilesAutomountMapHandler,
           self).__init__(conf, map_name, automount_info=automount_info)
-    
+
     if automount_info is None:
       # we are dealing with the master map
       self.CACHE_FILENAME = 'auto.master'
@@ -403,7 +402,7 @@ class FilesAutomountMapHandler(FilesCache):
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
-    
+
     Args:
       entry: A AutomountMapEntry
 
@@ -435,5 +434,5 @@ class FilesAutomountMapHandler(FilesCache):
   def GetMapLocation(self):
     """Get the location of this map for the automount master map."""
     return self._GetCacheFilename()
-    
+
 base.RegisterImplementation('files', 'automount', FilesAutomountMapHandler)

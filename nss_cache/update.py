@@ -468,7 +468,12 @@ class AutomountUpdater(Updater):
       # we need the local map to determine which of the other maps to update
       cache = caches.base.Create(self.cache_options, self.map_name,
                                  automount_info=None)
-      local_master = cache.GetMap()
+      try:
+        local_master = cache.GetMap()
+      except error.CacheNotFound:
+        self.log.warning('Local master map specified but no map found! '
+                         'No maps will update.')
+        return return_val + 1
 
     # update specific maps, e.g. auto.home and auto.auto
     for map_entry in master_map:

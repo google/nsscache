@@ -167,9 +167,12 @@ class Cache(object):
     # new cache, but we might instead want to reserve the space on
     # disk for a timestamp first -- thus needing a write/commit pair
     # of functions for a timestamp.  Edge case, so not bothering for now.
-    self.cache_file.flush()
-    os.fsync(self.cache_file.fileno())
-    self.cache_file.close()
+    if not self.cache_file.closed:
+      self.cache_file.flush()
+      os.fsync(self.cache_file.fileno())
+      self.cache_file.close()
+    else:
+      self.log.debug('cache file was already closed before Commit')
     os.chmod(self.cache_filename,
              stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',

@@ -7,7 +7,7 @@ Standards-Version: 3.6.1
 
 Package: nsscache
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, libnss-db | libnss-cache, python-ldap, ${python:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libnss-db | libnss-cache, python-ldap, python2.4
 Suggests: libdb4.3 (>= 4.3.29-gg1)
 Provides: lofsync, nss-cache-update
 Conflicts: lofsync, nss-cache-update

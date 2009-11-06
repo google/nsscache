@@ -1,3 +1,25 @@
+nsscache (0.8.8-1) hardy; urgency=low
+
+  * gracefully handle a missing auto.master when using the local automount
+    master map -- issues a warning and skips auto.* updates.
+
+ -- V Hoffman <vasilios@google.com>  Tue, 23 Jun 2009 15:52:05 -0700
+
+nsscache (0.8.7-2) unstable; urgency=low
+
+  * Explicit dependency on python2.4 instead of using ${python:Depends}
+    as we call python2.4 as the interpreter in /usr/bin/nsscache.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 10 Mar 2009 15:21:21 +1100
+
+nsscache (0.8.7-1) hardy; urgency=low
+
+  * Handle comments in map files.
+  * Stop FileCache.Write() from closing the cache file
+  * Handle closed cache files more gracefully in _Commit()
+
+ -- David MacKinnon <blaedd@google.com>  Thu, 26 Feb 2009 14:01:43 +1100
+
 nsscache (0.8.6-1) hardy; urgency=low
 
   * Worked around set(), subprocess, ConfigParser, and logging to allow
