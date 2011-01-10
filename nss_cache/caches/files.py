@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -28,6 +28,7 @@ from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
+from nss_cache.util import files
 
 try:
   SetType = set
@@ -72,20 +73,14 @@ class FilesCache(base.Cache):
     if cache_info is not None:
       cache_file = cache_info
     else:
-      cache_file = self._GetCacheFilename()
+      cache_file = self.GetCacheFilename()
 
     if not os.path.exists(cache_file):
-      self.log.debug('cache file %r does not exist', cache_file)
-      raise error.CacheNotFound('cache file %r does not exist' %
-                                cache_file)
-
-    for line in open(cache_file):
-      line = line.rstrip('\n')
-      if not line or line[0] == '#':
-        continue
-      entry = self._ReadEntry(line)
-      if not data.Add(entry):
-        self.log.warn('could not add entry built from %r', line)
+      self.log.warning('cache file %r does not exist, but we were told'
+                       ' to use it. Using an empty map instead.', cache_file)
+    else:
+      cache_file = open(cache_file)
+      data = self.map_parser.GetMap(cache_file, data)
 
     return data
 
@@ -109,7 +104,7 @@ class FilesCache(base.Cache):
     cache_data = self.GetMap(cache_info=self.cache_filename)
     map_entry_count = len(cache_data)
     self.log.debug('entry count: %d', map_entry_count)
-    
+
     if map_entry_count <= 0:
       # See nssdb.py Verify for a comment about this raise
       raise error.EmptyMap
@@ -172,7 +167,7 @@ class FilesCache(base.Cache):
 
     return written_keys
 
-  def _GetCacheFilename(self):
+  def GetCacheFilename(self):
     """Return the final destination pathname of the cache file."""
     cache_filename_target = self.CACHE_FILENAME
     if self.cache_filename_suffix:
@@ -188,6 +183,7 @@ class FilesPasswdMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_PASSWORD
     super(FilesPasswdMapHandler, self).__init__(conf, map_name,
                                                 automount_info=automount_info)
+    self.map_parser = files.FilesPasswdMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -208,20 +204,6 @@ class FilesPasswdMapHandler(FilesCache):
                                                entry.shell)
     target.write(password_entry + '\n')
 
-  def _ReadEntry(self, entry):
-    """Return a PasswdMapEntry from a record in the target cache."""
-    entry = entry.split(':')
-    map_entry = maps.PasswdMapEntry()
-    # maps expect strict typing, so convert to int as appropriate.
-    map_entry.name = entry[0]
-    map_entry.passwd = entry[1]
-    map_entry.uid = int(entry[2])
-    map_entry.gid = int(entry[3])
-    map_entry.gecos = entry[4]
-    map_entry.dir = entry[5]
-    map_entry.shell = entry[6]
-    return map_entry
-
 
 base.RegisterImplementation('files', 'passwd', FilesPasswdMapHandler)
 
@@ -234,6 +216,7 @@ class FilesGroupMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_GROUP
     super(FilesGroupMapHandler, self).__init__(conf, map_name,
                                                automount_info=automount_info)
+    self.map_parser = files.FilesGroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -252,17 +235,6 @@ class FilesGroupMapHandler(FilesCache):
                                    ','.join(entry.members))
     target.write(group_entry + '\n')
 
-  def _ReadEntry(self, line):
-    """Return a GroupMapEntry from a record in the target cache."""
-    line = line.split(':')
-    map_entry = maps.GroupMapEntry()
-    # map entries expect strict typing, so convert as appropriate
-    map_entry.name = line[0]
-    map_entry.passwd = line[1]
-    map_entry.gid = int(line[2])
-    map_entry.members = line[3].split(',')
-    return map_entry
-
 
 base.RegisterImplementation('files', 'group', FilesGroupMapHandler)
 
@@ -275,6 +247,7 @@ class FilesShadowMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_SHADOW
     super(FilesShadowMapHandler, self).__init__(conf, map_name,
                                                 automount_info=automount_info)
+    self.map_parser = files.FilesShadowMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -300,29 +273,6 @@ class FilesShadowMapHandler(FilesCache):
                                                    entry.flag or '')
     target.write(shadow_entry + '\n')
 
-  def _ReadEntry(self, line):
-    """Return a ShadowMapEntry from a record in the target cache."""
-    line = line.split(':')
-    map_entry = maps.ShadowMapEntry()
-    # map entries expect strict typing, so convert as appropriate
-    map_entry.name = line[0]
-    map_entry.passwd = line[1]
-    if line[2]:
-      map_entry.lstchg = int(line[2])
-    if line[3]:
-      map_entry.min = int(line[3])
-    if line[4]:
-      map_entry.max = int(line[4])
-    if line[5]:
-      map_entry.warn = int(line[5])
-    if line[6]:
-      map_entry.inact = int(line[6])
-    if line[7]:
-      map_entry.expire = int(line[7])
-    if line[8]:
-      map_entry.flag = int(line[8])
-    return map_entry
-
 
 base.RegisterImplementation('files', 'shadow', FilesShadowMapHandler)
 
@@ -336,6 +286,7 @@ class FilesNetgroupMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_NETGROUP
     super(FilesNetgroupMapHandler, self).__init__(conf, map_name,
                                                   automount_info=automount_info)
+    self.map_parser = files.FilesNetgroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -356,29 +307,6 @@ class FilesNetgroupMapHandler(FilesCache):
       netgroup_entry = entry.name
     target.write(netgroup_entry + '\n')
 
-  def _ReadEntry(self, line):
-    """Return a NetgroupMapEntry from a record in the target cache."""
-    map_entry = maps.NetgroupMapEntry()
-
-    # the first word is our name, but since the whole line is space delimited
-    # avoid .split(' ') since groups can have thousands of members.
-    index = line.find(' ')
-
-    if index == -1:
-      if line:
-        # empty group is OK, as long as the line isn't blank
-        map_entry.name = line
-        return map_entry
-      raise RuntimeError('Failed to parse entry: %s' % line)
-
-    map_entry.name = line[0:index]
-
-    # the rest is our entries, and for better or for worse this preserves extra
-    # leading spaces
-    map_entry.entries = line[index + 1:]
-
-    return map_entry
-
 
 base.RegisterImplementation('files', 'netgroup', FilesNetgroupMapHandler)
 
@@ -391,6 +319,7 @@ class FilesAutomountMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_AUTOMOUNT
     super(FilesAutomountMapHandler,
           self).__init__(conf, map_name, automount_info=automount_info)
+    self.map_parser = files.FilesAutomountMapParser()
 
     if automount_info is None:
       # we are dealing with the master map
@@ -419,20 +348,8 @@ class FilesAutomountMapHandler(FilesCache):
       automount_entry = '%s %s' % (entry.key, entry.location)
     target.write(automount_entry + '\n')
 
-  def _ReadEntry(self, line):
-    """Return an AutomountMapEntry from a record in the target cache."""
-    line = line.split()
-    map_entry = maps.AutomountMapEntry()
-    map_entry.key = line[0]
-    if len(line) > 2:
-      map_entry.options = line[1]
-      map_entry.location = line[2]
-    else:
-      map_entry.location = line[1]
-    return map_entry
-
   def GetMapLocation(self):
     """Get the location of this map for the automount master map."""
-    return self._GetCacheFilename()
+    return self.GetCacheFilename()
 
 base.RegisterImplementation('files', 'automount', FilesAutomountMapHandler)

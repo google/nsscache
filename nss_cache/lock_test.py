@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -260,7 +260,7 @@ class TestPidFile(pmock.MockTestCase):
     mock_match\
                 .expects(pmock.once())\
                 .method('match')\
-                .with(pmock.eq('TEST'))\
+                .pwith(pmock.eq('TEST'))\
                 .will(pmock.return_value(True))
 
     # Replace re.compile() to return our mock pattern.

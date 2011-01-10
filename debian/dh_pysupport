@@ -1,0 +1,362 @@
+#!/usr/bin/perl -w
+
+=head1 NAME
+
+dh_pysupport - use the python-support framework to handle Python modules
+
+=cut
+
+use strict;
+use File::Find;
+use Debian::Debhelper::Dh_Lib;
+
+=head1 SYNOPSIS
+
+B<dh_pysupport> [S<I<debhelper options>>] [-V I<X.Y>] [-X I<item> [...]] [-n] [S<I<module dirs ...>>]
+
+=head1 DESCRIPTION
+
+dh_pysupport is a debhelper program that will scan your package, detect
+public modules in I</usr/share/python-support> and generate appropriate
+postinst/prerm scripts to byte-compile modules installed there for all
+available python versions.
+
+It will also look for private Python modules and will byte-compile them
+with the current Python version. You may have to list the directories
+containing private Python modules.
+
+If a file named I<debian/pyversions> exists, it is installed in 
+I</usr/share/python-support/$PACKAGE/.version>.
+
+Appropriate dependencies on python-support, python and pythonI<X.Y> are
+put in ${python:Depends}.  The ${python:Versions} and ${python:Provides} 
+optional substitution variables are made available as well.
+
+=head1 OPTIONS
+
+=over 4
+
+=item I<module dirs>
+
+If your package installs private python modules in non-standard directories, you
+can make dh_pysupport check those directories by passing their names on the
+command line. By default, it will check /usr/lib/$PACKAGE,
+/usr/share/$PACKAGE, /usr/lib/games/$PACKAGE and /usr/share/games/$PACKAGE
+
+=item B<-n>, B<--noscripts>
+
+Do not modify postinst/postrm scripts.
+
+=item B<-d>
+
+This option is deprecated.
+
+=item B<-V> I<X.Y>
+
+Force private modules to be bytecompiled with the specific I<X.Y> python version, regardless of the default python version on the system.
+
+=item B<-X> I<item>, B<--exclude=>I<item>
+
+Exclude files that contain "item" anywhere in their filename from being
+taken into account to generate the python dependency. You may use this
+option multiple times to build up a list of things to exclude.
+
+=back
+
+=head1 CONFORMS TO
+
+Python policy as of 2006-08-10
+
+=cut
+
+init();
+
+sub next_minor_version {
+    my $version = shift;
+    # Handles 2.10 -> 2.11 gracefully
+    my @items = split(/\./, $version);
+    $items[1] += 1;
+    $version = join(".", @items);
+    return $version;
+}
+
+sub specified_deps_in_package {
+	my $package = shift;
+	my $curpackage = 0;
+	open (CONTROL, 'debian/control') || error("cannot read debian/control: $!\n");
+	while (<CONTROL>) {
+		chomp;
+		s/\s+$//;
+		if (/^Package:\s*(.*)$/) {
+			if ($package eq $1) {
+				$curpackage = 1;
+			} else {
+				$curpackage = 0;
+			}
+		}
+		if ($curpackage && /^Python-Depends:\s*(.*)$/) {
+			return split ",",$1;
+		}
+	}
+	return ();
+}
+
+sub trim {
+	my $tmp = shift;
+	$tmp =~ s/^\s+//;
+	$tmp =~ s/\s+$//;
+	return $tmp;
+}
+
+# The current default python version
+my $default=`readlink /usr/bin/python`;
+$default =~ s/^python//;
+chomp $default;
+
+# All supported versions
+my $allversions_string=`pysupport-parseversions --all`;
+chomp $allversions_string;
+my @allversions=split " ", $allversions_string;
+
+# Use a specific version for private modules (doesn't affect public modules)
+my $useversion;
+if($dh{V_FLAG_SET}) {
+	$useversion = $dh{V_FLAG};
+	if (! grep { $_ eq $useversion } @allversions) {
+		error("Unknown python version $useversion");
+	}
+}
+
+foreach my $package (@{$dh{DOPACKAGES}}) {
+	my $tmp = tmpdir($package);
+	my $have_pydep=0; # This variable tells whether we have added some dependency
+			  # on python one way or another.
+	my @specified_deps = specified_deps_in_package ($package);
+	my $do_scripts = "";
+	
+	# 1) Handle public python modules
+	# Move them to the python-support directories
+	doit (("pysupport-movemodules",$tmp));
+	# Then look for what the script found
+	foreach my $ps_dir (glob("$tmp/usr/share/python-support/*")) {
+		if (-d $ps_dir && ! excludefile($ps_dir)) {
+			my $verfile = "debian/pyversions";
+	        	if (-f $verfile) {
+	        		# TODO: debian/package.pyversions ?
+	        		doit("install","-p","-m644",$verfile,"$ps_dir/.version");
+	        	}
+	        	my $ext_dir=$ps_dir;
+	        	$ext_dir =~ s,/usr/share/,/usr/lib/,;
+	 		my $supported;
+	        	if (-d $ext_dir) {
+	        		if (-f "$ps_dir/.version") {
+	        			# Just ignore the .version file when there are extensions.
+	        			# The extensions dictate which versions to handle.
+	        			doit(("rm","-f","$ps_dir/.version"));
+	        		}
+	        		my @provides;
+	        		foreach my $pydir (glob("$ext_dir/python*")) {
+	        			if (-d $pydir && $pydir =~ m/python(\d+).(\d+)/) {
+	        				push @provides, "$1.$2";
+	        			}
+	        		}
+	        		my $a=join ",",@provides;
+	        		error("$ext_dir doesn't contain modules for any supported python version") if (! $a);
+	        		$supported=`echo $a | pysupport-parseversions --minmax`;
+			} elsif (-f "$ps_dir/.version") {
+	        		$supported=`pysupport-parseversions --minmax $ps_dir/.version`;
+	        	} else {
+	        		my $doko_versions=`pysupport-parseversions --raw --pycentral debian/control`;
+	        		chomp $doko_versions;
+	        		if ($doko_versions !~ /not found/) {
+	        			print "Compatibility mode: using detected XS-Python-Version.\n";
+	        			complex_doit("echo $doko_versions > $ps_dir/.version");
+		        		$supported=`pysupport-parseversions --minmax --pycentral debian/control`;
+	        		} else {
+					$supported=`echo - | pysupport-parseversions --minmax`;
+		        	}
+			}
+        		# Add the packages explicitly asked by the maintainer
+        		foreach my $dep (@specified_deps) {
+        			$dep = trim $dep;
+        			addsubstvar($package, "python:Depends", $dep);
+        		}
+        		my @ar=split "\n",$supported;
+        		my @provides=split " ",$ar[0];
+        		foreach my $pyversion (@provides) {
+        			# Generate the useless versions field
+        			addsubstvar($package, "python:Versions", $pyversion);
+        			# ... and the provides field
+				if ($package =~ /^python-/) {
+	        			my $virtual = $package;
+					$virtual =~ s/^python-/python$pyversion-/;
+					addsubstvar($package, "python:Provides", $virtual);
+	        		}
+	        		# Use the provides fields in packages dependended upon
+	        		foreach my $dep (@specified_deps) {
+					$dep = trim $dep;
+	        			# I have no idea why this wouldn't be the case, but well
+	        			if ($dep =~ /^python-(\S+)/) {
+	        				addsubstvar($package, "python:Depends", "python$pyversion-$1");
+	        			}
+	        		}
+        		}
+       			my @minmax=split " ",$ar[1];
+       			my $minversion=$minmax[0];
+        		if ( grep { $_ eq $default } @provides ) {
+        			# The default version is in the supported versions
+	        		if ($minversion ne "None") {
+		        		addsubstvar($package, "python:Depends", "python (>= $minversion)");
+					$have_pydep=1;
+		        	}
+		        } elsif ($minversion ne "None") {
+		        	# The default version is less than all supported versions
+		        	addsubstvar($package, "python:Depends", "python (>= $minversion) | python$minversion");
+				$have_pydep=1;
+		        } else {
+		        	error("The default python version is greater than all supported versions");
+		        }
+        		my $maxversion=$minmax[1];
+        		if ($maxversion ne "None") {
+				$maxversion = next_minor_version($maxversion);
+				addsubstvar($package, "python:Depends", "python (<< $maxversion)");
+				$have_pydep=1;
+			}
+			$ps_dir =~ s,^$tmp/usr/share/python-support/,,;
+			$do_scripts = "$do_scripts $ps_dir";
+		}
+	}
+
+        # 2) Look for private python modules
+	my @dirs = ("/usr/lib/$package", "/usr/share/$package",
+		    "/usr/lib/games/$package", "/usr/share/games/$package", @ARGV );
+	@dirs = grep -d, map "$tmp$_", @dirs;
+        my @dirlist;
+        my $need_pydep=0;
+        my $strong_pydep=0;
+	my %need_verdep = ();
+	foreach (@allversions) {
+		$need_verdep{$_} = 0;
+	}
+        if (@dirs) {
+                foreach my $curdir (@dirs) {
+                        my $has_module = 0;
+                        my $has_extension = 0;
+                        find sub {
+                                return unless -f;
+                                return if excludefile($File::Find::name);
+                                if (/.py$/) {
+                                	$has_module=1;
+                                	doit(("rm","-f",$_."c",$_."o"));
+                                }
+                                if (/.so$/ &&
+                                    `nm -Du "$_" | grep "U Py_InitModule"` &&
+                                    ! `objdump -p "$_" | grep "NEEDED *libpython"`) {
+                                	$has_extension=1;
+                                }
+                        }, $curdir ;
+                        if ( ($has_module or $has_extension) and not grep { $_ eq "$curdir" } @dirlist ) {
+                                if ( $useversion ) {
+        	                	# Create .pyversion to tell update-python-modules for which
+	                        	# version to compile
+                                	open(VERFILE, "> $curdir/.pyversion") ||
+                                		error("Can't create $curdir/.pyversion: $!");
+                                	print VERFILE "$useversion\n";
+                                	close(VERFILE);
+                                	$need_verdep{$useversion}=1;
+                                } else {
+                                	$need_pydep=1;
+                                	$strong_pydep=1 if $has_extension;
+                                }
+				$curdir =~ s%^$tmp%%;
+                                push @dirlist, "$curdir" if $has_module;
+                        }
+                }
+        }
+	if (@dirlist) {
+		# We have private python modules
+		# Use python-support to ensure that they are always
+		# byte-compiled for the current version
+		mkdir("$tmp/usr/share/python-support");
+		open(DIRLIST, "> $tmp/usr/share/python-support/$package.dirs") ||
+		    error("Can't create $tmp/usr/share/python-support/$package.dirs: $!");
+		print DIRLIST map "$_\n", @dirlist;
+		close(DIRLIST);
+		$do_scripts = "$do_scripts $package.dirs";
+	}
+
+	# 3) Add python-support dependency depending on what we found
+        if (-d "$tmp/usr/share/python-support") {
+		# Namespace packages were introduced in 0.7.1
+        	addsubstvar($package, "python:Depends", "python-support (>= 0.7.1)");
+        }
+        
+       	# 4) Look for python scripts
+       	find sub {
+		return unless -f and -x;
+		return if excludefile($File::Find::name);
+		local *F;
+       		return unless open F, $_;
+		if (read F, local $_, 32 and m%^#!\s*/usr/bin/(env\s+)?(python(\d+\.\d+)?)\s%) {
+       			if ( "python" eq $2 ) {
+				$need_pydep=1;
+       			} elsif (defined $need_verdep{$3}) {
+       				$need_verdep{$3}=1;
+       			}
+       		}
+       		close F;
+       	}, $tmp;
+       	
+       	# 5) Generate remaining dependencies
+       	foreach (@allversions) {
+       		if ($need_verdep{$_}) {
+       			addsubstvar($package, "python:Depends", "python$_");
+       		}
+       	}
+       	if (not $have_pydep) {
+       		if ($strong_pydep) {
+       			addsubstvar($package, "python:Depends", "python (>= $default)");
+       			my $maxversion = next_minor_version($default);
+       			addsubstvar($package, "python:Depends", "python (<< $maxversion)");
+       			$have_pydep=1;
+       		} elsif ($need_pydep and -f "debian/pyversions") {
+	       		my $supported=`pysupport-parseversions --minmax debian/pyversions`;
+       			my @ar=split "\n",$supported;
+       			my @minmax=split " ",$ar[1];
+	        	my $minversion=$minmax[0];
+	        	if ($minversion ne "None") {
+        			addsubstvar($package, "python:Depends", "python (>= $minversion)");
+        			$have_pydep=1;
+			}
+			my $maxversion=$minmax[1];
+		        if ($maxversion ne "None") {
+				$maxversion = next_minor_version($maxversion);
+				addsubstvar($package, "python:Depends", "python (<< $maxversion)");
+				$have_pydep=1;
+			}
+       		}
+       	}
+       	# If nothing has added a python dependency yet, add it
+	if ($need_pydep and not $have_pydep) {
+	       	addsubstvar($package, "python:Depends", "python");
+	}
+	
+	# 6) Generate the scripts
+	if ($do_scripts && ! $dh{NOSCRIPTS}) {
+		autoscript($package, "postinst", "postinst-python-support", "s,#ARGS#,$do_scripts,");
+		autoscript($package, "prerm",    "prerm-python-support",    "s,#ARGS#,$do_scripts,");
+	}
+}
+
+=head1 SEE ALSO
+
+L<debhelper(7)>
+
+This program is a part of python-support but is made to work with debhelper.
+
+=head1 AUTHORS
+
+Josselin Mouette <joss@debian.org>,
+Raphael Hertzog <hertzog@debian.org>
+
+=cut

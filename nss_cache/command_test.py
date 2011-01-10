@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -146,11 +146,12 @@ class TestUpdateCommand(pmock.MockTestCase):
 
     class DummySource(sources.base.Source):
       name = 'dummy'
+      UPDATER = config.UPDATER_MAP
 
       def GetPasswdMap(self, since=None):
         return maps.passwd.PasswdMap()
 
-    class DummyUpdater(update.Updater):
+    class DummyUpdater(update.base.Updater):
 
       def UpdateFromSource(self, source, incremental=True, force_write=False):
         return 0
@@ -163,10 +164,10 @@ class TestUpdateCommand(pmock.MockTestCase):
     self.original_create = caches.base.Create
 
     # Get our dummy updater to be returned instead
-    self.original_master_map_updater = update.AutomountUpdater
-    self.original_single_map_updater = update.SingleMapUpdater
-    update.AutomountUpdater = DummyUpdater
-    update.SingleMapUpdater = DummyUpdater
+    self.original_master_map_updater = update.maps.AutomountUpdater
+    self.original_single_map_updater = update.maps.SingleMapUpdater
+    update.maps.AutomountUpdater = DummyUpdater
+    update.maps.SingleMapUpdater = DummyUpdater
 
     self.conf = DummyConfig()
     self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
@@ -180,8 +181,8 @@ class TestUpdateCommand(pmock.MockTestCase):
 
   def tearDown(self):
     caches.base.Create = self.original_create
-    update.AutomountUpdater = self.original_master_map_updater
-    update.SingleMapUpdater = self.original_single_map_updater
+    update.maps.AutomountUpdater = self.original_master_map_updater
+    update.maps.SingleMapUpdater = self.original_single_map_updater
 
   def testConstructor(self):
     c = command.Update()
@@ -285,7 +286,7 @@ class TestUpdateCommand(pmock.MockTestCase):
 
   def testUpdateMapsTrapsPermissionDenied(self):
 
-    class BrokenUpdater(update.Updater):
+    class BrokenUpdater(update.base.Updater):
 
       def UpdateFromSource(self, source, incremental=True, force_write=False):
         raise error.PermissionDenied
@@ -296,7 +297,7 @@ class TestUpdateCommand(pmock.MockTestCase):
       return 'cache'
 
     # tearDown will restore this
-    update.SingleMapUpdater = BrokenUpdater
+    update.maps.SingleMapUpdater = BrokenUpdater
 
     lock_mock = self.mock()
     invocation = lock_mock.expects(pmock.once())
@@ -794,7 +795,7 @@ class TestStatusCommand(pmock.MockTestCase):
         return 0
 
     # stub out parts of update.SingleMapUpdater
-    class DummyUpdater(update.SingleMapUpdater):
+    class DummyUpdater(update.maps.SingleMapUpdater):
       def GetModifyTimestamp(self):
         return 1
 
@@ -815,15 +816,15 @@ class TestStatusCommand(pmock.MockTestCase):
 
     self.original_verify_configuration = config.VerifyConfiguration
     self.original_create = caches.base.Create
-    self.original_updater = update.SingleMapUpdater
+    self.original_updater = update.maps.SingleMapUpdater
 
     # stub this out for all tests
-    update.SingleMapUpdater = DummyUpdater
+    update.maps.SingleMapUpdater = DummyUpdater
 
   def tearDown(self):
     config.VerifyConfiguration = self.original_verify_configuration
     caches.base.Create = self.original_create
-    update.SingleMapUpdater = self.original_updater
+    update.maps.SingleMapUpdater = self.original_updater
 
   def testHelp(self):
     c = command.Status()

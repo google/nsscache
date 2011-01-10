@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -20,8 +20,10 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
+import errno
 import logging
 import os
+import shutil
 import stat
 import tempfile
 
@@ -68,7 +70,6 @@ def Create(conf, map_name, automount_info=None):
   """
   if not _cache_implementations:
     raise RuntimeError('no cache implementations exist')
-
   cache_name = conf['name']
 
   if cache_name not in _cache_implementations:
@@ -118,6 +119,8 @@ class Cache(object):
     # Store config info
     self.conf = conf
     self.output_dir = conf.get('dir', '.')
+    self.automount_info = automount_info
+    self.map_name = map_name
 
     # Setup the map we may be asked to load our cache into.
     if map_name == config.MAP_PASSWORD:
@@ -173,14 +176,22 @@ class Cache(object):
       self.cache_file.close()
     else:
       self.log.debug('cache file was already closed before Commit')
-    os.chmod(self.cache_filename,
-             stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+    # We emulate the permissions of our source map to avoid bugs where
+    # permissions may differ (usually w/shadow map)
+    # Catch the case where the source file may not exist for some reason and
+    # chose a sensible default.
+    try:
+      shutil.copymode(self.GetCompatFilename(), self.cache_filename)
+    except OSError, e:
+      if e.errno == errno.ENOENT:
+        os.chmod(self.cache_filename,
+                 stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
-                   self.cache_filename, self._GetCacheFilename())
-    os.rename(self.cache_filename, self._GetCacheFilename())
+                   self.cache_filename, self.GetCacheFilename())
+    os.rename(self.cache_filename, self.GetCacheFilename())
     return True
 
-  def _GetCacheFilename(self):
+  def GetCacheFilename(self):
     """Return the final destination pathname of the cache file."""
     return os.path.join(self.output_dir, self.CACHE_FILENAME)
 
@@ -192,10 +203,14 @@ class Cache(object):
     Args:
       cache_info:  optional extra info used by the child class
     Raises:
-      NotImplemmentedError:  We should have been implemented by child.
+      NotImplementedError:  We should have been implemented by child.
     """
     raise NotImplementedError('%s must implement this method!' %
                               self.__class__.__name__)
+
+  def GetCompatFilename(self):
+    """Return the filename where the normal (not-cache) map would be."""
+    return os.path.join(self.output_dir, self.map_name)
 
   def GetMapLocation(self):
     """Return the location of the Map in this cache.

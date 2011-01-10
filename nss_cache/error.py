@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -58,6 +58,11 @@ class PermissionDenied(Error):
 
 class UnsupportedMap(Error):
   """Raised when trying to use an unsupported map type."""
+  pass
+
+
+class InvalidMap(Error):
+  """Raised when an invalid map is encountered."""
   pass
 
 

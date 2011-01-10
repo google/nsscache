@@ -30,6 +30,7 @@ import re
 
 from nss_cache import error
 
+
 # known nss map types.
 MAP_PASSWORD = 'passwd'
 MAP_GROUP = 'group'
@@ -46,6 +47,10 @@ CMD_VERIFY = 'verify'
 
 # default file locations
 FILE_NSSWITCH = '/etc/nsswitch.conf'
+
+# update method types
+UPDATER_FILE = 'file'
+UPDATER_MAP = 'map'
 
 
 class Config(object):

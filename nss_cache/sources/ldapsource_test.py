@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -45,7 +45,7 @@ class TestLdapSource(pmock.MockTestCase):
                    'retry_delay': 'TEST_RETRY_DELAY',
                    'retry_max': 'TEST_RETRY_MAX',
                    'timelimit': 'TEST_TIMELIMIT',
-                   'tls_require_cert': 'TEST_TLS_REQUIRE_CERT',
+                   'tls_require_cert': 0,
                    'tls_cacertdir': 'TEST_TLS_CACERTDIR',
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
@@ -169,8 +169,7 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
     self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
     self.assertEquals(source.conf['timelimit'], 'TEST_TIMELIMIT')
-    self.assertEquals(source.conf['tls_require_cert'],
-                      'TEST_TLS_REQUIRE_CERT')
+    self.assertEquals(source.conf['tls_require_cert'], 0)
     self.assertEquals(source.conf['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
     self.assertEquals(source.conf['tls_cacertfile'],
                       'TEST_TLS_CACERTFILE')

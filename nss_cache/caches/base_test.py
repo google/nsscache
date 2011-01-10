@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -20,10 +20,14 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-import unittest
+import os
 import pmock
+import stat
+import tempfile
+import unittest
 
 from nss_cache.caches import base
+from nss_cache import config
 
 
 class TestCacheFactory(unittest.TestCase):
@@ -47,6 +51,53 @@ class TestCacheFactory(unittest.TestCase):
     base._cache_implementations = {}
     self.assertRaises(RuntimeError, base.Create, {}, 'map_name')
     base._cache_implementations = old_cache_implementations
+
+
+class FakeCacheCls(base.Cache):
+
+  CACHE_FILENAME = 'shadow'
+  def __init__(self, config, map_name):
+    super(FakeCacheCls, self).__init__(config, map_name)
+
+  def Write(self, map_data):
+    return 0
+
+  def GetCacheFilename(self):
+    return os.path.join(self.output_dir,
+                        self.CACHE_FILENAME + '.test')
+
+
+class TestCls(pmock.MockTestCase):
+
+  def setUp(self):
+    self.workdir = tempfile.mkdtemp()
+    self.config = {'dir': self.workdir}
+
+  def tearDown(self):
+    os.rmdir(self.workdir)
+
+  def testCopyOwnerMissing(self):
+    cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
+    cache._Begin()
+    cache._Commit()
+    data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
+    self.assertEqual(stat.S_IMODE(data.st_mode),
+                     stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+    os.unlink(cache.GetCacheFilename())
+
+  def testCopyOwnerPresent(self):
+    path = os.path.join(self.workdir, config.MAP_SHADOW)
+    f = open(path, 'wb')
+    f.close()
+    os.chmod(path, stat.S_IRUSR|stat.S_IWUSR)
+    cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
+    cache._Begin()
+    cache._Commit()
+    data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
+    self.assertEqual(stat.S_IMODE(data.st_mode),
+                     stat.S_IRUSR | stat.S_IWUSR)
+    os.unlink(path)
+    os.unlink(cache.GetCacheFilename())
 
 
 class TestCache(pmock.MockTestCase):

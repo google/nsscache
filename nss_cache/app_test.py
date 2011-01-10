@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -100,7 +100,7 @@ class TestNssCacheApp(unittest.TestCase):
     expected_str = 'Usage: nsscache [global options] command [command options]'
     self.failUnlessEqual(expected_str, usage)
     self.failUnless(commands.startswith('commands:'))
-    self.failUnless(options.startswith('options:'))
+    self.failUnless(options.startswith('Options:'))
     self.failUnless(options.find('show this help message and exit') >= 0)
 
   def testHelpCommandOutput(self):

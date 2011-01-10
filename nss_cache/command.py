@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -263,12 +263,24 @@ class Update(Command):
 
       source = sources.base.Create(source_options)
 
-      if map_name == config.MAP_AUTOMOUNT:
-        updater = update.AutomountUpdater(map_name, conf.timestamp_dir,
-                                          cache_options)
+      # Bit ugly. This just checks the class attribute UPDATER
+      # to determine which type of updater the source uses. At the moment
+      # there's only two, so not a huge deal. If we add another we should
+      # refactor though.
+      if hasattr(source, 'UPDATER') and source.UPDATER == config.UPDATER_FILE:
+        if map_name == config.MAP_AUTOMOUNT:
+          updater = update.files.AutomountUpdater(map_name, conf.timestamp_dir,
+                                                  cache_options)
+        else:
+          updater = update.files.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                                  cache_options)
       else:
-        updater = update.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                          cache_options)
+        if map_name == config.MAP_AUTOMOUNT:
+          updater = update.maps.AutomountUpdater(map_name, conf.timestamp_dir,
+                                                 cache_options)
+        else:
+          updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                                 cache_options)
 
       if incremental:
         self.log.info('Updating and verifying %s cache.', map_name)
@@ -278,7 +290,7 @@ class Update(Command):
       try:
         retval = updater.UpdateFromSource(source, incremental=incremental, force_write=force_write)
       except error.PermissionDenied:
-        self.log.error('Permission denied: could not update map %r.  Aborting',
+        self.log.error('Permission denied: could not update.maps %r.  Aborting',
                        map_name)
         retval = 1
 
@@ -646,8 +658,8 @@ class Status(Command):
     """
     cache_options = conf.options[map_name].cache
 
-    updater = update.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                      cache_options, automount_info)
+    updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                           cache_options, automount_info)
 
     if map_name == config.MAP_AUTOMOUNT:
       # have to find out *which* automount map from a cache object!

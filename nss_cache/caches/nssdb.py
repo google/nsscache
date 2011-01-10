@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -19,6 +19,13 @@
 """An implementation of nss_db local cache for nsscache."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
+
+# Supress deprecation warnings for popen2 module
+# TODO(blaedd): Fix this
+import warnings
+
+warnings.filterwarnings('ignore', category=DeprecationWarning,
+                        module='nss_cache.caches.nssdb', lineno=32)
 
 import bsddb
 import os
@@ -117,6 +124,7 @@ class NssDbCache(base.Cache):
     self.log.debug('executing makedb: %s - %s',
                    self.makedb, self.cache_filename)
     return popen2.Popen4([self.makedb, '-', self.cache_filename])
+
 
   def Write(self, map_data):
     """Write the map to the cache file.

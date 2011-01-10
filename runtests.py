@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -29,7 +29,6 @@ from nss_cache.caches.nssdb_test import *
 from nss_cache.command_test import *
 from nss_cache.config_test import *
 from nss_cache.error_test import *
-from nss_cache.update_test import *
 from nss_cache.maps.base_test import *
 from nss_cache.maps.group_test import *
 from nss_cache.maps.passwd_test import *
@@ -37,6 +36,13 @@ from nss_cache.maps.shadow_test import *
 from nss_cache.nss_test import *
 from nss_cache.sources.base_test import *
 from nss_cache.sources.ldapsource_test import *
+from nss_cache.sources.httpsource_test import *
+from nss_cache.sources.zsyncsource_test import *
+from nss_cache.update.base_test import *
+from nss_cache.update.maps_test import *
+from nss_cache.update.files_test import *
+from nss_cache.util.files_test import *
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Unit tests for nss_cache/update.py."""
+"""Unit tests for nss_cache/update.maps.py."""
 
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
@@ -31,70 +31,10 @@ from nss_cache import caches
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
-from nss_cache import update
+from nss_cache.update import maps
 
 logging.disable(logging.CRITICAL)
 
-
-class TestUpdater(pmock.MockTestCase):
-  """Unit tests for the Updater class."""
-
-  def setUp(self):
-    self.workdir = tempfile.mkdtemp()
-
-  def tearDown(self):
-    if os.path.exists(self.updater.modify_file):
-      os.unlink(self.updater.modify_file)
-    if os.path.exists(self.updater.update_file):
-      os.unlink(self.updater.update_file)
-    os.rmdir(self.workdir)
-
-  def testTimestampDir(self):
-    """We read and write timestamps to the specified directory."""
-    updater = update.Updater(config.MAP_PASSWORD, self.workdir, {})
-    self.updater = updater
-    update_time = 1199149400  # epoch
-    modify_time = 1199149200
-    
-    updater.WriteUpdateTimestamp(update_time)
-    updater.WriteModifyTimestamp(modify_time)
-    
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
-
-    self.assertEqual(update_time, update_stamp,
-                     msg='retrieved a different update time than we stored.')
-    self.assertEqual(modify_time, modify_stamp,
-                     msg='retrieved a different modify time than we stored.')
-
-  def testTimestampDefaultsToNone(self):
-    """Missing or unreadable timestamps return None."""
-    updater = update.Updater(config.MAP_PASSWORD, self.workdir, {})
-    self.updater = updater
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
-
-    self.assertEqual(None, update_stamp,
-                     msg='update time did not default to None')
-    self.assertEqual(None, modify_stamp,
-                     msg='modify time did not default to None')
-
-    # touch a file, make it unreadable
-    update_file = open(updater.update_file, 'w')
-    modify_file = open(updater.modify_file, 'w')
-    update_file.close()
-    modify_file.close()
-    os.chmod(updater.update_file, 0000)
-    os.chmod(updater.modify_file, 0000)
-
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
-
-    self.assertEqual(None, update_stamp,
-                     msg='unreadable update time did not default to None')
-    self.assertEqual(None, modify_stamp,
-                     msg='unreadable modify time did not default to None')
-    
 
 class SingleMapUpdaterTest(pmock.MockTestCase):
   """Unit tests for SingleMapUpdater class."""
@@ -113,7 +53,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
     """A full update reads the source, writes to cache, and updates times."""
     original_modify_stamp = 1
     new_modify_stamp = 2
-    updater = update.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
+    updater = maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     updater.WriteModifyTimestamp(original_modify_stamp)
 
@@ -156,7 +96,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
 
     original_modify_stamp = 1
     new_modify_stamp = 2
-    updater = update.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
+    updater = maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     updater.WriteModifyTimestamp(original_modify_stamp)
 
@@ -198,7 +138,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
   def testFullUpdateOnMissingCache(self):
     """We fault to a full update if our cache is missing."""
     
-    class DummyUpdater(update.SingleMapUpdater):
+    class DummyUpdater(maps.SingleMapUpdater):
       """Stubs functions we aren't specifically testing."""
       full_update = False
 
@@ -236,11 +176,11 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
 
   def testFullUpdateOnMissingTimestamp(self):
     """We fault to a full update if our modify timestamp is missing."""
-    
-    class DummyUpdater(update.SingleMapUpdater):
+
+    class DummyUpdater(maps.SingleMapUpdater):
       """Stubs functions we aren't specifically testing."""
       full_update = False
-      
+
       def FullUpdateFromMap(self, unused_cache, new_map,
                             unused_force_write=False):
         if new_map == 'second map':
@@ -268,16 +208,16 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
 class AutomountUpdaterTest(pmock.MockTestCase):
   """Unit tests for AutomountUpdater class."""
 
-  class DummyUpdater(update.SingleMapUpdater):
+  class DummyUpdater(maps.SingleMapUpdater):
     """Stubs functions we aren't specifically testing."""
-    
+
     def UpdateCacheFromSource(self, cache, source, unused_incremental,
                               unused_force_write, unused_location=None):
       """Notify our mock cache and source we were called."""
       cache._CalledUpdateCacheFromSource()
       source._CalledUpdateCacheFromSource()
       return 0
-      
+
     def FullUpdateFromMap(self, cache, unused_new_map,
                           unused_force_write=False):
       """Notify our mock cache we were called."""
@@ -286,27 +226,27 @@ class AutomountUpdaterTest(pmock.MockTestCase):
 
   def setUp(self):
     # register a dummy SingleMapUpdater, because that is tested above,
-    
-    self.original_single_map_updater = update.SingleMapUpdater
-    update.SingleMapUpdater = AutomountUpdaterTest.DummyUpdater
+
+    self.original_single_map_updater = maps.SingleMapUpdater
+    maps.SingleMapUpdater = AutomountUpdaterTest.DummyUpdater
 
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
-    update.SingleMapUpdater = self.original_single_map_updater
+    maps.SingleMapUpdater = self.original_single_map_updater
     os.rmdir(self.workdir)
 
   def testInit(self):
     """An automount object correctly sets map-specific attributes."""
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
     self.assertEqual(updater.local_master, False)
 
-    conf = {update.AutomountUpdater.OPT_LOCAL_MASTER: 'yes'}
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    conf = {maps.AutomountUpdater.OPT_LOCAL_MASTER: 'yes'}
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
     self.assertEqual(updater.local_master, True)
     
-    conf = {update.AutomountUpdater.OPT_LOCAL_MASTER: 'no'}
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    conf = {maps.AutomountUpdater.OPT_LOCAL_MASTER: 'no'}
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
     self.assertEqual(updater.local_master, False)
 
   def testUpdate(self):
@@ -368,7 +308,7 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
     updater.UpdateFromSource(source_mock)
 
     caches.base.Create = original_create
@@ -435,15 +375,15 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    skip = update.AutomountUpdater.OPT_LOCAL_MASTER
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
-                                      {skip: 'yes'})
+    skip = maps.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+                                    {skip: 'yes'})
     updater.UpdateFromSource(source_mock)
 
     caches.base.Create = original_create
 
   def testUpdateCatchesMissingMaster(self):
-    """Gracefully handle a missing local master map."""
+    """Gracefully handle a missing local master maps."""
     # use an empty master map from the source, to avoid mocking out already
     # tested code
     master_map = maps.AutomountMap()
@@ -467,9 +407,9 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    skip = update.AutomountUpdater.OPT_LOCAL_MASTER
-    updater = update.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
-                                      {skip: 'yes'})
+    skip = maps.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+                                    {skip: 'yes'})
 
     return_value = updater.UpdateFromSource(source_mock)
 

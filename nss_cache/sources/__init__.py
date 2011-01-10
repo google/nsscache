@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -21,4 +21,10 @@
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 from nss_cache.sources import base
+from nss_cache.sources import httpsource
 from nss_cache.sources import ldapsource
+# Don't load the zsync source if zsync python module isn't there.
+try:
+  from nss_cache.sources import zsyncsource
+except ImportError:
+  pass

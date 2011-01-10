@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -23,6 +23,7 @@ __author__ = 'jaq@google.com (Jamie Wilkinson)'
 import bsddb
 import logging
 import os.path
+import shutil
 import tempfile
 import time
 import unittest
@@ -46,7 +47,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
   def tearDown(self):
     # remove the test working directory
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testConvertValueToMapEntry(self):
     ent = 'foo:x:1000:1001:bar:/:/bin/sh'
@@ -449,7 +450,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 
   def tearDown(self):
     # remove the test working directory
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testConvertValueToMapEntry(self):
     ent = 'foo:*:::::::0'
@@ -640,7 +641,6 @@ class TestNssDbCache(unittest.TestCase):
     cache = nssdb.NssDbPasswdHandler(dummy_config)
 
     written = cache.Write(data)
-
     self.assertTrue('.foo' in written)
     self.assertTrue('=1000' in written)
 

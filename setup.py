@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -41,6 +41,8 @@ distutils.core.setup(name='nsscache',
                      packages=['nss_cache',
                                'nss_cache.caches',
                                'nss_cache.maps',
+                               'nss_cache.util',
+                               'nss_cache.update',
                                'nss_cache.sources'],
                      scripts=['nsscache',
                               'runtests.py'],

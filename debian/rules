@@ -42,8 +42,9 @@ install: build
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-	./setup.py install --root=$(CURDIR)/debian/nsscache
-
+	./setup.py install --root=$(CURDIR)/debian/nsscache --prefix=/usr
+	find ${CURDIR}/debian/nsscache -name '*_test.py' -exec rm {} \;
+	find ${CURDIR}/debian/nsscache -name runtests.py -exec rm {} \;
 
 # Build architecture-dependent files here.
 binary-arch: build install
@@ -73,6 +74,7 @@ binary-indep: build install
 	dh_fixperms
 #	dh_perl
 	dh_python
+	if `which dh_pysupport`; then dh_pysupport; fi
 #	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps

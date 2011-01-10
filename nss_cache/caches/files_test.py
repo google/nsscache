@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2007 Google Inc.
 #
@@ -61,7 +61,7 @@ class TestFilesCache(pmock.MockTestCase):
 
     cache.CACHE_FILENAME = 'test'
     self.assertEqual(os.path.join(self.workdir, 'test.blarg'),
-                     cache._GetCacheFilename())
+                     cache.GetCacheFilename())
 
     cache.cache_file = open(os.path.join(self.workdir, 'pre-commit'), 'w')
     cache.cache_file.write('\n')
@@ -73,27 +73,13 @@ class TestFilesCache(pmock.MockTestCase):
     self.failUnless(os.path.exists(expected_cache_filename))
     os.unlink(expected_cache_filename)
 
-  def testReadPasswdEntry(self):
-    """We correctly parse a typical entry in /etc/passwd format."""
-    cache = files.FilesPasswdMapHandler(self.config)
-    file_entry = 'root:x:0:0:Rootsy:/root:/bin/bash'
-    map_entry = cache._ReadEntry(file_entry)
-    
-    self.assertEqual(map_entry.name, 'root')
-    self.assertEqual(map_entry.passwd, 'x')
-    self.assertEqual(map_entry.uid, 0)
-    self.assertEqual(map_entry.gid, 0)
-    self.assertEqual(map_entry.gecos, 'Rootsy')
-    self.assertEqual(map_entry.dir, '/root')
-    self.assertEqual(map_entry.shell, '/bin/bash')
-
   def testWritePasswdEntry(self):
     """We correctly write a typical entry in /etc/passwd format."""
     cache = files.FilesPasswdMapHandler(self.config)
     file_mock = self.mock()
     invocation = file_mock.expects(pmock.once())
     invocation.write(pmock.eq('root:x:0:0:Rootsy:/root:/bin/bash\n'))
-    
+
     map_entry = maps.PasswdMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
@@ -104,24 +90,13 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry.shell = '/bin/bash'
     cache._WriteData(file_mock, map_entry)
 
-  def testReadGroupEntry(self):
-    """We correctly parse a typical entry in /etc/group format."""
-    cache = files.FilesGroupMapHandler(self.config)
-    file_entry = 'root:x:0:zero_cool,acid_burn'
-    map_entry = cache._ReadEntry(file_entry)
-    
-    self.assertEqual(map_entry.name, 'root')
-    self.assertEqual(map_entry.passwd, 'x')
-    self.assertEqual(map_entry.gid, 0)
-    self.assertEqual(map_entry.members, ['zero_cool', 'acid_burn'])
-
   def testWriteGroupEntry(self):
     """We correctly write a typical entry in /etc/group format."""
     cache = files.FilesGroupMapHandler(self.config)
     file_mock = self.mock()
     invocation = file_mock.expects(pmock.once())
     invocation.write(pmock.eq('root:x:0:zero_cool,acid_burn\n'))
-    
+
     map_entry = maps.GroupMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
@@ -129,53 +104,18 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry.members = ['zero_cool', 'acid_burn']
     cache._WriteData(file_mock, map_entry)
 
-  def testReadShadowEntry(self):
-    """We correctly parse a typical entry in /etc/shadow format."""
-    cache = files.FilesShadowMapHandler(self.config)
-    file_entry = 'root:$1$zomgmd5support:::::::'
-    map_entry = cache._ReadEntry(file_entry)
-    
-    self.assertEqual(map_entry.name, 'root')
-    self.assertEqual(map_entry.passwd, '$1$zomgmd5support')
-    self.assertEqual(map_entry.lstchg, None)
-    self.assertEqual(map_entry.min, None)
-    self.assertEqual(map_entry.max, None)
-    self.assertEqual(map_entry.warn, None)
-    self.assertEqual(map_entry.inact, None)
-    self.assertEqual(map_entry.expire, None)
-    self.assertEqual(map_entry.flag, None)
-
   def testWriteShadowEntry(self):
     """We correctly write a typical entry in /etc/shadow format."""
     cache = files.FilesShadowMapHandler(self.config)
     file_mock = self.mock()
     invocation = file_mock.expects(pmock.once())
     invocation.write(pmock.eq('root:$1$zomgmd5support:::::::\n'))
-    
+
     map_entry = maps.ShadowMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = '$1$zomgmd5support'
     cache._WriteData(file_mock, map_entry)
 
-  def testReadNetgroupEntry(self):
-    """We correctly parse a typical entry in /etc/netgroup format."""
-    cache = files.FilesNetgroupMapHandler(self.config)
-    file_entry = 'administrators unix_admins noc_monkeys (-,zero_cool,)'
-    map_entry = cache._ReadEntry(file_entry)
-
-    self.assertEqual(map_entry.name, 'administrators')
-    self.assertEqual(map_entry.entries,
-                     'unix_admins noc_monkeys (-,zero_cool,)')
-
-  def testReadEmptyNetgroupEntry(self):
-    """We correctly parse a memberless netgroup entry."""
-    cache = files.FilesNetgroupMapHandler(self.config)
-    file_entry = 'administrators'
-    map_entry = cache._ReadEntry(file_entry)
-
-    self.assertEqual(map_entry.name, 'administrators')
-    self.assertEqual(map_entry.entries, '')
-    
   def testWriteNetgroupEntry(self):
     """We correctly write a typical entry in /etc/netgroup format."""
     cache = files.FilesNetgroupMapHandler(self.config)
@@ -188,26 +128,6 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry.name = 'administrators'
     map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
     cache._WriteData(file_mock, map_entry)
-
-  def testReadAutomountEntry(self):
-    """We correctly parse a typical entry in /etc/auto.* format."""
-    cache = files.FilesAutomountMapHandler(self.config)
-    file_entry = 'scratch -tcp,rw,intr,bg fileserver:/scratch'
-    map_entry = cache._ReadEntry(file_entry)
-
-    self.assertEqual(map_entry.key, 'scratch')
-    self.assertEqual(map_entry.options, '-tcp,rw,intr,bg')
-    self.assertEqual(map_entry.location, 'fileserver:/scratch')
-
-  def testReadAutmountEntryWithExtraWhitespace(self):
-    """Extra whitespace doesn't break the parsing."""
-    cache = files.FilesAutomountMapHandler(self.config)
-    file_entry = 'scratch  fileserver:/scratch'
-    map_entry = cache._ReadEntry(file_entry)
-
-    self.assertEqual(map_entry.key, 'scratch')
-    self.assertEqual(map_entry.options, None)
-    self.assertEqual(map_entry.location, 'fileserver:/scratch')
 
   def testWriteAutomountEntry(self):
     """We correctly write a typical entry in /etc/auto.* format."""
@@ -244,6 +164,15 @@ class TestFilesCache(pmock.MockTestCase):
 
     cache = files.FilesAutomountMapHandler(conf, automount_info='/usr/meh')
     self.assertEquals(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
+
+  def testCacheFileDoesNotExist(self):
+    """Make sure we just get an empty map rather than exception."""
+    conf = {'dir': self.workdir, 'cache_filename_suffix': ''}
+    cache = files.FilesAutomountMapHandler(conf)
+    self.assertFalse(os.path.exists(os.path.join(self.workdir, 'auto.master')))
+    data = cache.GetMap()
+    self.assertTrue(len(data) == 0)
+
 
 if __name__ == '__main__':
   unittest.main()
