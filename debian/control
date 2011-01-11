@@ -1,17 +1,23 @@
 Source: nsscache
 Section: admin
 Priority: optional
-Maintainer: Jamie Wilkinson <jaq@google.com>
-Build-Depends: debhelper (>= 4.0.0), python(>=2.4), python-all-dev, python-support, python-setuptools, python2.4-pycurl | python-pycurl, python-ldap
-Standards-Version: 3.6.1
+Maintainer: Jamie Wilkinson <jaq@debian.org>
+Build-Depends: debhelper (>= 7.0.50), python (>= 2.4), python-support, python-all, python-pycurl, python-ldap
+Standards-Version: 3.9.1
+Homepage: http://code.google.com/p/nsscache
 
 Package: nsscache
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, libnss-db | libnss-cache, python-ldap, python, python2.4-pycurl | python-pycurl, python-support
-Suggests: libdb4.3 (>= 4.3.29-gg1), python-zsync, python-pyme
-Provides: lofsync, nss-cache-update
-Conflicts: lofsync, nss-cache-update
-Replaces: lofsync, nss-cache-update
-Description: NSS cache update tool and library
- This tool manages NSS cache data in a variety of storage formats, including
- nss_db, and sources it from a variety of NSS databases, including LDAP.
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Recommends: libnss-cache | libnss-db
+Suggests: python-zsync, python-pyme
+Description: asynchronously synchronise local NSS databases with remote directory services
+ Synchronises local NSS caches, such as those served by the
+ libnss-cache module, against remote directory services, such as
+ LDAP, or prebuild cache files from an HTTP server. This can be
+ used alongside the libnss-cache package to keep user account
+ information, groups, netgroups, and automounts up to date.
+ .
+ Use of nsscache and libnss-cache eliminates the need for using a
+ cache daemon such as nscd with networked NSS modules such as
+ libnss-ldap.

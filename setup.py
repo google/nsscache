@@ -44,6 +44,5 @@ distutils.core.setup(name='nsscache',
                                'nss_cache.util',
                                'nss_cache.update',
                                'nss_cache.sources'],
-                     scripts=['nsscache',
-                              'runtests.py'],
+                     scripts=['nsscache'],
                      data_files=[('/etc', ['nsscache.conf'])])

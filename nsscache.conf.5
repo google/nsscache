@@ -1,6 +1,6 @@
 .TH NSSCACHE.CONF 5 2008-11-19 "nsscache 0.8.5" "File formats"
 .SH NAME
-nsscache.conf \- NSS local cache synchroniser configuration file
+nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
 .B /etc/nsscache.conf
 .SH DESCRIPTION
@@ -9,7 +9,7 @@ synchronises a local NSS cache against a remote data source.
 This approach allows the administrator to separate the network from
 the NSS lookup codepath, improving speed and reliability of name
 services.
-.lp
+
 The nsscache configuration file comprises of one DEFAULT section,
 followed by zero or more map-specific configuration sections.  The
 file format is similar to that of ".ini" files.
@@ -120,8 +120,8 @@ used for anonymous binds.  Defaults to the empty string.
 
 .TP
 .B ldap_timelimit
-Timelimit in seconds for search results to return.  -1 means no limit.
-Defaults to -1.
+Timelimit in seconds for search results to return.  \-1 means no limit.
+Defaults to \-1.
 
 .TP
 .B ldap_retry_max

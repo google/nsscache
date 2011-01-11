@@ -1,104 +1,110 @@
-nsscache (0.19-1) lucid; urgency=low
+nsscache (0.19-2) unstable; urgency=low
+
+  * Initial upload to Debian.  (Closes: #609625) 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 11 Jan 2011 00:24:54 +0000
+
+nsscache (0.19-1) unstable; urgency=low
 
   * Allow a 206 response code when fetching the GPG signature.
 
  -- David MacKinnon <blaedd@google.com>  Fri, 19 Nov 2010 11:32:13 +1100
 
-nsscache (0.18-1) lucid; urgency=low
+nsscache (0.18-1) unstable; urgency=low
 
   * Remove the norange_conn. A range of 0- rather than blank will do
     the job.
 
  -- David MacKinnon <blaedd@google.com>  Thu, 18 Nov 2010 13:22:27 +1100
 
-nsscache (0.17-2) lucid; urgency=low
+nsscache (0.17-2) unstable; urgency=low
 
   * Bugfix for zsyncsource.Verify()
 
  -- David MacKinnon <blaedd@google.com>  Mon, 08 Nov 2010 10:31:49 +1100
 
-nsscache (0.16-1) lucid; urgency=low
+nsscache (0.16-1) unstable; urgency=low
 
   * Change behaviour when fetching full files. Use a separate connection
     that doesn't have the range header set at all.
 
  -- David MacKinnon <blaedd@google.com>  Wed, 03 Nov 2010 17:29:30 +1100
 
-nsscache (0.15-1) lucid; urgency=low
+nsscache (0.15-1) unstable; urgency=low
 
   * Add Verify() to the zsync source.
 
  -- David MacKinnon <blaedd@google.com>  Thu, 26 Aug 2010 16:01:25 +1000
 
-nsscache (0.14-1) lucid; urgency=low
+nsscache (0.14-1) unstable; urgency=low
 
   * Treat non-existent file maps as empty.
 
  -- David MacKinnon <blaedd@google.com>  Thu, 15 Jul 2010 14:32:51 +1000
 
-nsscache (0.13-1) lucid; urgency=low
+nsscache (0.13-1) unstable; urgency=low
 
   * Fix some errors in the GPG handling in zsyncsource.py
 
  -- David MacKinnon <blaedd@google.com>  Mon, 12 Jul 2010 16:29:02 +1000
 
-nsscache (0.12-3) hardy; urgency=low
+nsscache (0.12-3) unstable; urgency=low
 
   * Create /var/lib/nsscache
 
  -- David MacKinnon <blaedd@google.com>  Tue, 11 May 2010 12:17:21 +1000
 
-nsscache (0.12-2) hardy; urgency=low
+nsscache (0.12-2) unstable; urgency=low
 
   * Remove unit tests and test runner from package
 
  -- David MacKinnon <blaedd@google.com>  Fri, 23 Apr 2010 13:19:36 +1000
 
-nsscache (0.12-1) jaunty; urgency=low
+nsscache (0.12-1) unstable; urgency=low
 
   * Add support for GPG signed files to the zsyncsource
 
  -- David MacKinnon <blaedd@google.com>  Tue, 30 Mar 2010 15:21:03 +1100
 
-nsscache (0.11-1) hardy; urgency=low
+nsscache (0.11-1) unstable; urgency=low
 
   * Add the zsync source
   * Added file based Updater classes
 
  -- David MacKinnon <blaedd@google.com>  Thu, 25 Mar 2010 15:51:44 +1100
 
-nsscache (0.10-1) jaunty; urgency=low
+nsscache (0.10-1) unstable; urgency=low
 
   * Add support for netgroups and automounts to the HTTP file source.
 
  -- David MacKinnon <blaedd@google.com>  Thu, 18 Feb 2010 12:51:07 +1100
 
-nsscache (0.9-4) hardy; urgency=low
+nsscache (0.9-4) unstable; urgency=low
 
   * Install into /usr/bin instead of /usr/local/bin
 
  -- Andrew Pollock <apollock@google.com>  Fri, 19 Mar 2010 15:18:39 -0700
 
-nsscache (0.9-3) hardy; urgency=low
+nsscache (0.9-3) unstable; urgency=low
 
   * Minor packaging changes for lucid
 
  -- David MacKinnon <blaedd@google.com>  Mon, 15 Mar 2010 16:32:38 +1100
 
-nsscache (0.9-2) hardy; urgency=low
+nsscache (0.9-2) unstable; urgency=low
 
   * Fix setup.py to include the new util package.
 
  -- David MacKinnon <blaedd@google.com>  Wed, 17 Feb 2010 14:44:19 +1100
 
-nsscache (0.9-1) hardy; urgency=low
+nsscache (0.9-1) unstable; urgency=low
 
   * Add a HTTPSource. This only supports the passwd/shadow/group maps for now,
     and adds a pycurl dependency. The long term plan is to support zsync.
 
  -- David MacKinnon <blaedd@google.com>  Mon, 14 Dec 2009 12:52:16 +1100
 
-nsscache (0.8.8-1) hardy; urgency=low
+nsscache (0.8.8-1) unstable; urgency=low
 
   * gracefully handle a missing auto.master when using the local automount
     master map -- issues a warning and skips auto.* updates.
@@ -112,7 +118,7 @@ nsscache (0.8.7-2) unstable; urgency=low
 
  -- Jamie Wilkinson <jaq@google.com>  Tue, 10 Mar 2009 15:21:21 +1100
 
-nsscache (0.8.7-1) hardy; urgency=low
+nsscache (0.8.7-1) unstable; urgency=low
 
   * Handle comments in map files.
   * Stop FileCache.Write() from closing the cache file
@@ -120,7 +126,7 @@ nsscache (0.8.7-1) hardy; urgency=low
 
  -- David MacKinnon <blaedd@google.com>  Thu, 26 Feb 2009 14:01:43 +1100
 
-nsscache (0.8.6-1) hardy; urgency=low
+nsscache (0.8.6-1) unstable; urgency=low
 
   * Worked around set(), subprocess, ConfigParser, and logging to allow
     nsscache to run on python2.3 systems.  (code.google.com issue #15)
@@ -130,7 +136,7 @@ nsscache (0.8.6-1) hardy; urgency=low
 
  -- Jamie Wilkinson <jaq@google.com>  Thu, 29 Jan 2009 13:16:00 +1100
 
-nsscache (0.8.5-1) hardy; urgency=low
+nsscache (0.8.5-1) unstable; urgency=low
 
   * add local_automaster flag to the automount section of the files backend,
     to allow for local control over which automount masters are enabled and
@@ -140,7 +146,7 @@ nsscache (0.8.5-1) hardy; urgency=low
 
  -- V Hoffman <vasilios@google.com>  Wed, 19 Nov 2008 16:24:58 +0900
 
-nsscache (0.8.4-1) hardy; urgency=low
+nsscache (0.8.4-1) unstable; urgency=low
 
   * some style cleanups as I encountered them
   * fixed timezone dependancy in unit test
