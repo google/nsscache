@@ -21,11 +21,11 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
-import logging
 import os
 import shutil
 import sys
 import tempfile
+import time
 
 from nss_cache import app
 
@@ -34,8 +34,11 @@ if __name__ == '__main__':
   tempdir = tempfile.mkdtemp(prefix='nsscache')
   os.chdir(tempdir)
   nsscache_app = app.NssCacheApp()
+  start_time = time.clock()
   return_value = nsscache_app.Run(sys.argv[1:], os.environ)
-  nsscache_app.log.info('Exiting nsscache with value %d', return_value)
+  end_time = time.clock()
+  nsscache_app.log.info('Exiting nsscache with value %d runtime %f',
+                        return_value, end_time - start_time)
   os.chdir(old_dir)
   shutil.rmtree(tempdir)
   sys.exit(return_value)

@@ -1,3 +1,15 @@
+nsscache (0.21.4-0gg1) unstable; urgency=low
+
+  * New upstream release.
+    * Sort netgroup membership.
+    * Log the time it takes to perform a whole run.
+    * Factor out the updater factory method from app.py.
+    * Don't quit the updater if one map fails, wait for all maps to finish
+      processing before exiting.
+    * Add the pid, module, and function name to the syslog format string.
+
+ -- Jamie Wilkinson <jaq@google.com>  Wed, 26 Jan 2011 15:57:50 -0800
+
 nsscache (0.21.3-0gg1) unstable; urgency=low
 
   * New upstream release.

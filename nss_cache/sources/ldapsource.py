@@ -583,10 +583,10 @@ class NetgroupUpdateGetter(UpdateGetter):
     if 'memberNisNetgroup' in obj:
       entries.update(obj['memberNisNetgroup'])
     if 'nisNetgroupTriple' in obj:
-      entries.update(obj['nisNetgroupTriple'])  
+      entries.update(obj['nisNetgroupTriple'])
 
     # final data is stored as a string in the object
-    netgroup_ent.entries = ' '.join(entries)
+    netgroup_ent.entries = ' '.join(sorted(entries))
 
     return netgroup_ent
 

@@ -142,7 +142,8 @@ class SingleMapUpdater(base.Updater):
       os.chmod(source_file, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
       os.rename(source_file, cache.GetCacheFilename())
     except OSError:
-      logging.warning('Unable to copy new cache across')
+      logging.warning('Unable to rename new cache %s to %s',
+                      source_file, cache.GetCacheFilename())
       return_val += 1
 
     # We did an update, write our timestamps unless there is an error.

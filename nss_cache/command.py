@@ -263,24 +263,7 @@ class Update(Command):
 
       source = sources.base.Create(source_options)
 
-      # Bit ugly. This just checks the class attribute UPDATER
-      # to determine which type of updater the source uses. At the moment
-      # there's only two, so not a huge deal. If we add another we should
-      # refactor though.
-      if hasattr(source, 'UPDATER') and source.UPDATER == config.UPDATER_FILE:
-        if map_name == config.MAP_AUTOMOUNT:
-          updater = update.files.AutomountUpdater(map_name, conf.timestamp_dir,
-                                                  cache_options)
-        else:
-          updater = update.files.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                                  cache_options)
-      else:
-        if map_name == config.MAP_AUTOMOUNT:
-          updater = update.maps.AutomountUpdater(map_name, conf.timestamp_dir,
-                                                 cache_options)
-        else:
-          updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                                 cache_options)
+      updater = self._Updater(map_name, source, cache_options, conf)
 
       if incremental:
         self.log.info('Updating and verifying %s cache.', map_name)
@@ -288,16 +271,38 @@ class Update(Command):
         self.log.info('Rebuilding and verifying %s cache.', map_name)
 
       try:
-        retval = updater.UpdateFromSource(source, incremental=incremental, force_write=force_write)
+        retval = updater.UpdateFromSource(source, incremental=incremental,
+                                          force_write=force_write)
       except error.PermissionDenied:
         self.log.error('Permission denied: could not update.maps %r.  Aborting',
                        map_name)
         retval = 1
 
-      if retval:
-        return retval
+    if retval:
+      return retval
 
     return 0
+
+  def _Updater(self, map_name, source, cache_options, conf):
+    # Bit ugly. This just checks the class attribute UPDATER
+    # to determine which type of updater the source uses. At the moment
+    # there's only two, so not a huge deal. If we add another we should
+    # refactor though.
+    if hasattr(source, 'UPDATER') and source.UPDATER == config.UPDATER_FILE:
+      if map_name == config.MAP_AUTOMOUNT:
+        updater = update.files.AutomountUpdater(map_name, conf.timestamp_dir,
+                                                cache_options)
+      else:
+        updater = update.files.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                                cache_options)
+    else:
+      if map_name == config.MAP_AUTOMOUNT:
+        updater = update.maps.AutomountUpdater(map_name, conf.timestamp_dir,
+                                               cache_options)
+      else:
+        updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
+                                               cache_options)
+    return updater
 
 
 class Verify(Command):
@@ -375,7 +380,7 @@ class Verify(Command):
       # The netgroup map does not have an enumerator,
       # to test this we'd have to loop over the loaded cache map
       # and verify each entry is retrievable via getent directly.
-      # TODO: apply fix from comment to allow for netgroup checking
+      # TODO(blaed): apply fix from comment to allow for netgroup checking
       if map_name == config.MAP_NETGROUP:
         self.log.info(('The netgroup map does not support enumeration, '
                        'skipping.'))
@@ -460,7 +465,7 @@ class Help(Command):
   e.g. 'help help' shows this help.
   """
 
-  def Run(self, conf, args):
+  def Run(self, unused_conf, args):
     """Run the Help command.
 
     See Command.Run() for full documentation on the Run() method.

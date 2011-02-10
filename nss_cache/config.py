@@ -28,8 +28,6 @@ import ConfigParser
 import logging
 import re
 
-from nss_cache import error
-
 
 # known nss map types.
 MAP_PASSWORD = 'passwd'

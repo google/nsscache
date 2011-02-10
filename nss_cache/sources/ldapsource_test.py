@@ -452,7 +452,7 @@ class TestLdapSource(pmock.MockTestCase):
     ent = data.PopItem()
 
     self.assertEqual('test', ent.name)
-    self.assertEqual('admins (-,hax0r,)', ent.entries)
+    self.assertEqual('(-,hax0r,) admins', ent.entries)
 
   def testGetNetgroupMapWithDupes(self):
     """Test that GetNetgroupMap returns a sensible map."""
