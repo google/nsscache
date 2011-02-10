@@ -242,7 +242,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
   def testVerifyEmptyMap(self):
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     # create a temp file, clag it into the updater object
-    (_, temp_filename) = tempfile.mkstemp(prefix='nsscache',
+    (_, temp_filename) = tempfile.mkstemp(prefix='nsscache-nssdb_test',
                                           dir=self.workdir)
     updater.cache_filename = temp_filename
     # make it empty

@@ -265,8 +265,20 @@ class Update(Command):
       # In addition, we create a tempdir below this dir to work in, because
       # zsync's librcksum sometimes leaves temp files around, and we don't
       # want to leave file turds around /etc.
+      # We save and restore the directory here as each cache can define its own
+      # output directory.
+      # Finally, relative paths in the config are treated as relative to the
+      # startup directory, but we convewrt them to absolute paths so that future
+      # temp dirs do not mess with our output routines.
+      old_cwd = os.getcwd()
       tempdir = tempfile.mkdtemp(dir=cache_options['dir'],
                                  prefix='nsscache-')
+      if not os.path.isabs(cache_options['dir']):
+        cache_options['dir'] = os.path.abspath(cache_options['dir'])
+      if not os.path.isabs(conf.timestamp_dir):
+        conf.timestamp_dir = os.path.abspath(conf.timestamp_dir)
+      if not os.path.isabs(tempdir):
+        tempdir = os.path.abspath(tempdir)
       os.chdir(tempdir)
 
       source = sources.base.Create(source_options)
@@ -289,7 +301,7 @@ class Update(Command):
         self.log.error(e)
         retval = 1
 
-      os.chdir('/')
+      os.chdir(old_cwd)
       shutil.rmtree(tempdir)
 
     if retval:

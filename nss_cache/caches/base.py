@@ -138,9 +138,12 @@ class Cache(object):
 
   def _Begin(self):
     """Start a write transaction."""
+    self.log.debug('Output dir: %s', self.output_dir)
+    self.log.debug('CWD: %s', os.getcwd())
     try:
-      (fd, self.cache_filename) = tempfile.mkstemp(prefix='nsscache',
-                                                   dir=self.output_dir)
+      (fd, self.cache_filename) = tempfile.mkstemp(
+          prefix='nsscache-nssdb-',
+          dir=os.path.join(os.getcwd(), self.output_dir))
       self.cache_file = os.fdopen(fd, 'w+b')
       self.log.debug('opened temporary cache filename %r', self.cache_filename)
     except OSError, e:

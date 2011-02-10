@@ -1,3 +1,10 @@
+nsscache (0.21.10-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Handle relative paths in the config when creating temporary directories.
+
+ -- Jamie Wilkinson <jaq@google.com>  Wed, 09 Feb 2011 20:34:36 -0800
+
 nsscache (0.21.9-0gg1) unstable; urgency=low
 
   * New upstream release.

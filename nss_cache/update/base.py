@@ -153,7 +153,7 @@ class Updater(object):
     Returns:
        A boolean indicating success of write.
     """
-    (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache',
+    (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
                                                  dir=self.timestamp_dir)
 
     time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', timestamp)
