@@ -1,3 +1,22 @@
+nsscache (0.21.1-0gg1) unstable; urgency=low
+
+  * Bump version number in nss_cache/__init__.py so that the code knows
+    what version it's running.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 25 Jan 2011 15:01:09 -0800
+
+nsscache (0.21-1) unstable; urgency=low
+
+  * Include exit code in Exiting message
+
+ -- Michael Haro <mharo@google.com>  Mon, 17 Jan 2011 22:07:46 -0800
+
+nsscache (0.20-1) unstable; urgency=low
+
+  * Do all work in a tempdir that we clean up on a normal exit.
+
+ -- David MacKinnon <blaedd@google.com>  Fri, 14 Jan 2011 12:24:55 +1100
+
 nsscache (0.19-2) unstable; urgency=low
 
   * Initial upload to Debian.  (Closes: #609625) 
