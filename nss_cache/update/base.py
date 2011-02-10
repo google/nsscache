@@ -29,7 +29,6 @@ AutomountMapUpdater:  Class used for updating automount map caches.
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
-import calendar
 import logging
 import os
 import stat
@@ -468,7 +467,7 @@ class AutomountUpdater(Updater):
       self.log.info('Using local master map to determine maps to update.')
       # we need the local map to determine which of the other maps to update
       cache = caches.base.Create(self.cache_options, self.map_name,
-                                 automount_info=None)
+                                 automount_mountpoint=None)
       try:
         local_master = cache.GetMap()
       except error.CacheNotFound:
@@ -486,7 +485,7 @@ class AutomountUpdater(Updater):
       # create the cache to update
       cache = caches.base.Create(self.cache_options,
                                  self.map_name,
-                                 automount_info=automount_info)
+                                 automount_mountpoint=automount_info)
 
       # update the master map with the location of the map in the cache
       # e.g. /etc/auto.auto replaces ou=auto.auto
@@ -508,9 +507,10 @@ class AutomountUpdater(Updater):
                                                   force_write, source_location)
     # with sub-maps updated, write modified master map to disk if configured to
     if not self.local_master:
+      # automount_mountpoint=None defaults to master
       cache = caches.base.Create(self.cache_options,
                                  self.map_name,
-                                 automount_info=None)  # None defaults to master
+                                 automount_mountpoint=None)
       updater = SingleMapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options)

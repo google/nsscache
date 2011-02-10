@@ -112,6 +112,13 @@ class TestFilesCache(pmock.MockTestCase):
     self.assertEqual(map_entry.options, None)
     self.assertEqual(map_entry.location, 'fileserver:/scratch')
 
+  def testReadBadAutomountEntry(self):
+    """Cope with empty data."""
+    parser = files.FilesAutomountMapParser()
+    file_entry = ''
+    map_entry = parser._ReadEntry(file_entry)
+    self.assertEqual(None, map_entry)
+
 
 if __name__ == '__main__':
   unittest.main()

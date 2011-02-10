@@ -25,21 +25,22 @@ import os
 import re
 import tempfile
 import time
-
-try:
-  import pyme.core
-except ImportError:
-  pyme = None
 import urlparse
 
 import pycurl
 import zsync
 
+try:
+  import pyme.core
+except ImportError:
+  pyme = None
+
 import nss_cache
 from nss_cache import config
 from nss_cache import error
-from nss_cache.sources import base
 from nss_cache.util import curl
+
+from nss_cache.sources import base
 
 
 class ZSyncSource(base.FileSource):
@@ -63,7 +64,9 @@ class ZSyncSource(base.FileSource):
 
   TLS_CACERTFILE = '/etc/ssl/certs/ca-certificates.crt'
 
-  CONTENT_RANGE_RE = re.compile(r'content-range: bytes (?P<start>\d+)-(?P<end>\d+)/(?P<total>\d+)', re.I)
+  CONTENT_RANGE_RE = re.compile((r'content-range: bytes '
+                                 '(?P<start>\d+)-(?P<end>\d+)/(?P<total>\d+)'),
+                                re.I)
 
   name = 'zsync'
 
@@ -166,7 +169,7 @@ class ZSyncSource(base.FileSource):
     sign = result.signatures[0]
     while sign:
       if self.conf.get('gpg_fingerprint') == sign.fpr:
-        self.log.info('Successfully verified signed file %s:%s', local_path,
+        self.log.info('Successfully verified file %r signed by %r', local_path,
                       context.get_key(sign.fpr, 0).uids[0].uid)
         return True
       sign = sign.next

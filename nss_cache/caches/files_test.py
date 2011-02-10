@@ -23,11 +23,13 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import os
 import tempfile
-import pmock
 import unittest
+
+import pmock
 
 from nss_cache import config
 from nss_cache import maps
+
 from nss_cache.caches import files
 
 
@@ -159,10 +161,11 @@ class TestFilesCache(pmock.MockTestCase):
     cache = files.FilesAutomountMapHandler(conf)
     self.assertEquals(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
 
-    cache = files.FilesAutomountMapHandler(conf, automount_info='/home')
+    cache = files.FilesAutomountMapHandler(conf, automount_mountpoint='/home')
     self.assertEquals(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
 
-    cache = files.FilesAutomountMapHandler(conf, automount_info='/usr/meh')
+    cache = files.FilesAutomountMapHandler(conf,
+                                           automount_mountpoint='/usr/meh')
     self.assertEquals(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
 
   def testCacheFileDoesNotExist(self):

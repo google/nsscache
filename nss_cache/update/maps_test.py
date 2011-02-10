@@ -389,9 +389,6 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     master_map = maps.AutomountMap()
 
     source_mock = self.mock()
-    invocation = source_mock.expects(pmock.once())
-    invocation = invocation.GetAutomountMasterMap()
-    invocation.will(pmock.return_value(master_map))
 
     cache_mock = self.mock()
     # raise error on GetMap()

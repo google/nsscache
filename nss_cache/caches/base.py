@@ -52,14 +52,14 @@ def RegisterImplementation(cache_name, map_name, cache):
   _cache_implementations[cache_name][map_name] = cache
 
 
-def Create(conf, map_name, automount_info=None):
+def Create(conf, map_name, automount_mountpoint=None):
   """Cache creation factory method.
 
   Args:
    conf: a dictionary of configuration key/value pairs, including one
    required attribute 'name'
    map_name: a string identifying the map name to handle
-   automount_info: A string containing the automount mountpoint, used only
+   automount_mountpoint: A string containing the automount mountpoint, used only
      by automount maps.
 
   Returns:
@@ -79,7 +79,7 @@ def Create(conf, map_name, automount_info=None):
                                                              cache_name))
 
   return _cache_implementations[cache_name][map_name](
-    conf, map_name, automount_info=automount_info)
+      conf, map_name, automount_mountpoint=automount_mountpoint)
 
 
 class Cache(object):

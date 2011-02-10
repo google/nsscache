@@ -53,7 +53,8 @@ class FilesMapParser(object):
         continue
       entry = self._ReadEntry(line)
       if not data.Add(entry):
-        self.log.warn('could not add entry build from %r', line)
+        self.log.warn('Could not add entry %r read from line %r in cache',
+                      entry, line)
     return data
 
 
@@ -148,13 +149,23 @@ class FilesAutomountMapParser(FilesMapParser):
   """Class for parsing a nss_files module automount cache."""
 
   def _ReadEntry(self, line):
-    """Return an AutomountMapEntry from a record in the target cache."""
+    """Return an AutomountMapEntry from a record in the target cache.
+
+    Args:
+      line: A string from a file cache.
+
+    Returns:
+      An AutomountMapEntry if the line is successfully parsed, None otherwise.
+    """
     line = line.split()
     map_entry = maps.AutomountMapEntry()
-    map_entry.key = line[0]
-    if len(line) > 2:
-      map_entry.options = line[1]
-      map_entry.location = line[2]
-    else:
-      map_entry.location = line[1]
+    try:
+      map_entry.key = line[0]
+      if len(line) > 2:
+        map_entry.options = line[1]
+        map_entry.location = line[2]
+      else:
+        map_entry.location = line[1]
+    except IndexError:
+      return None
     return map_entry

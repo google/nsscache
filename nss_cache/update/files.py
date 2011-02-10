@@ -30,7 +30,6 @@ __author__ = ('blaedd@google.com (David MacKinnon)',)
 import errno
 import logging
 import os
-import shutil
 import stat
 import tempfile
 import time
@@ -88,10 +87,10 @@ class SingleMapUpdater(base.Updater):
     """
     return_val = 0
 
-    new_fd, new_file = tempfile.mkstemp(
-      dir=os.path.dirname(cache.GetCacheFilename()),
-      prefix=os.path.basename(cache.GetCacheFilename()),
-      suffix=".temp-nsscache.")
+    unused_new_fd, new_file = tempfile.mkstemp(
+        dir=os.path.dirname(cache.GetCacheFilename()),
+        prefix=os.path.basename(cache.GetCacheFilename()),
+        suffix='.nsscache.tmp')
     self.log.debug('temp filename: %s', new_file)
     try:
       source.GetFile(self.map_name, new_file, cache.GetCacheFilename(),
@@ -125,7 +124,7 @@ class SingleMapUpdater(base.Updater):
     """
     return_val = 0
     verify_cache = caches.base.Create(self.cache_options, self.map_name,
-                                      automount_info=cache.automount_info)
+                                      automount_mountpoint=cache.automount_info)
     new_map = verify_cache.GetMap()
 
     for entry in new_map:
@@ -226,11 +225,12 @@ class AutomountUpdater(base.Updater):
     return_val = 0
 
     try:
-      self.log.info('Retrieving automount master map.')
-      master_file = source.GetAutomountMasterFile(
-        os.path.join(self.cache_options['dir'], 'auto.master'))
+      if not self.local_master:
+        self.log.info('Retrieving automount master map.')
+        master_file = source.GetAutomountMasterFile(
+            os.path.join(self.cache_options['dir'], 'auto.master'))
       master_cache = caches.base.Create(self.cache_options, self.map_name,
-                                          None)
+                                        None)
       master_map = master_cache.GetMap()
     except error.CacheNotFound:
       return 1
@@ -239,7 +239,7 @@ class AutomountUpdater(base.Updater):
       self.log.info('Using local master map to determine maps to update.')
       # we need the local map to determine which of the other maps to update
       cache = caches.base.Create(self.cache_options, self.map_name,
-                                 automount_info=None)
+                                 automount_mountpoint=None)
       try:
         local_master = cache.GetMap()
       except error.CacheNotFound:
@@ -250,13 +250,13 @@ class AutomountUpdater(base.Updater):
     # update specific maps, e.g. auto.home and auto.auto
     for map_entry in master_map:
       source_location = os.path.basename(map_entry.location)
-      automount_info = map_entry.key        # e.g. /auto mountpoint
-      self.log.debug('looking at %s mount.', automount_info)
+      mountpoint = map_entry.key        # e.g. /auto mountpoint
+      self.log.debug('Looking at mountpoint %s', mountpoint)
 
       # create the cache to update
       cache = caches.base.Create(self.cache_options,
                                  self.map_name,
-                                 automount_info=automount_info)
+                                 automount_mountpoint=mountpoint)
 
       # update the master map with the location of the map in the cache
       # e.g. /etc/auto.auto replaces ou=auto.auto
@@ -266,25 +266,27 @@ class AutomountUpdater(base.Updater):
       # if configured to use the local master map, skip any not defined there
       if self.local_master:
         if map_entry not in local_master:
-          self.log.debug('skipping %s, not in %s', map_entry, local_master)
+          self.log.info('Skipping entry %s, not in map %s',
+                        map_entry, local_master)
           continue
-      self.log.info('Updating %s mount.', map_entry.key)
+      self.log.info('Updating mountpoint %s', map_entry.key)
       # update this map (e.g. /etc/auto.auto)
       updater = SingleMapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options,
-                                 automount_info=automount_info)
+                                 automount_info=mountpoint)
       return_val += updater.UpdateCacheFromSource(
           cache, source, force_write, source_location)
     # with sub-maps updated, write modified master map to disk if
     # configured to
     if not self.local_master:
+      # automount_mountpoint=None defaults to master
       cache = caches.base.Create(self.cache_options,
                                  self.map_name,
-                                 automount_info=None)  # None defaults to master
+                                 automount_mountpoint=None)
       updater = SingleMapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options)
-      return_val += updater.FullUpdateFromMap(cache, master_map)
+      return_val += updater.FullUpdateFromMap(cache, master_file)
 
     return return_val

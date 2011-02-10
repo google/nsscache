@@ -263,7 +263,6 @@ class Update(Command):
       cache_options = conf.options[map_name].cache
       source_options = conf.options[map_name].source
 
-
       # Change into the target directory.
       # Sources such as zsync handle their temporary files badly, so we
       # want to be in the same location that the destination file will
@@ -486,7 +485,7 @@ class Help(Command):
   e.g. 'help help' shows this help.
   """
 
-  def Run(self, unused_conf, args):
+  def Run(self, conf, args):
     """Run the Help command.
 
     See Command.Run() for full documentation on the Run() method.
@@ -668,14 +667,14 @@ class Status(Command):
 
     return '\n'.join(template)
 
-  def GetSingleMapMetadata(self, map_name, conf, automount_info=None,
+  def GetSingleMapMetadata(self, map_name, conf, automount_mountpoint=None,
                            epoch=False):
     """Return metadata from map specified.
 
     Args:
       map_name: name of map to extract data from
       conf: a config.Config object
-      automount_info: information necessary for automount maps
+      automount_mountpoint: information necessary for automount maps
       epoch: return times as an integer epoch (time_t) instead of a
         human readable name
 
@@ -685,12 +684,12 @@ class Status(Command):
     cache_options = conf.options[map_name].cache
 
     updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                           cache_options, automount_info)
+                                           cache_options, automount_mountpoint)
 
     if map_name == config.MAP_AUTOMOUNT:
       # have to find out *which* automount map from a cache object!
       cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
-                                 automount_info=automount_info)
+                                 automount_mountpoint=automount_mountpoint)
       value_dict = {'map': cache.GetMapLocation()}
     else:
       value_dict = {'map': map_name}
@@ -733,19 +732,19 @@ class Status(Command):
 
     # get the value_dict for the master map, note that automount_info=None
     # defaults to the master map!
-    value_dict = self.GetSingleMapMetadata(map_name, conf, automount_info=None,
-                                           epoch=epoch)
+    value_dict = self.GetSingleMapMetadata(
+        map_name, conf, automount_mountpoint=None, epoch=epoch)
     value_list.append(value_dict)
 
     # now get the contents of the master map, and get the status for each map
     # we find
     cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
-                               automount_info=None)
+                               automount_mountpoint=None)
     master_map = cache.GetMap()
 
     for map_entry in master_map:
       value_dict = self.GetSingleMapMetadata(map_name, conf,
-                                             automount_info=map_entry.key,
+                                             automount_mountpoint=map_entry.key,
                                              epoch=epoch)
       value_list.append(value_dict)
 

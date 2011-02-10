@@ -187,17 +187,18 @@ class AutomountUpdaterTest(pmock.MockTestCase):
         pmock.return_value(master_map))
     cache_mock3.expects(pmock.once())._CalledFullUpdateFromMap()
 
-    # key automount_info to the right cache mocks, where None is what we expect
-    # for the master_map
+    # key automount_mountpoint to the right cache mocks, where None is
+    # what we expect for the master_map
     cache_mocks = {'/home': cache_mock1,
                    '/auto': cache_mock2,
                    None: cache_mock3}
 
     # Create needs to return our mock_caches
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
-      return cache_mocks[automount_info]
+      # automount_mountpoint as the key to return the right one.
+      return cache_mocks[automount_mountpoint]
 
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
@@ -230,12 +231,8 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     local_entry2.location = '/etc/auto.null'
     local_master = maps.AutomountMap([local_entry1, local_entry2])
     source_mock = self.mock()
-    # return the source master map
     invocation = source_mock.expects(pmock.at_least_once())
     invocation._CalledUpdateCacheFromSource()
-    invocation = source_mock.expects(pmock.at_least_once())
-    invocation = invocation.method('GetAutomountMasterFile')
-    invocation.will(pmock.return_value(source_master))
     # we should get called inside the DummyUpdater, too.
 
     # the auto.home cache
@@ -266,10 +263,11 @@ class AutomountUpdaterTest(pmock.MockTestCase):
                    None: cache_mock3}
 
     # Create needs to return our mock_caches
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
-      return cache_mocks[automount_info]
+      # automount_mountpoint as the key to return the right one.
+      return cache_mocks[automount_mountpoint]
 
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
@@ -286,13 +284,7 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     """Gracefully handle a missing local master map."""
     # use an empty master map from the source, to avoid mocking out already
     # tested code
-    master_map = maps.AutomountMap()
-
     source_mock = self.mock()
-    invocation = source_mock.expects(pmock.once())
-    invocation = invocation.method('GetAutomountMasterFile')
-    invocation.will(pmock.return_value(
-        os.path.join(self.workdir, 'auto.master')))
 
     cache_mock = self.mock()
     # raise error on GetMap()
@@ -300,9 +292,10 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     invocation.will(pmock.raise_exception(error.CacheNotFound))
 
     # Create needs to return our mock_cache
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
+      # automount_mountpoint as the key to return the right one.
       return cache_mock
 
     original_create = caches.base.Create

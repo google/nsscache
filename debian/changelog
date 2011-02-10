@@ -1,3 +1,13 @@
+nsscache (0.21.6-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Don't retrieve the auto.master file from the zsync source if
+     zsync_local_automount_master is set to yes.
+   * Fix a crash caused by bad code clagging between update/files.py and
+     update/maps.py.
+
+ -- Jamie Wilkinson <jaq@google.com>  Fri, 28 Jan 2011 17:58:07 -0800
+
 nsscache (0.21.5-0gg1) unstable; urgency=low
 
   * New upstream release.

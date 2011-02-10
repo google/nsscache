@@ -73,7 +73,7 @@ class TestCommand(pmock.MockTestCase):
     invocation = mock_lock.expects(pmock.once())
     invocation = invocation.Lock(force=pmock.eq(False))
     invocation.will(pmock.return_value('LOCK')).id('first')
-    
+
     invocation = mock_lock.expects(pmock.once())
     invocation = invocation.Lock(force=pmock.eq(False))
     invocation.will(pmock.return_value('MORLOCK')).after('first')
@@ -96,7 +96,7 @@ class TestCommand(pmock.MockTestCase):
     c.lock = None
 
   def testForceLock(self):
-    
+
     mock_lock = self.mock()
 
     invocation = mock_lock.expects(pmock.once())
@@ -261,7 +261,7 @@ class TestUpdateCommand(pmock.MockTestCase):
     invocation = lock_mock.expects(pmock.once())
     invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(False))
     invocation.will(pmock.return_value(True))
-    
+
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
 
@@ -326,7 +326,7 @@ class TestUpdateCommand(pmock.MockTestCase):
     invocation = lock_mock.expects(pmock.once())
     invocation = invocation._Lock(path=pmock.eq(None), force=pmock.eq(True))
     invocation.will(pmock.return_value(False))
-    
+
     c = command.Update()
     c._Lock = lock_mock._Lock
     self.assertEquals(c.UpdateMaps(self.conf, False, force_lock=True),
@@ -915,13 +915,13 @@ class TestStatusCommand(pmock.MockTestCase):
     cache_mock = self.mock()
     invocation = cache_mock.expects(pmock.once())
     invocation.GetMapLocation().will(pmock.return_value('/etc/auto.master'))
-    
+
     self.cache_mock = cache_mock
 
     # FakeCreate() is to be called by GetSingleMapMetadata for automount maps
-    def FakeCreate(conf, map_name, automount_info=None):
+    def FakeCreate(conf, map_name, automount_mountpoint=None):
       self.assertEquals(map_name, config.MAP_AUTOMOUNT)
-      self.assertEquals(automount_info, 'automount_info')
+      self.assertEquals(automount_mountpoint, 'automount_mountpoint')
       return self.cache_mock
 
     caches.base.Create = FakeCreate
@@ -933,8 +933,9 @@ class TestStatusCommand(pmock.MockTestCase):
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
 
-    value_dict = c.GetSingleMapMetadata(config.MAP_AUTOMOUNT, self.conf,
-                                        automount_info='automount_info')
+    value_dict = c.GetSingleMapMetadata(
+        config.MAP_AUTOMOUNT, self.conf,
+        automount_mountpoint='automount_mountpoint')
 
     self.failUnless('map' in value_dict)
     self.failUnless('last-modify-timestamp' in value_dict)
@@ -970,7 +971,7 @@ class TestStatusCommand(pmock.MockTestCase):
     # stub out GetSingleMapMetadata
     class DummyStatus(command.Status):
       def GetSingleMapMetadata(self, unused_map_name, unused_conf,
-                               automount_info=None, epoch=False):
+                               automount_mountpoint=None, epoch=False):
         return {'map': 'map_name', 'last-modify-timestamp': 'foo',
                 'last-update-timestamp': 'bar'}
 
@@ -988,7 +989,8 @@ class TestStatusCommand(pmock.MockTestCase):
     self.cache_mock = cache_mock
 
     # stub out caches.base.Create(), is restored in tearDown()
-    def FakeCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def FakeCreate(unused_cache_options, unused_map_name,
+                   automount_mountpoint=None):
       return self.cache_mock
 
     caches.base.Create = FakeCreate

@@ -26,9 +26,9 @@ import re
 
 from nss_cache import config
 from nss_cache import error
-from nss_cache import maps
-from nss_cache.caches import base
 from nss_cache.util import files
+
+from nss_cache.caches import base
 
 try:
   SetType = set
@@ -44,17 +44,17 @@ class FilesCache(base.Cache):
   nss_files module.
   """
 
-  def __init__(self, conf, map_name, automount_info=None):
+  def __init__(self, conf, map_name, automount_mountpoint=None):
     """Create a handler for the given map type.
 
     Args:
      conf: a configuration object
      map_name: a string representing the type of map we are
-     automount_info: A string containing the automount mountpoint, used only
-       by automount maps.
+     automount_mountpoint: A string containing the automount mountpoint, used
+       only by automount maps.
     """
     super(FilesCache, self).__init__(conf, map_name,
-                                     automount_info=automount_info)
+                                     automount_info=automount_mountpoint)
 
     # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
@@ -179,10 +179,10 @@ class FilesPasswdMapHandler(FilesCache):
   """Concrete class for updating a nss_files module passwd cache."""
   CACHE_FILENAME = 'passwd'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_PASSWORD
-    super(FilesPasswdMapHandler, self).__init__(conf, map_name,
-                                                automount_info=automount_info)
+    super(FilesPasswdMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = files.FilesPasswdMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
@@ -212,10 +212,10 @@ class FilesGroupMapHandler(FilesCache):
   """Concrete class for updating a nss_files module group cache."""
   CACHE_FILENAME = 'group'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_GROUP
-    super(FilesGroupMapHandler, self).__init__(conf, map_name,
-                                               automount_info=automount_info)
+    super(FilesGroupMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = files.FilesGroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
@@ -243,10 +243,10 @@ class FilesShadowMapHandler(FilesCache):
   """Concrete class for updating a nss_files module shadow cache."""
   CACHE_FILENAME = 'shadow'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_SHADOW
-    super(FilesShadowMapHandler, self).__init__(conf, map_name,
-                                                automount_info=automount_info)
+    super(FilesShadowMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = files.FilesShadowMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
@@ -282,10 +282,10 @@ class FilesNetgroupMapHandler(FilesCache):
   CACHE_FILENAME = 'netgroup'
   _TUPLE_RE = re.compile('^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_NETGROUP
-    super(FilesNetgroupMapHandler, self).__init__(conf, map_name,
-                                                  automount_info=automount_info)
+    super(FilesNetgroupMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = files.FilesNetgroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
@@ -315,19 +315,19 @@ class FilesAutomountMapHandler(FilesCache):
   """Concrete class for updating a nss_files module automount cache."""
   CACHE_FILENAME = None  # we have multiple files, set as we update.
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_AUTOMOUNT
-    super(FilesAutomountMapHandler,
-          self).__init__(conf, map_name, automount_info=automount_info)
+    super(FilesAutomountMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = files.FilesAutomountMapParser()
 
-    if automount_info is None:
+    if automount_mountpoint is None:
       # we are dealing with the master map
       self.CACHE_FILENAME = 'auto.master'
     else:
       # turn /auto into auto.auto, and /usr/local into /auto.usr_local
-      automount_info = automount_info.lstrip('/')
-      self.CACHE_FILENAME = 'auto.%s' % automount_info.replace('/', '_')
+      automount_mountpoint = automount_mountpoint.lstrip('/')
+      self.CACHE_FILENAME = 'auto.%s' % automount_mountpoint.replace('/', '_')
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
