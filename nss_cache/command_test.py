@@ -853,15 +853,6 @@ class TestStatusCommand(pmock.MockTestCase):
     self.assertEquals(2, c.Run(None, ['--invalid']))
     sys.stderr = stderr
 
-  def testValuesOnlyParameter(self):
-    c = command.Status()
-    (options, args) = c.parser.parse_args([])
-    self.assertEqual(False, options.values_only)
-    self.assertEqual([], args)
-    (options, args) = c.parser.parse_args(['--values-only'])
-    self.assertEqual(True, options.values_only)
-    self.assertEqual([], args)
-
   def testEpochFormatParameter(self):
     c = command.Status()
     (options, args) = c.parser.parse_args([])
@@ -881,32 +872,6 @@ class TestStatusCommand(pmock.MockTestCase):
 
     self.failIfEqual(0, len(stdout_buffer.getvalue()))
     self.failIf(stdout_buffer.getvalue().find('group') >= 0)
-
-  def testStatParameter(self):
-    c = command.Status()
-    (options, args) = c.parser.parse_args([])
-    self.assertEqual(None, options.stat)
-    self.assertEqual([], args)
-    (options, args) = c.parser.parse_args(['--stat=foo'])
-    self.assertEqual('foo', options.stat)
-    self.assertEqual([], args)
-    (options, args) = c.parser.parse_args(['--stat', 'foo'])
-    self.assertEqual('foo', options.stat)
-    self.assertEqual([], args)
-
-  def testGetOutputTemplateValuesOnly(self):
-    c = command.Status()
-    template = c.GetOutputTemplate(values_only=True)
-    self.failIfEqual(0, len(template))
-    self.failUnless(template.find('%(last-modify-timestamp)s') >= 0)
-    self.failIf(template.find('(UTC)') >= 0)
-
-  def testGetOutputTemplateStat(self):
-    c = command.Status()
-    template = c.GetOutputTemplate(only_key='last-modify-timestamp')
-    self.failIfEqual(0, len(template))
-    self.failUnless(template.find('%(last-modify-timestamp)s') >= 0)
-    self.failIf(template.find('\n') >= 0, 'too many lines returned')
 
   def testGetSingleMapMetadata(self):
     # test both automount and non-automount maps.
@@ -928,29 +893,30 @@ class TestStatusCommand(pmock.MockTestCase):
 
     c = command.Status()
 
-    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf)
-    self.failUnless('map' in value_dict)
-    self.failUnless('last-modify-timestamp' in value_dict)
-    self.failUnless('last-update-timestamp' in value_dict)
+    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf)
+    self.failUnless('map' in values[0])
+    self.failUnless('key' in values[0])
+    self.failUnless('value' in values[0])
 
-    value_dict = c.GetSingleMapMetadata(
+    values = c.GetSingleMapMetadata(
         config.MAP_AUTOMOUNT, self.conf,
         automount_mountpoint='automount_mountpoint')
 
-    self.failUnless('map' in value_dict)
-    self.failUnless('last-modify-timestamp' in value_dict)
-    self.failUnless('last-update-timestamp' in value_dict)
+    self.failUnless('map' in values[0])
+    self.failUnless('key' in values[0])
+    self.failUnless('value' in values[0])
+    self.failUnless('automount' in values[0])
 
   def testGetSingleMapMetadataTimestampEpoch(self):
     c = command.Status()
-    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
-                                        epoch=True)
-    self.failUnless('map' in value_dict)
-    self.failUnless('last-modify-timestamp' in value_dict)
-    self.failUnless('last-update-timestamp' in value_dict)
+    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
+                                    epoch=True)
+    self.failUnless('map' in values[0])
+    self.failUnless('key' in values[0])
+    self.failUnless('value' in values[0])
     # values below are returned by dummyupdater
-    self.assertEqual(time.gmtime(1), value_dict['last-modify-timestamp'])
-    self.assertEqual(time.gmtime(2), value_dict['last-update-timestamp'])
+    self.assertEqual(1, values[0]['value'])
+    self.assertEqual(2, values[1]['value'])
 
   def testGetSingleMapMetadataTimestampEpochFalse(self):
     # set the timezone so we get a consistent return value
@@ -958,10 +924,10 @@ class TestStatusCommand(pmock.MockTestCase):
     time.tzset()
 
     c = command.Status()
-    value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
-                                        epoch=False)
+    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
+                                    epoch=False)
     self.failUnlessEqual('Thu Jan  1 00:00:02 1970',
-                         value_dict['last-update-timestamp'])
+                         values[1]['value'])
 
   def testGetAutomountMapMetadata(self):
     # need to stub out GetSingleMapMetadata (tested above) and then
@@ -998,7 +964,7 @@ class TestStatusCommand(pmock.MockTestCase):
     c = DummyStatus()
     value_list = c.GetAutomountMapMetadata(self.conf)
 
-    self.assertEqual(len(value_list), 3)
+    self.assertEqual(9, len(value_list))
 
 if __name__ == '__main__':
   unittest.main()

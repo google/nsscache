@@ -1,3 +1,11 @@
+nsscache (0.21.8-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Update the status output to be flexible, adding --template and
+    --automount-template options.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 01 Feb 2011 23:52:08 -0800
+
 nsscache (0.21.7-0gg1) unstable; urgency=low
 
   * New upstream release.

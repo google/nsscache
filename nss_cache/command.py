@@ -21,6 +21,7 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import calendar
 import inspect
 import logging
 import optparse
@@ -569,18 +570,21 @@ class Status(Command):
 
   def __init__(self):
     super(Status, self).__init__()
-    self.parser.add_option('--values-only',
-                           action='store_true',
-                           help='show values only, no labels',
-                           dest='values_only', default=False)
-    self.parser.add_option('--stat',
-                           action='store',
-                           help='only show status field FIELD',
-                           metavar='FIELD', dest='stat')
     self.parser.add_option('--epoch',
                            action='store_true',
                            help='show timestamps in UNIX epoch time',
                            dest='epoch', default=False)
+    self.parser.add_option('--template',
+                           action='store',
+                           help='Set format for output',
+                           metavar='FORMAT', dest='template',
+                           default='NSS map: %(map)s\n%(key)s: %(value)s')
+    self.parser.add_option('--automount-template',
+                           action='store',
+                           help='Set format for automount output',
+                           metavar='FORMAT', dest='automount_template',
+                           default=('NSS map: %(map)s\nAutomount map: '
+                                    '%(automount)s\n%(key)s: %(value)s'))
 
   def Run(self, conf, args):
     """Run the Status command.
@@ -604,61 +608,23 @@ class Status(Command):
       self.log.info('Setting configured maps to %s', options.maps)
       conf.maps = options.maps
 
-    template = self.GetOutputTemplate(options.values_only,
-                                      options.stat)
-
     for map_name in conf.maps:
-      if len(conf.maps) > 1 and not options.values_only:
-        print 'NSS map:', map_name
       # Hardcoded to support the two-tier structure of automount maps
       if map_name == config.MAP_AUTOMOUNT:
         value_list = self.GetAutomountMapMetadata(conf, epoch=options.epoch)
+        self.log.debug('Value list: %r', value_list)
         for value_dict in value_list:
-          if not options.values_only:
-            print 'Automount map:', value_dict['map']
-          output = template % value_dict
+          self.log.debug('Value dict: %r', value_dict)
+          output = options.automount_template % value_dict
           print output
       else:
-        value_dict = self.GetSingleMapMetadata(map_name, conf,
-                                               epoch=options.epoch)
-        output = template % value_dict
-        print output
+        for value_dict in self.GetSingleMapMetadata(map_name, conf,
+                                                    epoch=options.epoch):
+          self.log.debug('Value dict: %r', value_dict)
+          output = options.template % value_dict
+          print output
 
     return os.EX_OK
-
-  def GetOutputTemplate(self, values_only=False, only_key=None):
-    """Build a template for outputting status information.
-
-    Args:
-      values_only: boolean indicating that the output should not have labels
-      only_key: a list of strings indicating which key/value pairs should be
-        shown, if set to None, then all values are shown.
-
-    Returns:
-      String that can be modified using the string mod operator
-    """
-    # This is a sneaky sneak.  We want to create a bunch of lines for each
-    # template in the same style, so we have a template string that we fill
-    # with each metadata key in the right spot, and possibly the label too.
-    # This then gives back a new template that can have the actual
-    if values_only:
-      key_template = '%%(%(key)s)s'
-    else:
-      key_template = '%(key)s: %%(%(key)s)s'
-
-    # only show these keys
-    if only_key is not None:
-      keys = [only_key]
-    else:
-      keys = ['last-modify-timestamp',
-              'last-update-timestamp']
-
-    # now build the template for the keys we want
-    template = []
-    for key in keys:
-      template.append(key_template % {'key': key})
-
-    return '\n'.join(template)
 
   def GetSingleMapMetadata(self, map_name, conf, automount_mountpoint=None,
                            epoch=False):
@@ -672,20 +638,24 @@ class Status(Command):
         human readable name
 
     Returns:
-      a dict of metadata key/value pairs
+      a list of dicts of metadata key/value pairs
     """
     cache_options = conf.options[map_name].cache
 
     updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
                                            cache_options, automount_mountpoint)
 
+    modify_dict = {'key': 'last-modify-timestamp',
+                   'map': map_name}
+    update_dict = {'key': 'last-update-timestamp',
+                   'map': map_name}
     if map_name == config.MAP_AUTOMOUNT:
       # have to find out *which* automount map from a cache object!
       cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
                                  automount_mountpoint=automount_mountpoint)
-      value_dict = {'map': cache.GetMapLocation()}
-    else:
-      value_dict = {'map': map_name}
+      automount = cache.GetMapLocation()
+      modify_dict['automount'] = automount
+      update_dict['automount'] = automount
 
     last_modify_timestamp = updater.GetModifyTimestamp()
     last_update_timestamp = updater.GetUpdateTimestamp()
@@ -699,11 +669,20 @@ class Status(Command):
         last_update_timestamp = time.asctime(last_update_timestamp)
       else:
         last_update_timestamp = 'Unknown'
+    else:
+      if last_modify_timestamp is not None:
+        last_modify_timestamp = calendar.timegm(last_modify_timestamp)
+      else:
+        last_modify_timestamp = 0
+      if last_update_timestamp is not None:
+        last_update_timestamp = calendar.timegm(last_update_timestamp)
+      else:
+        last_update_timestamp = 0
 
-    value_dict['last-modify-timestamp'] = last_modify_timestamp
-    value_dict['last-update-timestamp'] = last_update_timestamp
+    modify_dict['value'] = last_modify_timestamp
+    update_dict['value'] = last_update_timestamp
 
-    return value_dict
+    return [modify_dict, update_dict]
 
   def GetAutomountMapMetadata(self, conf, epoch=False):
     """Return status of automount master map and all listed automount maps.
@@ -725,9 +704,9 @@ class Status(Command):
 
     # get the value_dict for the master map, note that automount_mountpoint=None
     # defaults to the master map!
-    value_dict = self.GetSingleMapMetadata(
+    values = self.GetSingleMapMetadata(
         map_name, conf, automount_mountpoint=None, epoch=epoch)
-    value_list.append(value_dict)
+    value_list.extend(values)
 
     # now get the contents of the master map, and get the status for each map
     # we find
@@ -736,9 +715,8 @@ class Status(Command):
     master_map = cache.GetMap()
 
     for map_entry in master_map:
-      value_dict = self.GetSingleMapMetadata(map_name, conf,
-                                             automount_mountpoint=map_entry.key,
-                                             epoch=epoch)
-      value_list.append(value_dict)
-
+      values = self.GetSingleMapMetadata(map_name, conf,
+                                         automount_mountpoint=map_entry.key,
+                                         epoch=epoch)
+      value_list.extend(values)
     return value_list
