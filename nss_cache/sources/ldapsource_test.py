@@ -454,6 +454,55 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('test', ent.name)
     self.assertEqual('admins (-,hax0r,)', ent.entries)
 
+  def testGetNetgroupMapWithDupes(self):
+    """Test that GetNetgroupMap returns a sensible map."""
+    test_posix_netgroup = ('cn=test,ou=netgroup,dc=example,dc=com',
+                           {'cn': ['test'],
+                            'memberNisNetgroup': ['(-,hax0r,)'],
+                            'nisNetgroupTriple': ['(-,hax0r,)'],
+                            'modifyTimestamp': ['20070227012807Z'],
+                           })
+
+    ldap_conn = self.mock()
+    ldap_conn\
+               .expects(pmock.once())\
+               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
+                              cred=pmock.eq('TEST_BIND_PASSWORD'))
+    ldap_conn\
+               .expects(pmock.once())\
+               .search(base=pmock.eq('TEST_BASE'),
+                       filterstr=pmock.eq('TEST_FILTER'),
+                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
+                       attrlist=pmock.eq(['cn', 'memberNisNetgroup',
+                                          'nisNetgroupTriple',
+                                          'modifyTimestamp']))\
+                                          .will(pmock.return_value(37))
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('search')\
+               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
+                                         [test_posix_netgroup])))\
+                                         .id('res #1')
+    ldap_conn\
+               .expects(pmock.once())\
+               .result(pmock.eq(37), all=pmock.eq(0),
+                       timeout=pmock.eq('TEST_TIMELIMIT'))\
+               .after('res #1')\
+               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+
+    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+
+    data = source.GetNetgroupMap()
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('test', ent.name)
+    self.assertEqual('(-,hax0r,)', ent.entries)
+
   def testGetAutomountMap(self):
     """Test that GetAutomountMap returns a sensible map."""
     test_automount = ('cn=user,ou=auto.home,ou=automounts,dc=example,dc=com',

@@ -28,11 +28,14 @@ import os
 import shutil
 import tempfile
 import unittest
+import time
+
+import pmock
+
 from nss_cache import caches
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
-import pmock
 from nss_cache import update
 
 
@@ -56,8 +59,8 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
 
   def testFullUpdate(self):
     """A full update reads the source, writes to cache, and updates times."""
-    original_modify_stamp = 1
-    new_modify_stamp = 2
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
     updater = update.files.SingleMapUpdater(config.MAP_PASSWORD, self.workdir,
                                             {'name': 'files'})
     self.updater = updater
@@ -88,8 +91,8 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
                                                       source_mock,
                                                       force_write=False,
                                                       location=None))
-    self.assertEqual(updater.GetModifyTimestamp(), new_modify_stamp)
-    self.assertNotEqual(updater.GetUpdateTimestamp(), None)
+    self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
+    self.assertNotEqual(None, updater.GetUpdateTimestamp())
 
 
 class AutomountUpdaterTest(pmock.MockTestCase):
@@ -315,4 +318,3 @@ class AutomountUpdaterTest(pmock.MockTestCase):
 
 if __name__ == '__main__':
   unittest.main()
-

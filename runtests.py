@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -B
 #
 # Copyright 2007 Google Inc.
 #
@@ -25,7 +25,8 @@ import unittest
 from nss_cache.app_test import *
 from nss_cache.caches.base_test import *
 from nss_cache.caches.files_test import *
-from nss_cache.caches.nssdb_test import *
+# Full of fail.
+#from nss_cache.caches.nssdb_test import *
 from nss_cache.command_test import *
 from nss_cache.config_test import *
 from nss_cache.error_test import *

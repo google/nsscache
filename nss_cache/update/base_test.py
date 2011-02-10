@@ -26,6 +26,7 @@ import logging
 import os
 import pmock
 import tempfile
+import time
 
 from nss_cache import config
 from nss_cache.update import base
@@ -50,8 +51,8 @@ class TestUpdater(pmock.MockTestCase):
     """We read and write timestamps to the specified directory."""
     updater = base.Updater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
-    update_time = 1199149400  # epoch
-    modify_time = 1199149200
+    update_time = time.gmtime(1199149400)  # epoch
+    modify_time = time.gmtime(1199149200)
 
     updater.WriteUpdateTimestamp(update_time)
     updater.WriteModifyTimestamp(modify_time)
@@ -60,9 +61,13 @@ class TestUpdater(pmock.MockTestCase):
     modify_stamp = updater.GetModifyTimestamp()
 
     self.assertEqual(update_time, update_stamp,
-                     msg='retrieved a different update time than we stored.')
+                     msg=('retrieved a different update time than we stored: '
+                          'Expected: %r, observed: %r' %
+                          (update_time, update_stamp)))
     self.assertEqual(modify_time, modify_stamp,
-                     msg='retrieved a different modify time than we stored.')
+                     msg=('retrieved a different modify time than we stored: '
+                          'Expected %r, observed: %r' %
+                          (modify_time, modify_stamp)))
 
   def testTimestampDefaultsToNone(self):
     """Missing or unreadable timestamps return None."""

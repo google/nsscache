@@ -439,7 +439,7 @@ class UpdateGetter(object):
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
 
-    data_map.SetModifyTimestamp(max_ts)
+    data_map.SetModifyTimestamp(time.gmtime(max_ts))
 
     return data_map
 
@@ -579,11 +579,11 @@ class NetgroupUpdateGetter(UpdateGetter):
     netgroup_ent = maps.NetgroupMapEntry()
     netgroup_ent.name = obj['cn'][0]
 
-    entries = []
+    entries = set()
     if 'memberNisNetgroup' in obj:
-      entries.extend(obj['memberNisNetgroup'])
+      entries.update(obj['memberNisNetgroup'])
     if 'nisNetgroupTriple' in obj:
-      entries.extend(obj['nisNetgroupTriple'])  
+      entries.update(obj['nisNetgroupTriple'])  
 
     # final data is stored as a string in the object
     netgroup_ent.entries = ' '.join(entries)

@@ -32,6 +32,7 @@ import os
 import shutil
 import stat
 import tempfile
+import time
 
 from nss_cache import caches
 from nss_cache import error
@@ -146,7 +147,11 @@ class SingleMapUpdater(base.Updater):
 
     # We did an update, write our timestamps unless there is an error.
     if return_val is 0:
-      self.WriteModifyTimestamp(os.stat(cache.GetCacheFilename())[-2])
+      mtime = os.stat(cache.GetCacheFilename()).st_mtime
+      gmtime = time.gmtime(mtime)
+      self.log.debug('Cache filename %s has mtime %d, gmtime %r',
+                     cache.GetCacheFilename(), mtime, gmtime)
+      self.WriteModifyTimestamp(gmtime)
       self.WriteUpdateTimestamp()
 
     return return_val

@@ -25,19 +25,21 @@ MapEntry:  Abstract class representing an entry in a NSS map.
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
+import time
+
 from nss_cache import error
 
 
 class Map(object):
   """Abstract class representing a basic NSS map.
-  
+
   Map data is stored internally as a dict of MapEntry objects, with
   the key being the unique value provided by MapEntry.Key().
-  
+
   MapEntry.Key() is implemented by returning the attribute value for
   some attribute which is expected to be unique, e.g. the name of a
   user or the name of a group.
-  
+
   This allows for a fast implementation of __contains__() although
   it restricts Map objects from holding two MapEntry objects with
   the same keys (e.g. no two entries for root allowed).  This is
@@ -55,7 +57,7 @@ class Map(object):
   Attributes:
     log: A logging.Logger instance used for output.
   """
-  
+
   def __init__(self, iterable=None, modify_time=None, update_time=None):
     """Construct a Map object.
 
@@ -76,7 +78,7 @@ class Map(object):
     self._last_modification_timestamp = modify_time
     # Last update timestamp, same as previous
     self._last_update_timestamp = update_time
-    
+
     self.log = logging.getLogger(self.__class__.__name__)
 
     # Seed with iterable, should raise TypeError for bad items.
@@ -151,7 +153,7 @@ class Map(object):
 
     Args:
       other: A maps.Map instance.
-    
+
     Returns:
       True if anything was added or modified, False if
       nothing changed.
@@ -181,7 +183,7 @@ class Map(object):
         # Add() will overwrite similar entries if they exist.
         if self.Add(their_entry):
           merge_count += 1
-     
+
     self.log.info('%d of %d entries were new or modified',
                   merge_count, len(other))
 
@@ -209,15 +211,16 @@ class Map(object):
     """Set the last modify timestamp of this map.
 
     Args:
-      value: An integer containing the number of seconds since epoch, or None.
+      value: A time.struct_time.
 
     Raises:
       TypeError: The argument is not an int or None.
     """
-    if value is None or isinstance(value, int):
+    if value is None or isinstance(value, time.struct_time):
       self._last_modification_timestamp = value
     else:
-      raise TypeError('timestamp can only be int or None, not %r' % value)
+      raise TypeError('timestamp can only be None or time.struct_time, not %r'
+                      % value)
 
   def GetModifyTimestamp(self):
     """Return last modification timestamp of this map.
@@ -253,7 +256,7 @@ class Map(object):
 
 class MapEntry(object):
   """Abstract class for representing an entry in an NSS map.
-  
+
   We expect to be contained in MapEntry objects and provide a unique identifier
   via Key() so that Map objects can properly index us.  See the Map class for
   more details.
@@ -321,4 +324,3 @@ class MapEntry(object):
       is not None.  False otherwise.
     """
     return getattr(self, self._KEY) is not None
-

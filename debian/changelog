@@ -1,3 +1,27 @@
+nsscache (0.21.3-0gg1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 25 Jan 2011 23:32:39 -0800
+
+nsscache (0.21.2-0gg2) unstable; urgency=low
+
+  * Reduce the size of netgroup files by half for ldap servers that use
+    memberNisNetgroup attributes like they use nisNetgroupTriple; they're
+    both just text fields so easy to do it incorrectly; use a set instead
+    of a list to remove duplicates.
+  * Convert timestamp handling to use time.struct_time instead of epoch
+    timestamps, the former lets us control the timezone of the timestamp
+    correctly.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 25 Jan 2011 23:11:22 -0800
+
+nsscache (0.21.2-0gg1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 25 Jan 2011 16:45:15 -0800
+
 nsscache (0.21.1-0gg1) unstable; urgency=low
 
   * Bump version number in nss_cache/__init__.py so that the code knows

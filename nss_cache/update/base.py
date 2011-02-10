@@ -105,8 +105,8 @@ class Updater(object):
       filename:  A String naming the file to read from.
 
     Returns:
-      An int with the number of seconds since epoch, or None if the timestamp
-      file doesn't exist or has errors.
+      A time.struct_time, or None if the timestamp file doesn't
+      exist or has errors.
     """
     if not os.path.exists(filename):
       return None
@@ -122,8 +122,9 @@ class Updater(object):
 
     if timestamp_string is not None:
       try:
-        timestamp = calendar.timegm(time.strptime(timestamp_string,
-                                                  '%Y-%m-%dT%H:%M:%SZ'))
+        # Append UTC to force the timezone to parse the string in.
+        timestamp = time.strptime(timestamp_string + ' UTC',
+                                  '%Y-%m-%dT%H:%M:%SZ %Z')
       except ValueError, e:
         self.log.error('cannot parse timestamp file %r: %s',
                        filename, e)
@@ -131,7 +132,7 @@ class Updater(object):
     else:
       timestamp = None
 
-    if timestamp > time.time():
+    if timestamp > time.gmtime():
       self.log.warn('timestamp %r from %r is in the future.',
                     timestamp_string, filename)
 
@@ -156,8 +157,8 @@ class Updater(object):
     (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache',
                                                  dir=self.timestamp_dir)
 
-    time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ',
-                                time.gmtime(timestamp))
+    time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', timestamp)
+
     try:
       os.write(filedesc, '%s\n' % time_string)
       os.fsync(filedesc)
@@ -212,7 +213,7 @@ class Updater(object):
 
     # default to now
     if update_timestamp is None:
-      update_timestamp = int(time.time())
+      update_timestamp = time.gmtime()
     return self._WriteTimestamp(update_timestamp, self.update_file)
 
   def WriteModifyTimestamp(self, timestamp):
