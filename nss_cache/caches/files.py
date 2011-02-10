@@ -30,12 +30,6 @@ from nss_cache.util import files
 
 from nss_cache.caches import base
 
-try:
-  SetType = set
-except NameError:
-  import sets
-  SetType = sets.Set
-
 
 class FilesCache(base.Cache):
   """An implementation of a Cache specific to nss_files module.
@@ -54,7 +48,7 @@ class FilesCache(base.Cache):
        only by automount maps.
     """
     super(FilesCache, self).__init__(conf, map_name,
-                                     automount_info=automount_mountpoint)
+                                     automount_mountpoint=automount_mountpoint)
 
     # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
@@ -75,9 +69,9 @@ class FilesCache(base.Cache):
     else:
       cache_file = self.GetCacheFilename()
 
+    self.log.debug('Opening %r for reading existing cache', cache_file)
     if not os.path.exists(cache_file):
-      self.log.warning('cache file %r does not exist, but we were told'
-                       ' to use it. Using an empty map instead.', cache_file)
+      self.log.warning('Cache file does not exist, using an empty map instead')
     else:
       cache_file = open(cache_file)
       data = self.map_parser.GetMap(cache_file, data)
@@ -109,7 +103,7 @@ class FilesCache(base.Cache):
       # See nssdb.py Verify for a comment about this raise
       raise error.EmptyMap
 
-    cache_keys = SetType()
+    cache_keys = set()
     # Use PopItem() so we free our memory if multiple maps are Verify()ed.
     try:
       while 1:
@@ -151,7 +145,7 @@ class FilesCache(base.Cache):
       a set of keys written or None on failure.
     """
     self._Begin()
-    written_keys = SetType()
+    written_keys = set()
 
     try:
       while 1:

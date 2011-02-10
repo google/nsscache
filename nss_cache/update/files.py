@@ -123,8 +123,9 @@ class SingleMapUpdater(base.Updater):
       InvalidMap:
     """
     return_val = 0
-    verify_cache = caches.base.Create(self.cache_options, self.map_name,
-                                      automount_mountpoint=cache.automount_info)
+    verify_cache = caches.base.Create(
+        self.cache_options, self.map_name,
+        automount_mountpoint=cache.automount_mountpoint)
     new_map = verify_cache.GetMap()
 
     for entry in new_map:
@@ -170,17 +171,17 @@ class AutomountUpdater(base.Updater):
   OPT_LOCAL_MASTER = 'local_automount_master'
 
   def __init__(self, map_name, timestamp_dir, cache_options,
-               automount_info=None):
+               automount_mountpoint=None):
     """Initialize automount-specific updater options.
 
     Args:
       map_name: A string representing the type of the map we are an Updater for.
       timestamp_dir: A string with the directory containing our timestamp files.
       cache_options: A dict containing the options for any caches we create.
-      automount_info: An optional string containing automount path info.
+      automount_mountpoint: An optional string containing automount path info.
     """
     super(AutomountUpdater, self).__init__(map_name, timestamp_dir,
-                                           cache_options, automount_info)
+                                           cache_options, automount_mountpoint)
     self.local_master = False
     if self.OPT_LOCAL_MASTER in cache_options:
       if cache_options[self.OPT_LOCAL_MASTER] == 'yes':
@@ -274,7 +275,7 @@ class AutomountUpdater(base.Updater):
       updater = SingleMapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options,
-                                 automount_info=mountpoint)
+                                 automount_mountpoint=mountpoint)
       return_val += updater.UpdateCacheFromSource(
           cache, source, force_write, source_location)
     # with sub-maps updated, write modified master map to disk if

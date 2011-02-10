@@ -101,14 +101,14 @@ class Cache(object):
   (and in the darkness bind them).
   """
 
-  def __init__(self, conf, map_name, automount_info=None):
+  def __init__(self, conf, map_name, automount_mountpoint=None):
     """Initialise the Cache object.
 
     Args:
       conf: A dictionary of key/value pairs
       map_name: A string representation of the map type
-      automount_info: A string containing the automount mountpoint, used only
-        by automount maps.
+      automount_mountpoint: A string containing the automount mountpoint,
+        used only by automount maps.
 
     Raises:
       UnsupportedMap: for map types we don't know about
@@ -119,7 +119,7 @@ class Cache(object):
     # Store config info
     self.conf = conf
     self.output_dir = conf.get('dir', '.')
-    self.automount_info = automount_info
+    self.automount_mountpoint = automount_mountpoint
     self.map_name = map_name
 
     # Setup the map we may be asked to load our cache into.

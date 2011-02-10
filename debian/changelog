@@ -1,3 +1,20 @@
+nsscache (0.21.7-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Improve logging around adding to an automount map.
+   * Ignore elements of automount master that we can't parse, instead of
+    crashing.
+   * Rename automount_info to automount_mountpoint for clarity.
+   * Work around a bug in bdb-4.8 that doesn't like writing to a
+    zero-length file, instead we create a security hole race condition on
+    the tempfile we want it to write to. Oh well, if you use bdb for nss
+    caching then you are going to suffer many more problems than just this
+    one.
+   * Drop python2.3 and lower support by insisting on the set() type, and
+    using subprocess instead of popen*.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 31 Jan 2011 13:57:19 -0800
+
 nsscache (0.21.6-0gg1) unstable; urgency=low
 
   * New upstream release.

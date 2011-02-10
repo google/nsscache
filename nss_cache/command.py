@@ -38,13 +38,6 @@ from nss_cache import nss
 from nss_cache import sources
 from nss_cache import update
 
-# python2.3 has no builtin set() class
-try:
-  Set = set
-except NameError:
-  import sets
-  Set = sets.Set
-
 
 class Command(object):
   """Base class for commands.
@@ -452,7 +445,7 @@ class Verify(Command):
 
   def VerifySources(self, conf):
     """Verify each possible source and return the appropriate retval."""
-    possible_sources = Set()
+    possible_sources = set()
     retval = 0
 
     for map_name in conf.maps:
@@ -730,7 +723,7 @@ class Status(Command):
     cache_options = conf.options[map_name].cache
     value_list = []
 
-    # get the value_dict for the master map, note that automount_info=None
+    # get the value_dict for the master map, note that automount_mountpoint=None
     # defaults to the master map!
     value_dict = self.GetSingleMapMetadata(
         map_name, conf, automount_mountpoint=None, epoch=epoch)

@@ -24,13 +24,14 @@ __author__ = ('vasilios@google.com (V Hoffman)',
 
 import logging
 import os
-import pmock
 import tempfile
 import unittest
+
 from nss_cache import caches
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
+import pmock
 from nss_cache.update import maps
 
 logging.disable(logging.CRITICAL)
@@ -293,17 +294,18 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     # and we get a full update by the DummyUpdater
     cache_mock3.expects(pmock.once())._CalledFullUpdateFromMap()
 
-    # key automount_info to the right cache mocks, where None is what we expect
-    # for the master_map
+    # key automount_mountpoint to the right cache mocks, where None is what
+    # we expect for the master_map
     cache_mocks = {'/home': cache_mock1,
                    '/auto': cache_mock2,
                    None: cache_mock3}
     
     # Create needs to return our mock_caches
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
-      return cache_mocks[automount_info]
+      # automount_mountpoint as the key to return the right one.
+      return cache_mocks[automount_mountpoint]
 
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
@@ -367,10 +369,11 @@ class AutomountUpdaterTest(pmock.MockTestCase):
                    None: cache_mock3}
     
     # Create needs to return our mock_caches
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
-      return cache_mocks[automount_info]
+      # automount_mountpoint as the key to return the right one.
+      return cache_mocks[automount_mountpoint]
 
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
@@ -396,9 +399,10 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     invocation.will(pmock.raise_exception(error.CacheNotFound))
 
     # Create needs to return our mock_cache
-    def DummyCreate(unused_cache_options, unused_map_name, automount_info=None):
+    def DummyCreate(unused_cache_options, unused_map_name,
+                    automount_mountpoint=None):
       # the order of the master_map iterable is not predictable, so we use the
-      # automount_info as the key to return the right one.
+      # automount_mountpoint as the key to return the right one.
       return cache_mock
 
     original_create = caches.base.Create

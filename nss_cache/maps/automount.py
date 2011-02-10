@@ -43,7 +43,7 @@ class AutomountMap(base.Map):
   def Add(self, entry):
     """Add a new object, verify it is a AutomountMapEntry object."""
     if not isinstance(entry, AutomountMapEntry):
-      raise TypeError
+      raise TypeError('Entry is not an AutomountMapEntry: %r' % entry)
     return super(AutomountMap, self).Add(entry)
 
 
@@ -60,5 +60,3 @@ class AutomountMapEntry(base.MapEntry):
     self.options = None
     
     super(AutomountMapEntry, self).__init__(data)
-    
-

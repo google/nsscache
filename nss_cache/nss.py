@@ -23,7 +23,7 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 import grp
 import logging
 import pwd
-import popen2
+import subprocess
 
 from nss_cache import config
 from nss_cache import error
@@ -126,7 +126,7 @@ def GetShadowMap():
 
 def _SpawnGetent(map_name):
   """Run 'getent map' in a subprocess for reading NSS data."""
-  getent = popen2.Popen3([GETENT, map_name],
-                         capturestderr=True)
+  getent = subprocess.Popen([GETENT, map_name],
+                            stderr=subprocess.STDOUT)
 
   return getent

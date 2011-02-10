@@ -190,17 +190,17 @@ class AutomountUpdater(base.Updater):
   OPT_LOCAL_MASTER = 'local_automount_master'
 
   def __init__(self, map_name, timestamp_dir, cache_options,
-               automount_info=None):
+               automount_mountpoint=None):
     """Initialize automount-specific updater options.
 
     Args:
       map_name: A string representing the type of the map we are an Updater for.
       timestamp_dir: A string with the directory containing our timestamp files.
       cache_options: A dict containing the options for any caches we create.
-      automount_info: An optional string containing automount path info.
+      automount_mountpoint: An optional string containing automount path info.
     """
     super(AutomountUpdater, self).__init__(map_name, timestamp_dir,
-                                           cache_options, automount_info)
+                                           cache_options, automount_mountpoint)
     self.local_master = False
     if self.OPT_LOCAL_MASTER in cache_options:
       if cache_options[self.OPT_LOCAL_MASTER] == 'yes':
@@ -264,13 +264,13 @@ class AutomountUpdater(base.Updater):
     for map_entry in master_map:
 
       source_location = map_entry.location  # e.g. ou=auto.auto in ldap
-      automount_info = map_entry.key        # e.g. /auto mountpoint
-      self.log.debug('looking at %s mount.', automount_info)
+      automount_mountpoint = map_entry.key        # e.g. /auto mountpoint
+      self.log.debug('looking at %s mount.', automount_mountpoint)
 
       # create the cache to update
       cache = caches.base.Create(self.cache_options,
                                  self.map_name,
-                                 automount_mountpoint=automount_info)
+                                 automount_mountpoint=automount_mountpoint)
 
       # update the master map with the location of the map in the cache
       # e.g. /etc/auto.auto replaces ou=auto.auto
@@ -287,7 +287,7 @@ class AutomountUpdater(base.Updater):
       updater = SingleMapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options,
-                                 automount_info=automount_info)
+                                 automount_mountpoint=automount_mountpoint)
       return_val += updater.UpdateCacheFromSource(cache, source, incremental,
                                                   force_write, source_location)
     # with sub-maps updated, write modified master map to disk if configured to

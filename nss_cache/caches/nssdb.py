@@ -20,28 +20,14 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-# Supress deprecation warnings for popen2 module
-# TODO(blaedd): Fix this
-import warnings
-
-warnings.filterwarnings('ignore', category=DeprecationWarning,
-                        module='nss_cache.caches.nssdb', lineno=32)
-
 import bsddb
 import os
-import popen2
+import subprocess
 
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import base
-
-# python2.3 has no builtin set() class
-try:
-  Set = set
-except NameError:
-  import sets
-  Set = sets.Set
 
 
 class NssDbCache(base.Cache):
@@ -57,19 +43,19 @@ class NssDbCache(base.Cache):
   UPDATE_TIMESTAMP_SUFFIX = 'nsscache-update-timestamp'
   MODIFY_TIMESTAMP_SUFFIX = 'nsscache-timestamp'
 
-  def __init__(self, conf, map_name, automount_info=None):
+  def __init__(self, conf, map_name, automount_mountpoint=None):
     """Create a handler for the given map type.
 
     Args:
      conf: a configuration object
      map_name: a string representing the type of map we are
-     automount_info: A string containing the automount mountpoint, used only
-       by automount maps.
+     automount_mountpoint: A string containing the automount mountpoint,
+       used only by automount maps.
 
     Returns: A CacheMapHandler instance.
     """
     super(NssDbCache, self).__init__(conf, map_name,
-                                     automount_info=automount_info)
+                                     automount_mountpoint=automount_mountpoint)
     self.makedb = conf.get('makedb', '/usr/bin/makedb')
 
   def GetMap(self, cache_info=None):
@@ -114,7 +100,7 @@ class NssDbCache(base.Cache):
     """Run 'makedb' in a subprocess and return it to use for streaming.
 
     Returns:
-      (tochild, fromchild): stdin and stdout of makedb subprocess
+      a subprocess object
     """
     # TODO(jaq): this should probably raise a better exception and be handled
     # gracefully
@@ -123,8 +109,18 @@ class NssDbCache(base.Cache):
                     'bdb map', self.makedb)
     self.log.debug('executing makedb: %s - %s',
                    self.makedb, self.cache_filename)
-    return popen2.Popen4([self.makedb, '-', self.cache_filename])
-
+    # This is a race condition on the tempfile now, but db-4.8 is braindead
+    # and refuses to open zero length files with:
+    # fop_read_meta: foo: unexpected file type or format
+    # foo: Invalid type 5 specified
+    # makedb: cannot open output file `foo': Invalid argument
+    os.unlink(self.cache_filename)
+    makedb = subprocess.Popen([self.makedb, '-', self.cache_filename],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              close_fds=True)
+    return makedb
 
   def Write(self, map_data):
     """Write the map to the cache file.
@@ -137,36 +133,38 @@ class NssDbCache(base.Cache):
       map_data: A Map subclass
 
     Returns:
-      a Set() of keys written or None on failure.
+      a set of keys written or None on failure.
     """
     self._Begin()
-    written_keys = Set()
+    written_keys = set()
+
+    self.log.debug('Map contains %d elems', len(map_data))
 
     try:
       makedb = self._SpawnMakeDb()
       enumeration_index = 0
 
       try:
-        while 1:
+        while True:
           entry = map_data.PopItem()
-          if makedb.poll() != -1:
+          if makedb.poll() is not None:
             self.log.error('early exit from makedb! child output: %s',
-                           makedb.fromchild.read())
+                           makedb.stdout.read())
             # in this case, no matter how the child exited, we complain
             return None
-          self.WriteData(makedb.tochild, entry, enumeration_index)
+          self.WriteData(makedb.stdin, entry, enumeration_index)
           written_keys.update(self.ExpectedKeysForEntry(entry))
           enumeration_index += 1
       except KeyError:
         # expected when PopItem() is done, and breaks our loop for us.
         pass
 
-      makedb.tochild.close()
+      makedb.stdin.close()
       self.log.debug('%d entries written, %d keys', enumeration_index,
                      len(written_keys))
 
-      map_data = makedb.fromchild.read()
-      makedb.fromchild.close()
+      map_data = makedb.stdout.read()
+      makedb.stdout.close()
       if map_data:
         self.log.debug('makedb output: %r', map_data)
 
@@ -176,6 +174,8 @@ class NssDbCache(base.Cache):
       return None
 
     except:
+      self.log.debug('Wrote %d entries before exception', enumeration_index)
+      self.log.debug('makedb output: %s', makedb.stdout.read())
       self._Rollback()
       raise
 
@@ -190,7 +190,7 @@ class NssDbCache(base.Cache):
     back and verifying that it loads and has the entries we expect.
 
     Args:
-      written_keys: a Set() of keys that should have been written to disk.
+      written_keys: a set of keys that should have been written to disk.
 
     Returns:
       boolean indicating success.
@@ -202,7 +202,7 @@ class NssDbCache(base.Cache):
     db = bsddb.btopen(self.cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
-    cache_keys = Set(db)
+    cache_keys = set(db)
     db.close()
 
     written_key_count = len(written_keys)
@@ -235,10 +235,10 @@ class NssDbPasswdHandler(NssDbCache):
   """Concrete class for updating a nss_db passwd cache."""
   CACHE_FILENAME = 'passwd.db'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_PASSWORD
-    super(NssDbPasswdHandler, self).__init__(conf, map_name,
-                                             automount_info=automount_info)
+    super(NssDbPasswdHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db passwd map.
@@ -327,10 +327,10 @@ class NssDbGroupHandler(NssDbCache):
   """Concrete class for updating nss_db group maps."""
   CACHE_FILENAME = 'group.db'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_GROUP
-    super(NssDbGroupHandler, self).__init__(conf, map_name,
-                                            automount_info=automount_info)
+    super(NssDbGroupHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db group map.
@@ -411,10 +411,10 @@ class NssDbShadowHandler(NssDbCache):
   """Concrete class for updating nss_db shadow maps."""
   CACHE_FILENAME = 'shadow.db'
 
-  def __init__(self, conf, map_name=None, automount_info=None):
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_SHADOW
-    super(NssDbShadowHandler, self).__init__(conf, map_name,
-                                             automount_info=automount_info)
+    super(NssDbShadowHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
 
   def WriteData(self, target, entry, enumeration_index):
     """Generate three entries as expected by nss_db shadow map.

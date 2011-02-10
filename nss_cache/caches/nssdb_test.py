@@ -158,8 +158,8 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.tochild = makedb_stdin
-      makedb.fromchild = makedb_stdout
+      makedb.stdin = makedb_stdin
+      makedb.stdout = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbPasswdHandler({'makedb': '/usr/bin/makedb',
@@ -364,8 +364,8 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.tochild = makedb_stdin
-      makedb.fromchild = makedb_stdout
+      makedb.stdin = makedb_stdin
+      makedb.stdout = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbGroupHandler({'makedb': '/usr/bin/makedb',
@@ -534,8 +534,8 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
-      makedb.tochild = makedb_stdin
-      makedb.fromchild = makedb_stdout
+      makedb.stdin = makedb_stdin
+      makedb.stdout = makedb_stdout
       return makedb
 
     writer = nssdb.NssDbShadowHandler({'makedb': '/usr/bin/makedb',
