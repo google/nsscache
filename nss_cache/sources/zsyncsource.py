@@ -330,9 +330,14 @@ class ZSyncSource(base.FileSource):
   def Verify(self, since=None):
     """Verify that this source is contactable and can be queried for data."""
     tmpfile = tempfile.NamedTemporaryFile()
+    # zsync's librcksum creates its own temp files in the cwd, so
+    # let's chdir to where our tempfile goes so that it can rename its
+    # tempfile to our tempfile without going across filesystems. Yo dawg.
+    old_dir = os.getcwd()
+    os.chdir(os.path.dirname(tmpfile.name))
     if self.conf['passwd_url']:
       self.GetPasswdFile(tmpfile.name, None)
+    os.chdir(old_dir)
     return 0
 
 base.RegisterImplementation(ZSyncSource)
-

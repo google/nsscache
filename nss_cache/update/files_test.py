@@ -89,7 +89,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
     source_mock = MockSource()
     self.assertEqual(0, updater.UpdateCacheFromSource(cache_mock,
                                                       source_mock,
-                                                      force_write=False,
+                                                      force_write=True,
                                                       location=None))
     self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
     self.assertNotEqual(None, updater.GetUpdateTimestamp())
@@ -202,8 +202,9 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
+    options = {'name': 'files', 'dir': self.workdir}
     updater = update.files.AutomountUpdater(config.MAP_AUTOMOUNT,
-                                            self.workdir, {'name': 'files'})
+                                            self.workdir, options)
     updater.UpdateFromSource(source_mock)
 
     caches.base.Create = original_create
@@ -274,8 +275,9 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     caches.base.Create = DummyCreate
 
     skip = update.files.AutomountUpdater.OPT_LOCAL_MASTER
+    options = {skip: 'yes', 'dir': self.workdir}
     updater = update.files.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
-                                            {skip: 'yes'})
+                                            options)
     updater.UpdateFromSource(source_mock)
 
     caches.base.Create = original_create
@@ -307,8 +309,9 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     caches.base.Create = DummyCreate
 
     skip = update.files.AutomountUpdater.OPT_LOCAL_MASTER
+    options = {skip: 'yes', 'dir': self.workdir}
     updater = update.files.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
-                                            {skip: 'yes'})
+                                            options)
 
     return_value = updater.UpdateFromSource(source_mock)
 

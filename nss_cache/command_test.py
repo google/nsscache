@@ -25,8 +25,10 @@ import grp
 import logging
 import os
 import pwd
+import shutil
 import StringIO
 import sys
+import tempfile
 import time
 import unittest
 
@@ -169,17 +171,23 @@ class TestUpdateCommand(pmock.MockTestCase):
     update.maps.AutomountUpdater = DummyUpdater
     update.maps.SingleMapUpdater = DummyUpdater
 
+    # working dir
+    self.workdir = tempfile.mkdtemp()
+
     self.conf = DummyConfig()
     self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
                          config.MAP_AUTOMOUNT: config.MapOptions()}
-    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy',
+                                                    'dir': self.workdir}
     self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
-    self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy'}
+    self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy',
+                                                     'dir': self.workdir}
     self.conf.options[config.MAP_AUTOMOUNT].source = {'name': 'dummy'}
     self.conf.timestamp_dir = ''
     self.conf.lockfile = None
 
   def tearDown(self):
+    shutil.rmtree(self.workdir)
     caches.base.Create = self.original_create
     update.maps.AutomountUpdater = self.original_master_map_updater
     update.maps.SingleMapUpdater = self.original_single_map_updater
@@ -797,10 +805,10 @@ class TestStatusCommand(pmock.MockTestCase):
     # stub out parts of update.SingleMapUpdater
     class DummyUpdater(update.maps.SingleMapUpdater):
       def GetModifyTimestamp(self):
-        return 1
+        return time.gmtime(1)
 
       def GetUpdateTimestamp(self):
-        return 2
+        return time.gmtime(2)
 
     # Add dummy source to the set if implementations of sources
     sources.base.RegisterImplementation(DummySource)
@@ -940,8 +948,8 @@ class TestStatusCommand(pmock.MockTestCase):
     self.failUnless('last-modify-timestamp' in value_dict)
     self.failUnless('last-update-timestamp' in value_dict)
     # values below are returned by dummyupdater
-    self.assertEqual(1, value_dict['last-modify-timestamp'])
-    self.assertEqual(2, value_dict['last-update-timestamp'])
+    self.assertEqual(time.gmtime(1), value_dict['last-modify-timestamp'])
+    self.assertEqual(time.gmtime(2), value_dict['last-update-timestamp'])
 
   def testGetSingleMapMetadataTimestampEpochFalse(self):
     # set the timezone so we get a consistent return value
@@ -951,7 +959,7 @@ class TestStatusCommand(pmock.MockTestCase):
     c = command.Status()
     value_dict = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                         epoch=False)
-    self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
+    self.failUnlessEqual('Thu Jan  1 00:00:02 1970',
                          value_dict['last-update-timestamp'])
 
   def testGetAutomountMapMetadata(self):

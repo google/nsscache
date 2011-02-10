@@ -27,6 +27,7 @@ They also contain the code for reading, writing, and updating timestamps.
 
 __author__ = ('blaedd@google.com (David MacKinnon)',)
 
+import errno
 import logging
 import os
 import shutil
@@ -87,15 +88,22 @@ class SingleMapUpdater(base.Updater):
     """
     return_val = 0
 
-    tmpdir = tempfile.mkdtemp(prefix=self.__class__.__name__)
+    new_fd, new_file = tempfile.mkstemp(
+      dir=os.path.dirname(cache.GetCacheFilename()),
+      prefix=os.path.basename(cache.GetCacheFilename()),
+      suffix=".temp-nsscache.")
+    self.log.debug('temp filename: %s', new_file)
     try:
-      new_file = os.path.join(tmpdir,
-                              os.path.basename(cache.GetCacheFilename()))
       source.GetFile(self.map_name, new_file, cache.GetCacheFilename(),
                      location=location)
       return_val += self.FullUpdateFromMap(cache, new_file, force_write)
     finally:
-      shutil.rmtree(tmpdir)
+      try:
+        os.unlink(new_file)
+      except OSError, e:
+        # If we're using zsync source, it already renames the file for us.
+        if e.errno != errno.ENOENT:
+          raise
 
     return return_val
 
@@ -115,20 +123,10 @@ class SingleMapUpdater(base.Updater):
       EmptyMap: Update is an empty map, not raised if force_write=True.
       InvalidMap:
     """
-    self.log.debug('Source file: %s', source_file)
-    self.log.debug('Cache location: %s', cache.GetCacheFilename())
-    self.log.debug('Automount Info: %s', cache.automount_info)
     return_val = 0
-    tmpdir = os.path.dirname(source_file)
-    cache_options = self.cache_options.copy()
-    cache_options['dir'] = tmpdir
-    verify_cache = caches.base.Create(cache_options, self.map_name,
+    verify_cache = caches.base.Create(self.cache_options, self.map_name,
                                       automount_info=cache.automount_info)
-
     new_map = verify_cache.GetMap()
-
-    if not new_map:
-      raise error.InvalidMap('Map is not valid. Aborting')
 
     for entry in new_map:
       if not entry.Verify():
@@ -227,21 +225,15 @@ class AutomountUpdater(base.Updater):
     """
     return_val = 0
 
-    tmpdir = tempfile.mkdtemp(prefix=self.__class__.__name__)
     try:
-      try:
-        self.log.info('Retrieving automount master map.')
-        master_file = source.GetAutomountMasterFile(
-            os.path.join(tmpdir, 'auto.master'))
-        cache_options = self.cache_options.copy()
-        cache_options['dir'] = tmpdir
-        master_cache = caches.base.Create(cache_options, self.map_name,
+      self.log.info('Retrieving automount master map.')
+      master_file = source.GetAutomountMasterFile(
+        os.path.join(self.cache_options['dir'], 'auto.master'))
+      master_cache = caches.base.Create(self.cache_options, self.map_name,
                                           None)
-        master_map = master_cache.GetMap()
-      except error.CacheNotFound:
-        return 1
-    finally:
-      shutil.rmtree(tmpdir)
+      master_map = master_cache.GetMap()
+    except error.CacheNotFound:
+      return 1
 
     if self.local_master:
       self.log.info('Using local master map to determine maps to update.')
@@ -287,7 +279,7 @@ class AutomountUpdater(base.Updater):
     # with sub-maps updated, write modified master map to disk if
     # configured to
     if not self.local_master:
-      cache = caches.base.Create(cache_options,
+      cache = caches.base.Create(self.cache_options,
                                  self.map_name,
                                  automount_info=None)  # None defaults to master
       updater = SingleMapUpdater(self.map_name,

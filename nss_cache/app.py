@@ -78,12 +78,12 @@ class NssCacheApp(object):
 
     See the file README.style for logging policy set up here.
     """
-    format_str = (os.path.basename(sys.argv[0]) +
-                  ('[%(process)d]: '
-                   '%(module)s.%(funcName)s '
-                   '%(message)s'))
     # default to syslog unless on a tty
     if os.isatty(sys.stdin.fileno()):
+      format_str = ('%(levelname)-8s %(asctime)-15s '
+                    '%(filename)s:%(lineno)d: '
+                    '%(funcName)s: '
+                    '%(message)s')
       logging.basicConfig(format=format_str)
       # python2.3's basicConfig doesn't let you set the default level
       logger = logging.getLogger()
@@ -98,6 +98,8 @@ class NssCacheApp(object):
         # Omitting an argument to StreamHandler results in sys.stderr being
         # used.
         handler = logging.StreamHandler()
+      format_str = (os.path.basename(sys.argv[0]) +
+                    '[%(process)d]: %(levelname)s %(message)s')
       fmt = logging.Formatter(format_str)
       handler.setFormatter(fmt)
       handler.setLevel(level=logging.INFO)

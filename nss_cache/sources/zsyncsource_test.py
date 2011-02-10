@@ -27,6 +27,7 @@ from nss_cache import error
 from nss_cache.sources import zsyncsource
 
 import pmock
+import mox
 
 
 class TestZsyncsource(pmock.MockTestCase):
@@ -293,33 +294,37 @@ class TestZsyncsource(pmock.MockTestCase):
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
     path_orig = zsyncsource.os.path
-    path = self.mock()
-    path.expects(pmock.once()).exists(pmock.eq(current_file)).will(
-        pmock.return_value(True))
-    path.expects(pmock.once()).exists(pmock.eq(local)).will(
-        pmock.return_value(True))
+    mocker = mox.Mox()
+    path = mocker.CreateMock(zsyncsource.os.path)
+    path.exists(current_file).AndReturn(True)
+    path.exists(local).AndReturn(True)
     zsyncsource.os.path = path
 
     zsync_orig = zsyncsource.zsync
-    zsync_mock = self.mock()
-    zsync_object_mock = self.mock()
-    zsync_mock.expects(pmock.once()).method('Zsync').will(
-        pmock.return_value(zsync_object_mock))
-    zsync_object_mock.expects(pmock.once()).Begin(pmock.eq(remote + '.zsync'))
-    zsync_object_mock.expects(pmock.once()).SubmitSource(pmock.eq(current_file))
-    zsync_object_mock.expects(pmock.once()).Fetch(pmock.eq(local))
+    zsync_object_mock = mocker.CreateMock(zsyncsource.zsync.Zsync)
+    zsync_mock = mocker.CreateMock(zsyncsource.zsync)
+    zsync_mock.Zsync(conn=mox.IgnoreArg(),
+                     retry_delay=5, retry_max=3).AndReturn(zsync_object_mock)
+    zsync_object_mock.Begin(remote + '.zsync')
+    zsync_object_mock.SubmitSource(current_file)
+    zsync_object_mock.Fetch(local)
     zsyncsource.zsync = zsync_mock
     self.gpg_called = False
     source = zsyncsource.ZSyncSource({'gpg': True})
 
-    def MockGPGVerify(local_path, remote_sig):
+    def FakeGPGVerify(local_path, remote_sig):
       self.assertEquals(local_path, local)
       self.assertEquals(remote_sig, remote + '.asc')
       self.gpg_called = True
       return True
 
-    source._GPGVerify = MockGPGVerify
-    self.assertEquals(source._GetFile(remote, local, current_file), local)
+    source._GPGVerify = FakeGPGVerify
+    # test
+    mocker.ReplayAll()
+    self.assertEquals(local,
+                      source._GetFile(remote, local, current_file))
+    mocker.VerifyAll()
+
     self.assertTrue(self.gpg_called)
     zsyncsource.os.path = path_orig
     zsyncsource.zsync = zsync_orig
@@ -356,4 +361,3 @@ class TestZsyncsource(pmock.MockTestCase):
     self.assertTrue(self.gpg_called)
     zsyncsource.os.path = path_orig
     zsyncsource.zsync = zsync_orig
-

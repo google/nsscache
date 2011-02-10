@@ -25,7 +25,9 @@ import inspect
 import logging
 import optparse
 import os
+import shutil
 import StringIO
+import tempfile
 import time
 
 from nss_cache import caches
@@ -261,6 +263,19 @@ class Update(Command):
       cache_options = conf.options[map_name].cache
       source_options = conf.options[map_name].source
 
+
+      # Change into the target directory.
+      # Sources such as zsync handle their temporary files badly, so we
+      # want to be in the same location that the destination file will
+      # exist in, so that the atomic rename occurs in the same
+      # filesystem.
+      # In addition, we create a tempdir below this dir to work in, because
+      # zsync's librcksum sometimes leaves temp files around, and we don't
+      # want to leave file turds around /etc.
+      tempdir = tempfile.mkdtemp(dir=cache_options['dir'],
+                                 prefix='nsscache-')
+      os.chdir(tempdir)
+
       source = sources.base.Create(source_options)
 
       updater = self._Updater(map_name, source, cache_options, conf)
@@ -277,6 +292,12 @@ class Update(Command):
         self.log.error('Permission denied: could not update.maps %r.  Aborting',
                        map_name)
         retval = 1
+      except error.EmptyMap, e:
+        self.log.error(e)
+        retval = 1
+
+      os.chdir('/')
+      shutil.rmtree(tempdir)
 
     if retval:
       return retval
@@ -679,11 +700,11 @@ class Status(Command):
 
     if not epoch:
       if last_modify_timestamp is not None:
-        last_modify_timestamp = time.ctime(last_modify_timestamp)
+        last_modify_timestamp = time.asctime(last_modify_timestamp)
       else:
         last_modify_timestamp = 'Unknown'
       if last_update_timestamp is not None:
-        last_update_timestamp = time.ctime(last_update_timestamp)
+        last_update_timestamp = time.asctime(last_update_timestamp)
       else:
         last_update_timestamp = 'Unknown'
 

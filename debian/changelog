@@ -1,3 +1,27 @@
+nsscache (0.21.5-0gg1) unstable; urgency=low
+
+  * New upstream release.
+    * Change the log message formatting depending on where the logs go,
+      adding timestamp, level, and source location when on the console, and
+      removing everything but the level and message when going to syslog.
+    * Actually sort netgroup membership.
+    * Create temp files in the same directory as the destination, as
+      cross-filesystem renames aren't atomic.
+    * Create a temporary directory in the target directory, and chdir into
+      it, in case a zsync source is used; zsync's librcksum creates its
+      temporary files in the cwd, and sometimes doesn't clean up after
+      itself.
+    * Fix printing of timestamps in nsscache status output.
+    * Don't abort on EmptyMap errors, continue onto the next map.
+
+ -- Jamie Wilkinson <jaq@google.com>  Fri, 28 Jan 2011 14:04:01 -0800
+
+nsscache (0.21.4-0gg2) unstable; urgency=low
+
+  * Put nsscache back in /usr/bin
+
+ -- Michael Haro <mharo@google.com>  Fri, 28 Jan 2011 04:44:34 -0800
+
 nsscache (0.21.4-0gg1) unstable; urgency=low
 
   * New upstream release.
@@ -55,7 +79,7 @@ nsscache (0.20-1) unstable; urgency=low
 
 nsscache (0.19-2) unstable; urgency=low
 
-  * Initial upload to Debian.  (Closes: #609625) 
+  * Initial upload to Debian.  (Closes: #609625)
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 11 Jan 2011 00:24:54 +0000
 
