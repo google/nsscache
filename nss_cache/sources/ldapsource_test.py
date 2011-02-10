@@ -650,7 +650,7 @@ class TestLdapSource(pmock.MockTestCase):
                .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
 
     source = ldapsource.LdapSource(self.config, conn=ldap_conn)
-    self.assertEquals(0, source.Verify(0))
+    self.assertEquals(0, source.Verify(time.gmtime(0)))
 
 
 class TestUpdateGetter(unittest.TestCase):

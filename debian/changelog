@@ -1,3 +1,11 @@
+nsscache (0.21.9-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Fix bugs in the ldapsource module introduced by changing the
+    timestamp type from an int to a time.struct_time.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 07 Feb 2011 21:24:41 -0800
+
 nsscache (0.21.8-0gg1) unstable; urgency=low
 
   * New upstream release.

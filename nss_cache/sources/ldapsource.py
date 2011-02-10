@@ -21,12 +21,10 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
-import calendar
 import logging
 import time
 import ldap
 
-from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache.sources import base
@@ -66,7 +64,7 @@ class LdapSource(base.Source):
     """
     super(LdapSource, self).__init__(conf)
     self._dn_requested = False  # dn is a special-cased attribute
-    
+
     self._SetDefaults(conf)
 
     if conn is None:
@@ -198,7 +196,7 @@ class LdapSource(base.Source):
         # If the dn is requested, return it along with the payload,
         # otherwise ignore it.
         if self._dn_requested:
-          merged_records = {'dn':record[0]}
+          merged_records = {'dn': record[0]}
           merged_records.update(record[1])
           yield merged_records
         else:
@@ -276,11 +274,11 @@ class LdapSource(base.Source):
     set our search scope to be 'one'.
 
     Args:
-      location: Currently a string containing our search base, later we
-        may support hostname and additional parameters.
       since: Get data only changed since this timestamp (inclusive) or None
         for all data.
-        
+      location: Currently a string containing our search base, later we
+        may support hostname and additional parameters.
+
     Returns:
       instance of AutomountMap
     """
@@ -313,7 +311,7 @@ class LdapSource(base.Source):
     search_filter = '(&(objectclass=automountMap)(ou=auto.master))'
     self.log.debug('retrieving automount master map.')
     self.Search(search_base=search_base, search_filter=search_filter,
-                  search_scope=search_scope, attrs=['dn'])
+                search_scope=search_scope, attrs=['dn'])
 
     search_base = None
     for obj in self:
@@ -325,7 +323,7 @@ class LdapSource(base.Source):
       raise error.EmptyMap
 
     self.log.debug('found ou=auto.master at %s', search_base)
-    master_map =  self.GetAutomountMap(location=search_base)
+    master_map = self.GetAutomountMap(location=search_base)
 
     # fix our location attribute to contain the data we
     # expect returned to us later, namely the new search base(s)
@@ -336,14 +334,14 @@ class LdapSource(base.Source):
       # and strip the space seperated options
       map_entry.location = map_entry.location.split(' ')[0]
       self.log.debug('master map has: %s' % map_entry.location)
-                     
+
     return master_map
 
   def Verify(self, since=None):
     """Verify that this source is contactable and can be queried for data."""
     if since is None:
       # one minute in the future
-      since = time.time() + 60
+      since = time.gmtime(time.time() + 60)
     results = self.GetPasswdMap(since=since)
     return len(results)
 
@@ -358,21 +356,22 @@ class UpdateGetter(object):
       ldap_ts_string: An LDAP timestamp string in the format %Y%m%d%H%M%SZ
 
     Returns:
-      number of seconds since epoch.
+      a time.struct_time
     """
     t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
-    return calendar.timegm(t)
+    return t
 
   def FromTimestampToLdap(self, ts):
     """Transforms nss_cache internal timestamp into a LDAP timestamp.
 
     Args:
-      ts: number of seconds since epoch
+      ts: a time.struct_time
+
     Returns:
       LDAP format timestamp string.
     """
-    ts = time.gmtime(ts)
-    return time.strftime('%Y%m%d%H%M%SZ', ts)
+    t = time.strftime('%Y%m%d%H%M%SZ', ts)
+    return t
 
   def GetUpdates(self, source, search_base, search_filter,
                  search_scope, since):
@@ -399,7 +398,7 @@ class UpdateGetter(object):
       # since openldap disallows modifyTimestamp "greater than" we have to
       # increment by one second.
       ts = int(ts.rstrip('Z')) + 1
-      ts = '%sZ' % ts      
+      ts = '%sZ' % ts
       search_filter = ('(&%s(modifyTimestamp>=%s))' % (search_filter, ts))
 
     if search_scope == 'base':
@@ -439,7 +438,7 @@ class UpdateGetter(object):
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
 
-    data_map.SetModifyTimestamp(time.gmtime(max_ts))
+    data_map.SetModifyTimestamp(max_ts)
 
     return data_map
 
@@ -555,7 +554,7 @@ class ShadowUpdateGetter(UpdateGetter):
       shadow_ent.flag = 0
     if 'userPassword' in obj:
       passwd = obj['userPassword'][0]
-      if passwd[:7] == "{CRYPT}":
+      if passwd[:7] == '{CRYPT}':
         shadow_ent.passwd = passwd[7:]
       else:
         logging.info('Ignored password that was not in crypt format')
