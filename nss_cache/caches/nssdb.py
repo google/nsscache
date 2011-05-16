@@ -108,14 +108,14 @@ class NssDbCache(base.Cache):
       self.log.warn('makedb binary %s does not exist, cannot generate '
                     'bdb map', self.makedb)
     self.log.debug('executing makedb: %s - %s',
-                   self.makedb, self.cache_filename)
+                   self.makedb, self.temp_cache_filename)
     # This is a race condition on the tempfile now, but db-4.8 is braindead
     # and refuses to open zero length files with:
     # fop_read_meta: foo: unexpected file type or format
     # foo: Invalid type 5 specified
     # makedb: cannot open output file `foo': Invalid argument
-    os.unlink(self.cache_filename)
-    makedb = subprocess.Popen([self.makedb, '-', self.cache_filename],
+    os.unlink(self.temp_cache_filename)
+    makedb = subprocess.Popen([self.makedb, '-', self.temp_cache_filename],
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
@@ -140,9 +140,9 @@ class NssDbCache(base.Cache):
 
     self.log.debug('Map contains %d elems', len(map_data))
 
+    enumeration_index = 0
+    makedb = self._SpawnMakeDb()
     try:
-      makedb = self._SpawnMakeDb()
-      enumeration_index = 0
 
       try:
         while True:
@@ -183,6 +183,8 @@ class NssDbCache(base.Cache):
     """Helper function to compute if a child exited with code 0 or not."""
     return os.WIFEXITED(code) and (os.WEXITSTATUS(code) is 0)
 
+  # TODO(jaq): validate the unit tests for this code path, are we
+  # verifying the temp cache or the real cache?
   def Verify(self, written_keys):
     """Verify that the written cache is correct.
 
@@ -196,10 +198,10 @@ class NssDbCache(base.Cache):
       boolean indicating success.
 
     Raises:
-      EmptyMap: The map to be verified against is empty.
+      EmptyMap: The cache being verified is empty.
     """
     self.log.debug('verification started')
-    db = bsddb.btopen(self.cache_filename, 'r')
+    db = bsddb.btopen(self.temp_cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
     cache_keys = set(db)
@@ -211,8 +213,8 @@ class NssDbCache(base.Cache):
                    cache_key_count)
 
     if cache_key_count <= 0 and written_key_count > 0:
-      # We have an empty map yet we should have written more.
-      # Uncaught disk full or other error?
+      # We have an empty db, yet we expect that earlier we should have
+      # written more. Uncaught disk full or other error?
       raise error.EmptyMap
 
     # makedb creates new keys internally.  we only care that all the keys
@@ -227,7 +229,7 @@ class NssDbCache(base.Cache):
       self._Rollback()
       return False
 
-    self.log.info('verify passed: %s', self.CACHE_FILENAME)
+    self.log.info('verify passed: %s', self.temp_cache_filename)
     return True
 
 

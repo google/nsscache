@@ -22,19 +22,19 @@ __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
 
-import logging
 import os
+import shutil
 import tempfile
+import time
 import unittest
+
+import pmock
 
 from nss_cache import caches
 from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
-import pmock
-from nss_cache.update import maps
-
-logging.disable(logging.CRITICAL)
+from nss_cache import update
 
 
 class SingleMapUpdaterTest(pmock.MockTestCase):
@@ -48,13 +48,13 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
       os.unlink(self.updater.modify_file)
     if os.path.exists(self.updater.update_file):
       os.unlink(self.updater.update_file)
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testFullUpdate(self):
     """A full update reads the source, writes to cache, and updates times."""
-    original_modify_stamp = 1
-    new_modify_stamp = 2
-    updater = maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
+    updater = update.maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     updater.WriteModifyTimestamp(original_modify_stamp)
 
@@ -95,9 +95,9 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
           return False
         return True
 
-    original_modify_stamp = 1
-    new_modify_stamp = 2
-    updater = maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
+    updater = update.maps.SingleMapUpdater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     updater.WriteModifyTimestamp(original_modify_stamp)
 
@@ -139,7 +139,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
   def testFullUpdateOnMissingCache(self):
     """We fault to a full update if our cache is missing."""
     
-    class DummyUpdater(maps.SingleMapUpdater):
+    class DummyUpdater(update.maps.SingleMapUpdater):
       """Stubs functions we aren't specifically testing."""
       full_update = False
 
@@ -152,7 +152,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
           self.full_update = True
         return 0
 
-    original_modify_stamp = 1
+    original_modify_stamp = time.gmtime(1)
     updater = DummyUpdater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     updater.WriteModifyTimestamp(original_modify_stamp)
@@ -178,7 +178,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
   def testFullUpdateOnMissingTimestamp(self):
     """We fault to a full update if our modify timestamp is missing."""
 
-    class DummyUpdater(maps.SingleMapUpdater):
+    class DummyUpdater(update.maps.SingleMapUpdater):
       """Stubs functions we aren't specifically testing."""
       full_update = False
 
@@ -209,7 +209,7 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
 class AutomountUpdaterTest(pmock.MockTestCase):
   """Unit tests for AutomountUpdater class."""
 
-  class DummyUpdater(maps.SingleMapUpdater):
+  class DummyUpdater(update.maps.SingleMapUpdater):
     """Stubs functions we aren't specifically testing."""
 
     def UpdateCacheFromSource(self, cache, source, unused_incremental,
@@ -228,26 +228,26 @@ class AutomountUpdaterTest(pmock.MockTestCase):
   def setUp(self):
     # register a dummy SingleMapUpdater, because that is tested above,
 
-    self.original_single_map_updater = maps.SingleMapUpdater
-    maps.SingleMapUpdater = AutomountUpdaterTest.DummyUpdater
+    self.original_single_map_updater = update.maps.SingleMapUpdater
+    update.maps.SingleMapUpdater = AutomountUpdaterTest.DummyUpdater
 
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
-    maps.SingleMapUpdater = self.original_single_map_updater
+    update.maps.SingleMapUpdater = self.original_single_map_updater
     os.rmdir(self.workdir)
 
   def testInit(self):
     """An automount object correctly sets map-specific attributes."""
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
     self.assertEqual(updater.local_master, False)
 
-    conf = {maps.AutomountUpdater.OPT_LOCAL_MASTER: 'yes'}
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    conf = {update.maps.AutomountUpdater.OPT_LOCAL_MASTER: 'yes'}
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
     self.assertEqual(updater.local_master, True)
     
-    conf = {maps.AutomountUpdater.OPT_LOCAL_MASTER: 'no'}
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
+    conf = {update.maps.AutomountUpdater.OPT_LOCAL_MASTER: 'no'}
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, conf)
     self.assertEqual(updater.local_master, False)
 
   def testUpdate(self):
@@ -310,7 +310,7 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
     updater.UpdateFromSource(source_mock)
 
     caches.base.Create = original_create
@@ -378,8 +378,8 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    skip = maps.AutomountUpdater.OPT_LOCAL_MASTER
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+    skip = update.maps.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
                                     {skip: 'yes'})
     updater.UpdateFromSource(source_mock)
 
@@ -408,8 +408,8 @@ class AutomountUpdaterTest(pmock.MockTestCase):
     original_create = caches.base.Create
     caches.base.Create = DummyCreate
 
-    skip = maps.AutomountUpdater.OPT_LOCAL_MASTER
-    updater = maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
+    skip = update.maps.AutomountUpdater.OPT_LOCAL_MASTER
+    updater = update.maps.AutomountUpdater(config.MAP_AUTOMOUNT, self.workdir,
                                     {skip: 'yes'})
 
     return_value = updater.UpdateFromSource(source_mock)

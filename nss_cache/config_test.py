@@ -20,7 +20,6 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-import logging
 import os
 import shutil
 import tempfile
@@ -64,11 +63,8 @@ class TestClassMethods(unittest.TestCase):
     self.conf = config.Config({})
     self.conf.config_file = self.conf_filename
 
-    logging.disable(logging.CRITICAL)
-
   def tearDown(self):
-    os.unlink(self.conf_filename)
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testLoadConfigSingleMap(self):
     conf_file = open(self.conf_filename, 'w')

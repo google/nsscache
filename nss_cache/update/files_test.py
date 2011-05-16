@@ -23,12 +23,11 @@ __author__ = ('vasilios@google.com (V Hoffman)',
               'blaedd@google.com (David MacKinnon)')
 
 
-import logging
 import os
 import shutil
 import tempfile
-import unittest
 import time
+import unittest
 
 import pmock
 
@@ -37,9 +36,6 @@ from nss_cache import config
 from nss_cache import error
 from nss_cache import maps
 from nss_cache import update
-
-
-logging.disable(logging.CRITICAL)
 
 
 class SingleMapUpdaterTest(pmock.MockTestCase):
@@ -61,23 +57,55 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
     """A full update reads the source, writes to cache, and updates times."""
     original_modify_stamp = time.gmtime(1)
     new_modify_stamp = time.gmtime(2)
-    updater = update.files.SingleMapUpdater(config.MAP_PASSWORD, self.workdir,
-                                            {'name': 'files'})
-    self.updater = updater
-    updater.WriteModifyTimestamp(original_modify_stamp)
 
-    cur_path = os.path.join(self.workdir2, 'passwd.cache')
+    # Construct an updater.
+    self.updater = update.files.SingleMapUpdater(config.MAP_PASSWORD,
+                                                 self.workdir,
+                                                 {'name': 'files',
+                                                  'dir': self.workdir2})
+    self.updater.WriteModifyTimestamp(original_modify_stamp)
+
+    # Construct the cache.
+    cache = caches.files.FilesPasswdMapHandler({'dir': self.workdir2})
     map_entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    password_map = maps.PasswdMap([map_entry])
+    password_map = maps.PasswdMap()
     password_map.SetModifyTimestamp(new_modify_stamp)
+    password_map.Add(map_entry)
+    cache.Write(password_map)
 
-    cache_mock = self.mock()
-    cache_mock.expects(pmock.at_least_once()).GetCacheFilename().will(
-        pmock.return_value(cur_path))
+    # Construct a fake source.
+    class MockSource(pmock.Mock):
+      def GetFile(self, map_name, dst_file, current_file, location=None):
+        f = open(dst_file, 'w')
+        f.write('root:x:0:0:root:/root:/bin/bash\n')
+        f.close()
+        os.utime(dst_file, (1, 2))
+        return dst_file
+
+    source_mock = MockSource()
+    self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
+                                                           source_mock,
+                                                           force_write=False,
+                                                           location=None))
+    self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+    self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
+
+  def testFullUpdateOnEmptyCache(self):
+    """A full update as above, but the initial cache is empty."""
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
+    # Construct an updater
+    self.updater = update.files.SingleMapUpdater(config.MAP_PASSWORD,
+                                                 self.workdir,
+                                                 {'name': 'files',
+                                                  'dir': self.workdir2})
+    self.updater.WriteModifyTimestamp(original_modify_stamp)
+
+    # Construct a cache
+    cache = caches.files.FilesPasswdMapHandler({'dir': self.workdir2})
 
     class MockSource(pmock.Mock):
       def GetFile(self, map_name, dst_file, current_file, location=None):
-        assert current_file == cur_path
         assert location is None
         assert map_name == config.MAP_PASSWORD
         f = open(dst_file, 'w')
@@ -87,12 +115,88 @@ class SingleMapUpdaterTest(pmock.MockTestCase):
         return dst_file
 
     source_mock = MockSource()
-    self.assertEqual(0, updater.UpdateCacheFromSource(cache_mock,
-                                                      source_mock,
-                                                      force_write=True,
-                                                      location=None))
-    self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
-    self.assertNotEqual(None, updater.GetUpdateTimestamp())
+    self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
+                                                           source_mock,
+                                                           force_write=False,
+                                                           location=None))
+    self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+    self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
+
+  def testFullUpdateOnEmptySource(self):
+    """A full update as above, but instead, the initial source is empty."""
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
+    # Construct an updater
+    self.updater = update.files.SingleMapUpdater(config.MAP_PASSWORD,
+                                                 self.workdir,
+                                                 {'name': 'files',
+                                                  'dir': self.workdir2})
+    self.updater.WriteModifyTimestamp(original_modify_stamp)
+
+    # Construct a cache
+    cache = caches.files.FilesPasswdMapHandler({'dir': self.workdir2})
+    map_entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    password_map = maps.PasswdMap()
+    password_map.SetModifyTimestamp(new_modify_stamp)
+    password_map.Add(map_entry)
+    cache.Write(password_map)
+
+    class MockSource(pmock.Mock):
+      def GetFile(self, map_name, dst_file, current_file, location=None):
+        assert location is None
+        assert map_name == config.MAP_PASSWORD
+        f = open(dst_file, 'w')
+        f.write('')
+        f.close()
+        os.utime(dst_file, (1, 2))
+        return dst_file
+
+    source_mock = MockSource()
+    self.assertRaises(error.EmptyMap,
+                      self.updater.UpdateCacheFromSource,
+                      cache,
+                      source_mock,
+                      force_write=False,
+                      location=None)
+    self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+    self.assertEqual(None, self.updater.GetUpdateTimestamp())
+
+  def testFullUpdateOnEmptySourceForceWrite(self):
+    """A full update as above, but instead, the initial source is empty."""
+    original_modify_stamp = time.gmtime(1)
+    new_modify_stamp = time.gmtime(2)
+    # Construct an updater
+    self.updater = update.files.SingleMapUpdater(config.MAP_PASSWORD,
+                                                 self.workdir,
+                                                 {'name': 'files',
+                                                  'dir': self.workdir2})
+    self.updater.WriteModifyTimestamp(original_modify_stamp)
+
+    # Construct a cache
+    cache = caches.files.FilesPasswdMapHandler({'dir': self.workdir2})
+    map_entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    password_map = maps.PasswdMap()
+    password_map.SetModifyTimestamp(new_modify_stamp)
+    password_map.Add(map_entry)
+    cache.Write(password_map)
+
+    class MockSource(pmock.Mock):
+      def GetFile(self, map_name, dst_file, current_file, location=None):
+        assert location is None
+        assert map_name == config.MAP_PASSWORD
+        f = open(dst_file, 'w')
+        f.write('')
+        f.close()
+        os.utime(dst_file, (1, 2))
+        return dst_file
+
+    source_mock = MockSource()
+    self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
+                                                           source_mock,
+                                                           force_write=True,
+                                                           location=None))
+    self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+    self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
 
 
 class AutomountUpdaterTest(pmock.MockTestCase):

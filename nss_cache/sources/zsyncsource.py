@@ -172,7 +172,10 @@ class ZSyncSource(base.FileSource):
         self.log.info('Successfully verified file %r signed by %r', local_path,
                       context.get_key(sign.fpr, 0).uids[0].uid)
         return True
-      sign = sign.next
+      if hasattr(sign, 'next'):
+        sign = sign.next
+      else:
+        sign = None
     return False
 
   def _GetFile(self, remote, local_path, current_file):
@@ -196,62 +199,17 @@ class ZSyncSource(base.FileSource):
       zs.Fetch(local_path)
     except zsync.error.Error, e:
       self.log.exception(e)
-      self.log.warning('Unable to retrieve zsync file.'
-                       ' Falling back to full file transfer')
-      self._GetFileFull(remote, local_path)
-    except pycurl.error, e:
-      curl.HandleCurlError(e, self.log)
+      self.log.warning('Unable to retrieve zsync file: %s', e)
+      raise error.InvalidMap('Failed to fetch map via zsync')
+    if not os.path.exists(local_path):
+      raise error.EmptyMap()
     if self.conf['gpg']:
       remote_sig = remote + self.conf['gpg_suffix']
       if not self._GPGVerify(local_path, remote_sig):
         self.log.warning('Invalid GPG signature for %s', remote)
         raise error.InvalidMap('Unable to verify map')
-    if not os.path.exists(local_path):
-      raise error.EmptyMap()
 
     return local_path
-
-  def _GetFileFull(self, remote, local_path):
-    """Retrieve a file via http(s).
-
-    Args:
-      remote: remote url to fetch
-      local_path: local filename to use
-
-    Returns:
-      local_path
-
-    Raises:
-      error.SourceUnavailable
-    """
-    conn = self.conn
-    conn.setopt(pycurl.ENCODING, 'gzip, identity')
-    conn.setopt(pycurl.RANGE, '0-')
-    for retry in range(self.conf['retry_max']):
-      try:
-        (resp_code, headers, body) = curl.CurlFetch(remote, conn, self.log)
-        conn.setopt(pycurl.ENCODING, 'identity')
-        self.log.debug('response code: %s', resp_code)
-        if resp_code in (200, 206):
-          # This happens with some web servers because of the range
-          # header, even though we get the entire file.
-          if resp_code == 206:
-            match = re.search(self.CONTENT_RANGE_RE, headers)
-            if (not match or
-                int(match.group('end')) - int(match.group('start')) + 1
-                != int(match.group('total'))):
-              raise error.SourceUnavailable('Unable to retrieve cache %s'
-                                            % remote)
-          local_file = open(local_path, 'w')
-          local_file.write(body)
-          local_file.close()
-          return local_path
-      except error.Error:
-        self.log.info('Failed to fetch %s. Attempt #%d', remote, retry)
-      time.sleep(self.conf['retry_delay'])
-
-    conn.setopt(pycurl.ENCODING, 'identity')
-    raise error.SourceUnavailable('Unable to retrieve cache %s' % remote)
 
   def GetPasswdFile(self, dst_file, current_file):
     """Retrieve passwd file via zsync.

@@ -22,9 +22,9 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import errno
 import fcntl
-import logging
 import os
 import re
+import shutil
 import signal
 import stat
 import sys
@@ -50,12 +50,11 @@ class TestPidFile(pmock.MockTestCase):
 
   def setUp(self):
     """Create a temporary working dir for unit tests."""
-    logging.disable(logging.CRITICAL)
     self.workdir = tempfile.mkdtemp()
     self.filename = '%s/%s' % (self.workdir, 'pidfile')
 
   def tearDown(self):
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testInit(self):
     """We can create a pidfile object."""

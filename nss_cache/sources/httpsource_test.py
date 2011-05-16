@@ -20,7 +20,6 @@
 
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
-import logging
 import time
 import unittest
 import StringIO
@@ -45,12 +44,6 @@ class TestHttpFilesSource(pmock.MockTestCase):
                    'retry_max': 'TEST_RETRY_MAX',
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
-
-    logging.disable(logging.CRITICAL)
-
-  #
-  # Our tests are defined below here.
-  #
 
   def testDefaults(self):
     """Test that we set the expected defaults for HTTP connections."""

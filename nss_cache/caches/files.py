@@ -65,15 +65,15 @@ class FilesCache(base.Cache):
     """
     data = self.data
     if cache_info is not None:
-      cache_file = cache_info
+      cache_filename = cache_info
     else:
-      cache_file = self.GetCacheFilename()
+      cache_filename = self.GetCacheFilename()
 
-    self.log.debug('Opening %r for reading existing cache', cache_file)
-    if not os.path.exists(cache_file):
+    self.log.debug('Opening %r for reading existing cache', cache_filename)
+    if not os.path.exists(cache_filename):
       self.log.warning('Cache file does not exist, using an empty map instead')
     else:
-      cache_file = open(cache_file)
+      cache_file = open(cache_filename)
       data = self.map_parser.GetMap(cache_file, data)
 
     return data
@@ -91,16 +91,17 @@ class FilesCache(base.Cache):
       a boolean indicating success.
 
     Raises:
-      error.EmptyMap: see nssdb.py:Verify
+      EmptyMap: The cache being verified is empty.
     """
-    self.log.debug('verification starting on %r', self.cache_filename)
+    self.log.debug('verification starting on %r', self.temp_cache_filename)
 
-    cache_data = self.GetMap(cache_info=self.cache_filename)
+    cache_data = self.GetMap(cache_info=self.temp_cache_filename)
     map_entry_count = len(cache_data)
     self.log.debug('entry count: %d', map_entry_count)
 
     if map_entry_count <= 0:
-      # See nssdb.py Verify for a comment about this raise
+      # We have read in an empty map, yet we expect that earlier we
+      # should have written more. Uncaught disk full or other error?
       raise error.EmptyMap
 
     cache_keys = set()
@@ -150,11 +151,11 @@ class FilesCache(base.Cache):
     try:
       while 1:
         entry = map_data.PopItem()
-        self._WriteData(self.cache_file, entry)
+        self._WriteData(self.temp_cache_file, entry)
         written_keys.update(self._ExpectedKeysForEntry(entry))
     except KeyError:
       # expected when PopItem() is done, and breaks our loop for us.
-      self.cache_file.flush()
+      self.temp_cache_file.flush()
     except:
       self._Rollback()
       raise

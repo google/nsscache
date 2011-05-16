@@ -119,6 +119,9 @@ class Updater(object):
     else:
       timestamp_file.close()
 
+    self.log.debug('read timestamp %s from file %r',
+                   timestamp_string, filename)
+
     if timestamp_string is not None:
       try:
         # Append UTC to force the timezone to parse the string in.
@@ -131,12 +134,14 @@ class Updater(object):
     else:
       timestamp = None
 
-    if timestamp > time.gmtime():
-      self.log.warn('timestamp %r from %r is in the future.',
-                    timestamp_string, filename)
+    now = time.gmtime()
+    if timestamp > now:
+      self.log.warn('timestamp %r from %r is in the future, now is %r',
+                    timestamp_string, filename, time.mktime(now))
+      if time.mktime(timestamp) - time.mktime(now) >= 60*60:
+        self.log.info('Resetting timestamp to now.')
+        timestamp = now
 
-    self.log.debug('read timestamp %s from file %r',
-                   timestamp_string, filename)
     return timestamp
 
   def _WriteTimestamp(self, timestamp, filename):

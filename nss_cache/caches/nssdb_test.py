@@ -33,8 +33,6 @@ from nss_cache import error
 from nss_cache import maps
 from nss_cache.caches import nssdb
 
-logging.disable(logging.CRITICAL)
-
 
 class TestSkipped(Exception):
   """Exception to raise if a test cannot be run."""
@@ -154,7 +152,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return -1
+        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -189,14 +187,14 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
                                         'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
 
-    os.unlink(updater.cache_filename)
+    os.unlink(updater.temp_cache_filename)
 
   def testVerifyFailure(self):
     # Can't test if no makedb
@@ -223,11 +221,11 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
                                         'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.cache_filename)
+    db = bsddb.btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -235,7 +233,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
-    self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
+    self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
     # no longer hide this message
     logging.getLogger('NssDbPasswdHandler').removeFilter(fltr)
 
@@ -244,7 +242,7 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     # create a temp file, clag it into the updater object
     (_, temp_filename) = tempfile.mkstemp(prefix='nsscache-nssdb_test',
                                           dir=self.workdir)
-    updater.cache_filename = temp_filename
+    updater.temp_cache_filename = temp_filename
     # make it empty
     db = bsddb.btopen(temp_filename, 'w')
     self.assertEqual(0, len(db))
@@ -261,7 +259,7 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 
   def tearDown(self):
     # remove the test working directory
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
 
   def testConvertValueToMapEntry(self):
     ent = 'foo:x:1000:bar'
@@ -360,7 +358,7 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return -1
+        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -376,8 +374,8 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
 
     tmpgroup = os.path.join(self.workdir, 'group.db')
     self.failIf(os.path.exists(tmpgroup))
-    # just clean it up, Write() doesn't Commit()
-    writer._Rollback()
+    # # just clean it up, Write() doesn't Commit()
+    # writer._Rollback()
 
   def testVerify(self):
     # Can't test if no makedb
@@ -394,13 +392,13 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
-    os.unlink(updater.cache_filename)
+    os.unlink(updater.temp_cache_filename)
 
   def testVerifyFailure(self):
     # Can't test if no makedb
@@ -426,11 +424,11 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.cache_filename)
+    db = bsddb.btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -438,7 +436,7 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
-    self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
+    self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
     # no longer hide this message
     logging.getLogger('NssDbGroupHandler').removeFilter(fltr)
 
@@ -530,7 +528,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
         return 0
 
       def poll(self):
-        return -1
+        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -562,13 +560,13 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
                                         'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
     self.failUnlessEqual(True, retval)
-    os.unlink(updater.cache_filename)
+    os.unlink(updater.temp_cache_filename)
 
   def testVerifyFailure(self):
 
@@ -595,11 +593,11 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
                                         'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.failUnless(os.path.exists(updater.cache_filename),
+    self.failUnless(os.path.exists(updater.temp_cache_filename),
                     'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.cache_filename)
+    db = bsddb.btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -607,7 +605,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     retval = updater.Verify(written)
 
     self.failUnlessEqual(False, retval)
-    self.failIf(os.path.exists(os.path.join(updater.cache_filename)))
+    self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
     # no longer hide this message
     logging.getLogger('NssDbShadowHandler').removeFilter(fltr)
 
@@ -645,7 +643,7 @@ class TestNssDbCache(unittest.TestCase):
     self.assertTrue('=1000' in written)
 
     # perform test
-    db = bsddb.btopen(cache.cache_filename, 'r')
+    db = bsddb.btopen(cache.temp_cache_filename, 'r')
 
     self.assertEqual(3, len(db.keys()))
     self.failUnless('.foo' in db.keys())
@@ -660,7 +658,7 @@ class TestNssDbCache(unittest.TestCase):
     self.assertEqual(db['=1000'], d)
 
     # tear down
-    os.unlink(cache.cache_filename)
+    os.unlink(cache.temp_cache_filename)
 
   def testLoadBdbCacheFile(self):
     pass_file = os.path.join(self.workdir, 'passwd.db')

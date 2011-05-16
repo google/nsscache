@@ -22,30 +22,28 @@ __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
 
-import logging
 import os
-import pmock
+import shutil
 import tempfile
 import time
+import unittest
+
+import mox
 
 from nss_cache import config
 from nss_cache.update import base
 
-logging.disable(logging.CRITICAL)
 
-
-class TestUpdater(pmock.MockTestCase):
+class TestUpdater(mox.MoxTestBase):
   """Unit tests for the Updater class."""
 
   def setUp(self):
+    super(TestUpdater, self).setUp()
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
-    if os.path.exists(self.updater.modify_file):
-      os.unlink(self.updater.modify_file)
-    if os.path.exists(self.updater.update_file):
-      os.unlink(self.updater.update_file)
-    os.rmdir(self.workdir)
+    shutil.rmtree(self.workdir)
+    super(TestUpdater, self).tearDown()
 
   def testTimestampDir(self):
     """We read and write timestamps to the specified directory."""
@@ -96,3 +94,15 @@ class TestUpdater(pmock.MockTestCase):
                      msg='unreadable update time did not default to None')
     self.assertEqual(None, modify_stamp,
                      msg='unreadable modify time did not default to None')
+
+  def testTimestampInTheFuture(self):
+    """Timestamps in the future are turned into now."""
+    updater = base.Updater(config.MAP_PASSWORD, self.workdir, {})
+    expected_time = time.gmtime(1)
+    update_time = time.gmtime(3600+1)
+    update_file = open(updater.update_file, 'w')
+    updater.WriteUpdateTimestamp(update_time)
+    self.mox.StubOutWithMock(time, 'gmtime')
+    time.gmtime().AndReturn(expected_time)
+    self.mox.ReplayAll()
+    self.assertEqual(expected_time, updater.GetUpdateTimestamp())

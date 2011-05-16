@@ -57,7 +57,7 @@ def Create(conf, map_name, automount_mountpoint=None):
 
   Args:
    conf: a dictionary of configuration key/value pairs, including one
-   required attribute 'name'
+     required attribute 'name'
    map_name: a string identifying the map name to handle
    automount_mountpoint: A string containing the automount mountpoint, used only
      by automount maps.
@@ -141,11 +141,12 @@ class Cache(object):
     self.log.debug('Output dir: %s', self.output_dir)
     self.log.debug('CWD: %s', os.getcwd())
     try:
-      (fd, self.cache_filename) = tempfile.mkstemp(
-          prefix='nsscache-nssdb-',
+      (fd, self.temp_cache_filename) = tempfile.mkstemp(
+          prefix='nsscache-cache-file-',
           dir=os.path.join(os.getcwd(), self.output_dir))
-      self.cache_file = os.fdopen(fd, 'w+b')
-      self.log.debug('opened temporary cache filename %r', self.cache_filename)
+      self.temp_cache_file = os.fdopen(fd, 'w+b')
+      self.log.debug('opened temporary cache filename %r',
+                     self.temp_cache_filename)
     except OSError, e:
       if e.errno == 13:
         self.log.info('Got OSError (%s) when trying to create temporary file',
@@ -155,9 +156,10 @@ class Cache(object):
 
   def _Rollback(self):
     """Rollback a write transaction."""
-    self.log.debug('rolling back, deleting cache file %r', self.cache_filename)
-    self.cache_file.close()
-    os.unlink(self.cache_filename)
+    self.log.debug('rolling back, deleting temp cache file %r',
+                   self.temp_cache_filename)
+    self.temp_cache_file.close()
+    os.unlink(self.temp_cache_filename)
 
   def _Commit(self):
     """Ensure the cache is now the active data source for NSS.
@@ -173,25 +175,25 @@ class Cache(object):
     # new cache, but we might instead want to reserve the space on
     # disk for a timestamp first -- thus needing a write/commit pair
     # of functions for a timestamp.  Edge case, so not bothering for now.
-    if not self.cache_file.closed:
-      self.cache_file.flush()
-      os.fsync(self.cache_file.fileno())
-      self.cache_file.close()
+    if not self.temp_cache_file.closed:
+      self.temp_cache_file.flush()
+      os.fsync(self.temp_cache_file.fileno())
+      self.temp_cache_file.close()
     else:
-      self.log.debug('cache file was already closed before Commit')
+      self.log.debug('temp cache file was already closed before Commit')
     # We emulate the permissions of our source map to avoid bugs where
     # permissions may differ (usually w/shadow map)
     # Catch the case where the source file may not exist for some reason and
     # chose a sensible default.
     try:
-      shutil.copymode(self.GetCompatFilename(), self.cache_filename)
+      shutil.copymode(self.GetCompatFilename(), self.temp_cache_filename)
     except OSError, e:
       if e.errno == errno.ENOENT:
-        os.chmod(self.cache_filename,
+        os.chmod(self.temp_cache_filename,
                  stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
-                   self.cache_filename, self.GetCacheFilename())
-    os.rename(self.cache_filename, self.GetCacheFilename())
+                   self.temp_cache_filename, self.GetCacheFilename())
+    os.rename(self.temp_cache_filename, self.GetCacheFilename())
     return True
 
   def GetCacheFilename(self):
@@ -242,7 +244,10 @@ class Cache(object):
       writable_map = map_data
 
     entries_written = self.Write(writable_map)
+
     # N.B. Write is destructive, len(writable_map) == 0 now.
+    # Asserting this isn't good for the unit tests, though.
+    #assert 0 == len(writable_map), "self.Write should be destructive."
 
     if entries_written is None:
       self.log.warn('cache write failed, exiting')

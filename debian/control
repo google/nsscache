@@ -8,7 +8,7 @@ Homepage: http://code.google.com/p/nsscache
 
 Package: nsscache
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-pycurl, python-ldap
 Recommends: libnss-cache | libnss-db
 Suggests: python-zsync, python-pyme
 Description: asynchronously synchronise local NSS databases with remote directory services

@@ -294,10 +294,10 @@ class Update(Command):
         retval = updater.UpdateFromSource(source, incremental=incremental,
                                           force_write=force_write)
       except error.PermissionDenied:
-        self.log.error('Permission denied: could not update.maps %r.  Aborting',
+        self.log.error('Permission denied: could not update map %r.  Aborting',
                        map_name)
         retval = 1
-      except error.EmptyMap, e:
+      except (error.EmptyMap, error.InvalidMap), e:
         self.log.error(e)
         retval = 1
 

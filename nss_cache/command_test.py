@@ -22,7 +22,6 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import grp
-import logging
 import os
 import pwd
 import shutil
@@ -43,8 +42,6 @@ from nss_cache import sources
 from nss_cache import update
 
 import pmock
-
-logging.disable(logging.CRITICAL)
 
 
 class TestCommand(pmock.MockTestCase):

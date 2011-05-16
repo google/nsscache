@@ -25,7 +25,9 @@ These classes contains all the business logic for updating cache objects.
 They also contain the code for reading, writing, and updating timestamps.
 """
 
-__author__ = ('blaedd@google.com (David MacKinnon)',)
+__author__ = ('jaq@google.com (Jamie Wilkinson)',
+              'vasilios@google.com (V Hoffman)',
+              'blaedd@google.com (David MacKinnon)',)
 
 import errno
 import logging
@@ -87,15 +89,28 @@ class SingleMapUpdater(base.Updater):
     """
     return_val = 0
 
-    unused_new_fd, new_file = tempfile.mkstemp(
+    new_file_fd, new_file = tempfile.mkstemp(
         dir=os.path.dirname(cache.GetCacheFilename()),
         prefix=os.path.basename(cache.GetCacheFilename()),
         suffix='.nsscache.tmp')
-    self.log.debug('temp filename: %s', new_file)
+    self.log.debug('temp source filename: %s', new_file)
     try:
-      source.GetFile(self.map_name, new_file, cache.GetCacheFilename(),
+      # Writes the source to new_file.
+      # Current file is passed in to allow the source to do partial diffs.
+      # TODO(jaq): refactor this to pass in the whole cache, so that the source
+      # can decide how to reduce downloads, c.f. last-modify-timestamp for ldap.
+      source.GetFile(self.map_name, new_file,
+                     current_file=cache.GetCacheFilename(),
                      location=location)
-      return_val += self.FullUpdateFromMap(cache, new_file, force_write)
+      os.lseek(new_file_fd, 0, os.SEEK_SET)
+      # TODO(jaq): this sucks.
+      source_cache = caches.base.Create(self.cache_options,
+                                        self.map_name)
+      source_map = source_cache.GetMap(new_file)
+
+      # Update the cache from the new file.
+      return_val += self.FullUpdateFromFile(cache, source_map, new_file,
+                                            force_write)
     finally:
       try:
         os.unlink(new_file)
@@ -106,12 +121,16 @@ class SingleMapUpdater(base.Updater):
 
     return return_val
 
-  def FullUpdateFromMap(self, cache, source_file, force_write=False):
+  def FullUpdateFromFile(self, cache, source_map, source_file,
+                         force_write=False):
     """Write a new map into the provided cache (overwrites).
 
     Args:
       cache: A nss_cache.caches.Cache object.
-      source_file: The file that we're replacing the cache with.
+      source_map: The map whose contents we're replacing the cache with, that is
+        used for verification.
+      source_file: The file whose contents we're replacing the cache with,
+        that gets renamed into position.
       force_write: A boolean flag forcing empty map updates when False,
         defaults to False.
 
@@ -123,16 +142,12 @@ class SingleMapUpdater(base.Updater):
       InvalidMap:
     """
     return_val = 0
-    verify_cache = caches.base.Create(
-        self.cache_options, self.map_name,
-        automount_mountpoint=cache.automount_mountpoint)
-    new_map = verify_cache.GetMap()
 
-    for entry in new_map:
+    for entry in source_map:
       if not entry.Verify():
         raise error.InvalidMap('Map is not valid. Aborting')
 
-    if len(new_map) is 0 and not force_write:
+    if len(source_map) is 0 and not force_write:
       raise error.EmptyMap('Source map empty during full update, aborting. '
                            'Use --force-write to override.')
 

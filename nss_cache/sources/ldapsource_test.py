@@ -21,7 +21,6 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
-import logging
 import time
 import unittest
 import ldap
@@ -49,12 +48,6 @@ class TestLdapSource(pmock.MockTestCase):
                    'tls_cacertdir': 'TEST_TLS_CACERTDIR',
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
-
-    logging.disable(logging.CRITICAL)
-
-  #
-  # Functions used to generate shared mocks and stubs.
-  #
 
   def ConnMock(self, success=None):
     """Return a mock for ldap connections."""

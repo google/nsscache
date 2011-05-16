@@ -21,7 +21,6 @@
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
 import cStringIO
-import logging
 
 from nss_cache import error
 from nss_cache.sources import zsyncsource
@@ -47,12 +46,6 @@ class TestZsyncsource(pmock.MockTestCase):
                    'http_proxy': 'HTTP_PROXY',
                    'gpg_suffix': 'GPG_SUFFIX',
                    }
-
-    logging.disable(logging.CRITICAL)
-
-  #
-  # Our tests are defined below here.
-  #
 
   def testDefaults(self):
     """Test that we set the expected defaults for HTTP connections."""
@@ -334,11 +327,13 @@ class TestZsyncsource(pmock.MockTestCase):
     remote = 'https://www/nss_cache'
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
-    path_orig = zsyncsource.os.path
-    path = self.mock()
-    path.expects(pmock.once()).exists(pmock.eq(current_file)).will(
-        pmock.return_value(True))
-    zsyncsource.os.path = path
+
+    def new_exists(path):
+      self.exists_called = True
+      return True
+
+    exists_orig = zsyncsource.os.path.exists
+    zsyncsource.os.path.exists = new_exists
 
     zsync_orig = zsyncsource.zsync
     zsync_mock = self.mock()
@@ -356,8 +351,10 @@ class TestZsyncsource(pmock.MockTestCase):
       return False
 
     source._GPGVerify = MockGPGVerify
-    self.assertRaises(error.InvalidMap, source._GetFile, remote,
+    self.assertRaises(error.InvalidMap,
+                      source._GetFile, remote,
                       local, current_file)
     self.assertTrue(self.gpg_called)
-    zsyncsource.os.path = path_orig
+    self.assertTrue(self.exists_called)
+    zsyncsource.os.path.exists = exists_orig
     zsyncsource.zsync = zsync_orig
