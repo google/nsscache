@@ -16,17 +16,34 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Library for client side caching of NSS data.
+"""Unit tests for sources/source.py."""
 
-The nsscache package implements client-side caching of nss data
-from various sources to different local nss storage implementations.
+__author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-This file all the availible known caches, maps, and sources for the
-nss_cache package.
-"""
+import unittest
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+from nss_cache.sources import source
 
-__version__ = '0.21.16'
 
+class TestSource(unittest.TestCase):
+  """Unit tests for the Source class."""
+
+  def testCreateNoConfig(self):
+
+    config = []
+
+    self.assertRaises(RuntimeError, source.Source, config)
+
+    self.assertRaises(RuntimeError, source.Source, None)
+
+    config = 'foo'
+
+    self.assertRaises(RuntimeError, source.Source, config)
+
+  def testVerify(self):
+    s = source.Source({})
+    self.assertRaises(NotImplementedError, s.Verify)
+
+
+if __name__ == '__main__':
+  unittest.main()

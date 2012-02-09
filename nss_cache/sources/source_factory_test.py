@@ -16,13 +16,14 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Unit tests for sources/base.py."""
+"""Unit tests for sources/source.py."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import unittest
 
-from nss_cache.sources import base
+from nss_cache.sources import source
+from nss_cache.sources import source_factory
 
 
 class TestSourceFactory(unittest.TestCase):
@@ -30,57 +31,40 @@ class TestSourceFactory(unittest.TestCase):
 
   def testRegister(self):
 
-    class DummySource(base.Source):
+    number_of_sources = len(source_factory._source_implementations)
+
+    class DummySource(source.Source):
       name = 'dummy'
+    source_factory.RegisterImplementation(DummySource)
 
-    base.RegisterImplementation(DummySource)
-
-    self.failUnlessEqual(1, len(base._source_implementations))
-    self.failUnlessEqual(DummySource, base._source_implementations['dummy'])
+    self.failUnlessEqual(number_of_sources + 1,
+                         len(source_factory._source_implementations))
+    self.failUnlessEqual(DummySource,
+                         source_factory._source_implementations['dummy'])
 
   def testRegisterWithoutName(self):
 
-    class DummySource(base.Source):
+    class DummySource(source.Source):
       pass
 
-    self.assertRaises(RuntimeError, base.RegisterImplementation, DummySource)
+    self.assertRaises(RuntimeError,
+                      source_factory.RegisterImplementation, DummySource)
 
   def testCreateWithNoImplementations(self):
-    base._source_implementations = {}
-    self.assertRaises(RuntimeError, base.Create, {})
+    source_factory._source_implementations = {}
+    self.assertRaises(RuntimeError, source_factory.Create, {})
 
   def testCreate(self):
 
-    class DummySource(base.Source):
+    class DummySource(source.Source):
       name = 'dummy'
 
-    base.RegisterImplementation(DummySource)
+    source_factory.RegisterImplementation(DummySource)
 
     dummy_config = {'name': 'dummy'}
+    dummy_source = source_factory.Create(dummy_config)
 
-    source = base.Create(dummy_config)
-
-    self.assertEqual(DummySource, type(source))
-
-
-class TestSource(unittest.TestCase):
-  """Unit tests for the Source class."""
-
-  def testCreateNoConfig(self):
-
-    config = []
-
-    self.assertRaises(RuntimeError, base.Source, config)
-
-    self.assertRaises(RuntimeError, base.Source, None)
-
-    config = 'foo'
-
-    self.assertRaises(RuntimeError, base.Source, config)
-
-  def testVerify(self):
-    s = base.Source({})
-    self.assertRaises(NotImplementedError, s.Verify)
+    self.assertEqual(DummySource, type(dummy_source))
 
 
 if __name__ == '__main__':

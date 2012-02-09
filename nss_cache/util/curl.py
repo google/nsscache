@@ -42,7 +42,7 @@ def CurlFetch(url, conn=None, logger=None):
   conn.setopt(pycurl.HEADERFUNCTION, conn.headers.write)
   try:
     conn.perform()
-  except Exception, e:
+  except pycurl.error, e:
     HandleCurlError(e, logger)
     raise error.Error(e)
   resp_code = conn.getinfo(pycurl.RESPONSE_CODE)
@@ -98,4 +98,3 @@ def HandleCurlError(e, logger=None):
 
   # Anything else
   raise error.Error(msg)
-

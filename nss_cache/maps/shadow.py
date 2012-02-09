@@ -26,10 +26,10 @@ ShadowMapEntry:  A shadow map entry based on the MapEntry class.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
-class ShadowMap(base.Map):
+class ShadowMap(maps.Map):
   """This class represents an NSS shadow map.
   
   Map data is stored as a list of MapEntry objects, see the abstract
@@ -47,7 +47,7 @@ class ShadowMap(base.Map):
     return super(ShadowMap, self).Add(entry)
 
 
-class ShadowMapEntry(base.MapEntry):
+class ShadowMapEntry(maps.MapEntry):
   """This class represents NSS shadow map entries."""
   __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
                'expire', 'flag')

@@ -16,7 +16,13 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-"""An implementation of nss_files local cache for nsscache."""
+"""An implementation of a nss_files format local cache, with indexing.
+
+libnss-cache is a NSS module that reads NSS data from files in /etc,
+that look similar to the standard ones used by nss_files, but with
+".cache" extension. It also uses an index file if one exists, in a
+format created here.
+"""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
@@ -26,16 +32,28 @@ import re
 
 from nss_cache import config
 from nss_cache import error
-from nss_cache.util import files
+from nss_cache.caches import caches
+from nss_cache.util import file_formats
 
-from nss_cache.caches import base
+
+def RegisterAllImplementations(register_callback):
+  """Register our cache classes independently from the import scheme."""
+  register_callback('files', 'passwd', FilesPasswdMapHandler)
+  register_callback('files', 'group', FilesGroupMapHandler)
+  register_callback('files', 'shadow', FilesShadowMapHandler)
+  register_callback('files', 'netgroup', FilesNetgroupMapHandler)
+  register_callback('files', 'automount', FilesAutomountMapHandler)
 
 
-class FilesCache(base.Cache):
+class FilesCache(caches.Cache):
   """An implementation of a Cache specific to nss_files module.
 
   This implementation creates, updates, and verifies map caches used by
   nss_files module.
+
+  Child classes can define the class attribute _INDEX_ATTRIBUTES, a
+  sequence-type of strings containing attributes of their associated
+  Map type that will be built into an index for use by libnss-cache.
   """
 
   def __init__(self, conf, map_name, automount_mountpoint=None):
@@ -52,21 +70,27 @@ class FilesCache(base.Cache):
 
     # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
+    # Store a dict of indexes, each containing a dict of keys to line, position
+    # tuples.
+    self._indices = {}
+    if hasattr(self, '_INDEX_ATTRIBUTES'):
+      for index in self._INDEX_ATTRIBUTES:
+        self._indices[index] = {}
 
-  def GetMap(self, cache_info=None):
+  def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
     Args:
-      cache_info:  alternative file to read, optional.
+      cache_filename: alternative file to read, optional.
+
     Returns:
       A child of Map containing the cache data.
+
     Raises:
       CacheNotFound: The cache file we expected to read from does not exist.
     """
     data = self.data
-    if cache_info is not None:
-      cache_filename = cache_info
-    else:
+    if cache_filename is None:
       cache_filename = self.GetCacheFilename()
 
     self.log.debug('Opening %r for reading existing cache', cache_filename)
@@ -95,14 +119,16 @@ class FilesCache(base.Cache):
     """
     self.log.debug('verification starting on %r', self.temp_cache_filename)
 
-    cache_data = self.GetMap(cache_info=self.temp_cache_filename)
+    cache_data = self.GetMap(self.temp_cache_filename)
     map_entry_count = len(cache_data)
     self.log.debug('entry count: %d', map_entry_count)
 
     if map_entry_count <= 0:
       # We have read in an empty map, yet we expect that earlier we
       # should have written more. Uncaught disk full or other error?
-      raise error.EmptyMap
+      self.log.error('The files cache being verified "%r" is empty.',
+                     self.temp_cache_filename)
+      raise error.EmptyMap(self.temp_cache_filename + ' is empty')
 
     cache_keys = set()
     # Use PopItem() so we free our memory if multiple maps are Verify()ed.
@@ -118,15 +144,23 @@ class FilesCache(base.Cache):
     if missing_from_cache:
       self.log.warn('verify failed: %d missing from the on-disk cache',
                     len(missing_from_cache))
-      self.log.debug('keys missing from cache: %r', missing_from_cache)
+      if len(missing_from_cache) < 1000:
+        self.log.debug('keys missing from the on-disk cache: %r',
+                       missing_from_cache)
+      else:
+        self.log.debug('More than 1000 keys missing from cache. '
+                       'Not printing.')
       self._Rollback()
       return False
 
     missing_from_map = cache_keys - written_keys
     if missing_from_map:
-      self.log.warn('verify failed: %d keys unexpected in the on-disk cache',
-                    len(missing_from_map))
-      self.log.warn('keys missing from map: %r', missing_from_map)
+      self.log.warn('verify failed: %d keys found, unexpected in the on-disk '
+                    'cache', len(missing_from_map))
+      if len(missing_from_map) < 1000:
+        self.log.debug('keys missing from map: %r', missing_from_map)
+      else:
+        self.log.debug('More than 1000 keys missing from map.  Not printing.')
       self._Rollback()
       return False
 
@@ -147,11 +181,14 @@ class FilesCache(base.Cache):
     """
     self._Begin()
     written_keys = set()
+    write_offset = 0
 
     try:
       while 1:
         entry = map_data.PopItem()
-        self._WriteData(self.temp_cache_file, entry)
+        for index in self._indices:
+          self._indices[index][str(getattr(entry, index))] = str(write_offset)
+        write_offset += self._WriteData(self.temp_cache_file, entry)
         written_keys.update(self._ExpectedKeysForEntry(entry))
     except KeyError:
       # expected when PopItem() is done, and breaks our loop for us.
@@ -169,16 +206,38 @@ class FilesCache(base.Cache):
       cache_filename_target += '.' + self.cache_filename_suffix
     return os.path.join(self.output_dir, cache_filename_target)
 
+  def WriteIndex(self):
+    """Generate an index for libnss-cache from this map."""
+    for index_name in self._indices:
+      # magic string ".ix"
+      index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
+      self.log.debug('Writing index %s', index_filename)
+
+      index = self._indices[index_name]
+      key_length = len(max(index.keys(), key=len))
+      pos_length = len(max(index.values(), key=len))
+      max_length = key_length + pos_length
+      # Open for write/truncate
+      index_file = open(index_filename, 'w')
+      for key in sorted(index):
+        pos = index[key]
+        index_line = ('%s\0%s\0%s\n' %
+                      (key, pos,
+                       '\0' * (max_length - len(key) - len(pos))))
+        index_file.write(index_line)
+      index_file.close()
+
 
 class FilesPasswdMapHandler(FilesCache):
   """Concrete class for updating a nss_files module passwd cache."""
   CACHE_FILENAME = 'passwd'
+  _INDEX_ATTRIBUTES = ('name', 'uid')
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_PASSWORD
     super(FilesPasswdMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
-    self.map_parser = files.FilesPasswdMapParser()
+    self.map_parser = file_formats.FilesPasswdMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -192,26 +251,33 @@ class FilesPasswdMapHandler(FilesCache):
     return [entry.name]
 
   def _WriteData(self, target, entry):
-    """Write a PasswdMapEntry to the target cache."""
+    """Write a PasswdMapEntry to the target cache.
+
+    Args:
+      target: A file-like object.
+      entry: A PasswdMapEntry.
+
+    Returns:
+      Number of bytes written to the target.
+    """
     password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
                                                entry.uid, entry.gid,
                                                entry.gecos, entry.dir,
                                                entry.shell)
     target.write(password_entry + '\n')
-
-
-base.RegisterImplementation('files', 'passwd', FilesPasswdMapHandler)
+    return len(password_entry) + 1
 
 
 class FilesGroupMapHandler(FilesCache):
   """Concrete class for updating a nss_files module group cache."""
   CACHE_FILENAME = 'group'
+  _INDEX_ATTRIBUTES = ('name', 'gid')
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_GROUP
     super(FilesGroupMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
-    self.map_parser = files.FilesGroupMapParser()
+    self.map_parser = file_formats.FilesGroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -229,20 +295,19 @@ class FilesGroupMapHandler(FilesCache):
     group_entry = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                                    ','.join(entry.members))
     target.write(group_entry + '\n')
-
-
-base.RegisterImplementation('files', 'group', FilesGroupMapHandler)
+    return len(group_entry) + 1
 
 
 class FilesShadowMapHandler(FilesCache):
   """Concrete class for updating a nss_files module shadow cache."""
   CACHE_FILENAME = 'shadow'
+  _INDEX_ATTRIBUTES = ('name',)
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
     if map_name is None: map_name = config.MAP_SHADOW
     super(FilesShadowMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
-    self.map_parser = files.FilesShadowMapParser()
+    self.map_parser = file_formats.FilesShadowMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -267,9 +332,7 @@ class FilesShadowMapHandler(FilesCache):
                                                    entry.expire or '',
                                                    entry.flag or '')
     target.write(shadow_entry + '\n')
-
-
-base.RegisterImplementation('files', 'shadow', FilesShadowMapHandler)
+    return len(shadow_entry) + 1
 
 
 class FilesNetgroupMapHandler(FilesCache):
@@ -281,7 +344,7 @@ class FilesNetgroupMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_NETGROUP
     super(FilesNetgroupMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
-    self.map_parser = files.FilesNetgroupMapParser()
+    self.map_parser = file_formats.FilesNetgroupMapParser()
 
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
@@ -301,9 +364,7 @@ class FilesNetgroupMapHandler(FilesCache):
     else:
       netgroup_entry = entry.name
     target.write(netgroup_entry + '\n')
-
-
-base.RegisterImplementation('files', 'netgroup', FilesNetgroupMapHandler)
+    return len(netgroup_entry) + 1
 
 
 class FilesAutomountMapHandler(FilesCache):
@@ -314,7 +375,7 @@ class FilesAutomountMapHandler(FilesCache):
     if map_name is None: map_name = config.MAP_AUTOMOUNT
     super(FilesAutomountMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
-    self.map_parser = files.FilesAutomountMapParser()
+    self.map_parser = file_formats.FilesAutomountMapParser()
 
     if automount_mountpoint is None:
       # we are dealing with the master map
@@ -342,9 +403,8 @@ class FilesAutomountMapHandler(FilesCache):
     else:
       automount_entry = '%s %s' % (entry.key, entry.location)
     target.write(automount_entry + '\n')
+    return len(automount_entry) + 1
 
   def GetMapLocation(self):
     """Get the location of this map for the automount master map."""
     return self.GetCacheFilename()
-
-base.RegisterImplementation('files', 'automount', FilesAutomountMapHandler)

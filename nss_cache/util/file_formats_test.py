@@ -16,25 +16,21 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-"""Unit tests for nss_cache/util/files.py."""
+"""Unit tests for nss_cache/util/file_formats.py."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
-import os
-import tempfile
-import pmock
 import unittest
-import StringIO
 
-from nss_cache.util import files
+from nss_cache.util import file_formats
 
 
-class TestFilesCache(pmock.MockTestCase):
+class TestFilesUtils(unittest.TestCase):
 
   def testReadPasswdEntry(self):
     """We correctly parse a typical entry in /etc/passwd format."""
-    parser = files.FilesPasswdMapParser()
+    parser = file_formats.FilesPasswdMapParser()
     file_entry = 'root:x:0:0:Rootsy:/root:/bin/bash'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -48,7 +44,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadGroupEntry(self):
     """We correctly parse a typical entry in /etc/group format."""
-    parser = files.FilesGroupMapParser()
+    parser = file_formats.FilesGroupMapParser()
     file_entry = 'root:x:0:zero_cool,acid_burn'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -59,7 +55,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadShadowEntry(self):
     """We correctly parse a typical entry in /etc/shadow format."""
-    parser = files.FilesShadowMapParser()
+    parser = file_formats.FilesShadowMapParser()
     file_entry = 'root:$1$zomgmd5support:::::::'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -75,7 +71,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadNetgroupEntry(self):
     """We correctly parse a typical entry in /etc/netgroup format."""
-    parser = files.FilesNetgroupMapParser()
+    parser = file_formats.FilesNetgroupMapParser()
     file_entry = 'administrators unix_admins noc_monkeys (-,zero_cool,)'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -85,7 +81,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadEmptyNetgroupEntry(self):
     """We correctly parse a memberless netgroup entry."""
-    parser = files.FilesNetgroupMapParser()
+    parser = file_formats.FilesNetgroupMapParser()
     file_entry = 'administrators'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -94,7 +90,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadAutomountEntry(self):
     """We correctly parse a typical entry in /etc/auto.* format."""
-    parser = files.FilesAutomountMapParser()
+    parser = file_formats.FilesAutomountMapParser()
     file_entry = 'scratch -tcp,rw,intr,bg fileserver:/scratch'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -104,7 +100,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadAutmountEntryWithExtraWhitespace(self):
     """Extra whitespace doesn't break the parsing."""
-    parser = files.FilesAutomountMapParser()
+    parser = file_formats.FilesAutomountMapParser()
     file_entry = 'scratch  fileserver:/scratch'
     map_entry = parser._ReadEntry(file_entry)
 
@@ -114,7 +110,7 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testReadBadAutomountEntry(self):
     """Cope with empty data."""
-    parser = files.FilesAutomountMapParser()
+    parser = file_formats.FilesAutomountMapParser()
     file_entry = ''
     map_entry = parser._ReadEntry(file_entry)
     self.assertEqual(None, map_entry)

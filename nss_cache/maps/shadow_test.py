@@ -27,7 +27,8 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import unittest
 
-from nss_cache import maps
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
 
 class TestShadowMap(unittest.TestCase):
@@ -36,7 +37,7 @@ class TestShadowMap(unittest.TestCase):
   def __init__(self, obj):
     """Set some default avalible data for testing."""
     super(TestShadowMap, self).__init__(obj)
-    self._good_entry = maps.ShadowMapEntry()
+    self._good_entry = shadow.ShadowMapEntry()
     self._good_entry.name = 'foo'
     self._good_entry.lstchg = None
     self._good_entry.min = None
@@ -48,16 +49,16 @@ class TestShadowMap(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty or seeded ShadowMap."""
-    self.assertEquals(maps.ShadowMap, type(maps.ShadowMap()),
+    self.assertEquals(shadow.ShadowMap, type(shadow.ShadowMap()),
                       msg='failed to create emtpy ShadowMap')
-    smap = maps.ShadowMap([self._good_entry])
+    smap = shadow.ShadowMap([self._good_entry])
     self.assertEquals(self._good_entry, smap.PopItem(),
                       msg='failed to seed ShadowMap with list')
-    self.assertRaises(TypeError, maps.ShadowMap, ['string'])
+    self.assertRaises(TypeError, shadow.ShadowMap, ['string'])
     
   def testAdd(self):
     """Add throws an error for objects it can't verify."""
-    smap = maps.ShadowMap()
+    smap = shadow.ShadowMap()
     entry = self._good_entry
     self.assert_(smap.Add(entry), msg='failed to append new entry.')
 
@@ -66,7 +67,7 @@ class TestShadowMap(unittest.TestCase):
     ret_entry = smap.PopItem()
     self.assertEquals(ret_entry, entry, msg='failed to pop existing entry.')
 
-    pentry = maps.PasswdMapEntry()
+    pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
     pentry.uid = 10
     pentry.gid = 10
@@ -78,10 +79,10 @@ class TestShadowMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct empty and seeded ShadowMapEntry."""
-    self.assert_(maps.ShadowMapEntry(),
+    self.assert_(shadow.ShadowMapEntry(),
                  msg='Could not create empty ShadowMapEntry')
     seed = {'name': 'foo'}
-    entry = maps.ShadowMapEntry(seed)
+    entry = shadow.ShadowMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded ShadowMapEntry')
     self.assertEquals(entry.name, 'foo',
@@ -105,7 +106,7 @@ class TestShadowMapEntry(unittest.TestCase):
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
-    entry = maps.ShadowMapEntry()
+    entry = shadow.ShadowMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.name, 'foo',
                       msg='Could not set attribute: name')
@@ -136,16 +137,17 @@ class TestShadowMapEntry(unittest.TestCase):
 
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
-    entry = maps.ShadowMapEntry()
+    entry = shadow.ShadowMapEntry()
     
     # Emtpy object should bomb
     self.failIf(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
-    entry = maps.ShadowMapEntry()
+    entry = shadow.ShadowMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
+
 
 if __name__ == '__main__':
   unittest.main()

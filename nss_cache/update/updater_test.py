@@ -31,7 +31,7 @@ import unittest
 import mox
 
 from nss_cache import config
-from nss_cache.update import base
+from nss_cache.update import updater
 
 
 class TestUpdater(mox.MoxTestBase):
@@ -47,16 +47,16 @@ class TestUpdater(mox.MoxTestBase):
 
   def testTimestampDir(self):
     """We read and write timestamps to the specified directory."""
-    updater = base.Updater(config.MAP_PASSWORD, self.workdir, {})
+    update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
     update_time = time.gmtime(1199149400)  # epoch
     modify_time = time.gmtime(1199149200)
 
-    updater.WriteUpdateTimestamp(update_time)
-    updater.WriteModifyTimestamp(modify_time)
+    update_obj.WriteUpdateTimestamp(update_time)
+    update_obj.WriteModifyTimestamp(modify_time)
 
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
+    update_stamp = update_obj.GetUpdateTimestamp()
+    modify_stamp = update_obj.GetModifyTimestamp()
 
     self.assertEqual(update_time, update_stamp,
                      msg=('retrieved a different update time than we stored: '
@@ -69,10 +69,10 @@ class TestUpdater(mox.MoxTestBase):
 
   def testTimestampDefaultsToNone(self):
     """Missing or unreadable timestamps return None."""
-    updater = base.Updater(config.MAP_PASSWORD, self.workdir, {})
-    self.updater = updater
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
+    update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
+    self.updater = update_obj
+    update_stamp = update_obj.GetUpdateTimestamp()
+    modify_stamp = update_obj.GetModifyTimestamp()
 
     self.assertEqual(None, update_stamp,
                      msg='update time did not default to None')
@@ -80,15 +80,15 @@ class TestUpdater(mox.MoxTestBase):
                      msg='modify time did not default to None')
 
     # touch a file, make it unreadable
-    update_file = open(updater.update_file, 'w')
-    modify_file = open(updater.modify_file, 'w')
+    update_file = open(update_obj.update_file, 'w')
+    modify_file = open(update_obj.modify_file, 'w')
     update_file.close()
     modify_file.close()
-    os.chmod(updater.update_file, 0000)
-    os.chmod(updater.modify_file, 0000)
+    os.chmod(update_obj.update_file, 0000)
+    os.chmod(update_obj.modify_file, 0000)
 
-    update_stamp = updater.GetUpdateTimestamp()
-    modify_stamp = updater.GetModifyTimestamp()
+    update_stamp = update_obj.GetUpdateTimestamp()
+    modify_stamp = update_obj.GetModifyTimestamp()
 
     self.assertEqual(None, update_stamp,
                      msg='unreadable update time did not default to None')
@@ -97,12 +97,16 @@ class TestUpdater(mox.MoxTestBase):
 
   def testTimestampInTheFuture(self):
     """Timestamps in the future are turned into now."""
-    updater = base.Updater(config.MAP_PASSWORD, self.workdir, {})
+    update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
     expected_time = time.gmtime(1)
     update_time = time.gmtime(3600+1)
-    update_file = open(updater.update_file, 'w')
-    updater.WriteUpdateTimestamp(update_time)
+    update_file = open(update_obj.update_file, 'w')
+    update_obj.WriteUpdateTimestamp(update_time)
     self.mox.StubOutWithMock(time, 'gmtime')
     time.gmtime().AndReturn(expected_time)
     self.mox.ReplayAll()
-    self.assertEqual(expected_time, updater.GetUpdateTimestamp())
+    self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
+
+
+if __name__ == '__main__':
+  unittest.main()

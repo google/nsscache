@@ -21,18 +21,24 @@
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
 import cStringIO
+import os
+import unittest
+
+import mox
+import pyme.core
+import zsync
 
 from nss_cache import error
 from nss_cache.sources import zsyncsource
-
-import pmock
-import mox
+from nss_cache.util import curl
 
 
-class TestZsyncsource(pmock.MockTestCase):
+
+class TestZsyncsource(mox.MoxTestBase):
 
   def setUp(self):
     """Initialize a basic config dict."""
+    super(TestZsyncsource, self).setUp()
     self.config = {'passwd_url': 'PASSWD_URL',
                    'shadow_url': 'SHADOW_URL',
                    'group_url': 'GROUP_URL',
@@ -95,42 +101,29 @@ class TestZsyncsource(pmock.MockTestCase):
     conf = {'gpg_fingerprint': 'AAA',
             'gpg': True}
     source = zsyncsource.ZSyncSource(conf)
-    curl_orig = zsyncsource.curl
-    curl_mock = self.mock()
-    curl_return = (200, 'headers', 'body')
-    curl_mock.expects(pmock.once()).CurlFetch(
-        pmock.eq('remote_sig'), pmock.eq(source.conn),
-        pmock.eq(source.log)).will(pmock.return_value(curl_return))
-    zsyncsource.curl = curl_mock
+    self.mox.StubOutWithMock(curl, 'CurlFetch')
+    curl.CurlFetch('remote_sig', source.conn, source.log).AndReturn((200, 'headers', 'body'))
 
     sig = 1
     signed = 2
-    pyme_core = self.mock()
-    pyme_core.expects(pmock.once()).Data(pmock.eq(curl_return[2])).will(
-        pmock.return_value(sig))
-    pyme_core.expects(pmock.once()).Data(file=pmock.eq('local_file')).will(
-        pmock.return_value(signed))
-    core_orig = zsyncsource.pyme.core
-    zsyncsource.pyme.core = pyme_core
+    self.mox.StubOutWithMock(pyme.core, 'Data')
+    pyme.core.Data('body').AndReturn(sig)
+    pyme.core.Data(file='local_file').AndReturn(signed)
 
-    result = self.mock()
-    result.signatures = [ self.mock() ]
+    result = self.mox.CreateMockAnything()
+    result.signatures = [ self.mox.CreateMockAnything() ]
     result.signatures[0].fpr = 'AAA'
-    key_mock = self.mock()
-    key_mock.uids = [ self.mock() ]
+    key_mock = self.mox.CreateMockAnything()
+    key_mock.uids = [ self.mox.CreateMockAnything() ]
     key_mock.uids[0].uid = 'Foobar'
-    context = self.mock()
-    context.expects(pmock.once()).op_verify(pmock.eq(sig),
-                                            pmock.eq(signed),
-                                            pmock.eq(None))
-    context.expects(pmock.once()).op_verify_result().will(
-        pmock.return_value(result))
-    context.expects(pmock.once()).get_key(pmock.eq('AAA'), pmock.eq(0)).will(
-        pmock.return_value(key_mock))
-    self.assertTrue(source._GPGVerify('local_file', 'remote_sig', context))
+    context = self.mox.CreateMockAnything()
+    context.op_verify(sig, signed, None)
+    context.op_verify_result().AndReturn(result)
+    context.get_key('AAA', 0).AndReturn(key_mock)
 
-    zsyncsource.curl = curl_orig
-    zsyncsource.pyme.core = pyme_core
+    self.mox.ReplayAll()
+
+    self.assertTrue(source._GPGVerify('local_file', 'remote_sig', context))
 
   def testGPGVerifyNoMatch(self):
     """Test the GPG Verify method."""
@@ -138,41 +131,29 @@ class TestZsyncsource(pmock.MockTestCase):
             'gpg': True}
     source = zsyncsource.ZSyncSource(conf)
 
-    curl_orig = zsyncsource.curl
-    curl_mock = self.mock()
-    curl_return = (200, 'headers', 'body')
-    curl_mock.expects(pmock.once()).CurlFetch(
-        pmock.eq('remote_sig'),
-        pmock.eq(source.conn),
-        pmock.eq(source.log)).will(pmock.return_value(curl_return))
-    zsyncsource.curl = curl_mock
+    self.mox.StubOutWithMock(curl, 'CurlFetch')
+    curl.CurlFetch('remote_sig', source.conn, source.log).AndReturn((200, 'headers', 'body'))
 
     sig = 1
     signed = 2
-    pyme_core = self.mock()
-    pyme_core.expects(pmock.once()).Data(pmock.eq(curl_return[2])).will(
-        pmock.return_value(sig))
-    pyme_core.expects(pmock.once()).Data(file=pmock.eq('local_file')).will(
-        pmock.return_value(signed))
-    core_orig = zsyncsource.pyme.core
-    zsyncsource.pyme.core = pyme_core
+    self.mox.StubOutWithMock(pyme.core, 'Data')
+    pyme.core.Data('body').AndReturn(sig)
+    pyme.core.Data(file='local_file').AndReturn(signed)
 
-    result = self.mock()
-    result.signatures = [ self.mock() ]
+    result = self.mox.CreateMockAnything()
+    result.signatures = [ self.mox.CreateMockAnything() ]
     result.signatures[0].fpr = 'BBB'
     result.signatures[0].next = None
-    key_mock = self.mock()
-    key_mock.uids = self.mock()
+    key_mock = self.mox.CreateMockAnything()
+    key_mock.uids = self.mox.CreateMockAnything()
     key_mock.uids.uid = 'Foobar'
-    context = self.mock()
-    context.expects(pmock.once()).op_verify(
-        pmock.eq(sig), pmock.eq(signed), pmock.eq(None))
-    context.expects(pmock.once()).op_verify_result().will(
-        pmock.return_value(result))
-    self.assertFalse(source._GPGVerify('local_file', 'remote_sig', context))
+    context = self.mox.CreateMockAnything()
+    context.op_verify(sig, signed, None)
+    context.op_verify_result().AndReturn(result)
 
-    zsyncsource.curl = curl_orig
-    zsyncsource.pyme.core = pyme_core
+    self.mox.ReplayAll()
+
+    self.assertFalse(source._GPGVerify('local_file', 'remote_sig', context))
 
   def testGPGVerifyMatchMultiple(self):
     """Test the GPG Verify method when there are multiple signatures."""
@@ -181,180 +162,148 @@ class TestZsyncsource(pmock.MockTestCase):
             'gpg': True}
     source = zsyncsource.ZSyncSource(conf)
 
-    curl_orig = zsyncsource.curl
-    curl_mock = self.mock()
-    curl_return = (200, 'headers', 'body')
-    curl_mock.expects(pmock.once()).CurlFetch(
-        pmock.eq('remote_sig'), pmock.eq(source.conn),
-        pmock.eq(source.log)).will(pmock.return_value(curl_return))
-    zsyncsource.curl = curl_mock
+    self.mox.StubOutWithMock(curl, 'CurlFetch')
+    curl.CurlFetch('remote_sig', source.conn, source.log).AndReturn((200, 'headers', 'body'))
 
     sig = 1
     signed = 2
-    pyme_core = self.mock()
-    pyme_core.expects(pmock.once()).Data(pmock.eq(curl_return[2])).will(
-        pmock.return_value(sig))
-    pyme_core.expects(pmock.once()).Data(file=pmock.eq('local_file')).will(
-        pmock.return_value(signed))
-    core_orig = zsyncsource.pyme.core
-    zsyncsource.pyme.core = pyme_core
+    self.mox.StubOutWithMock(pyme.core, 'Data')
+    pyme.core.Data('body').AndReturn(sig)
+    pyme.core.Data(file='local_file').AndReturn(signed)
 
-    result = self.mock()
-    result.signatures = [ self.mock() ]
-    result.signatures[0] .fpr = 'BBB'
-    result2 = self.mock()
+    result = self.mox.CreateMockAnything()
+    result.signatures = [ self.mox.CreateMockAnything() ]
+    result.signatures[0].fpr = 'BBB'
+    result2 = self.mox.CreateMockAnything()
     result.signatures[0].next = result2
     result2.fpr = 'AAA'
-    key_mock = self.mock()
-    key_mock.uids = [ self.mock() ]
+    key_mock = self.mox.CreateMockAnything()
+    key_mock.uids = [ self.mox.CreateMockAnything() ]
     key_mock.uids[0].uid = 'Foobar'
 
-    context = self.mock()
-    context.expects(pmock.once()).op_verify(pmock.eq(sig),
-                                            pmock.eq(signed),
-                                            pmock.eq(None))
-    context.expects(pmock.once()).op_verify_result().will(
-        pmock.return_value(result))
-    context.expects(pmock.once()).get_key(
-        pmock.eq('AAA'), pmock.eq(0)).will(pmock.return_value(key_mock))
-    self.assertTrue(source._GPGVerify('local_file', 'remote_sig', context))
+    context = self.mox.CreateMockAnything()
+    context.op_verify(sig, signed, None)
+    context.op_verify_result().AndReturn(result)
+    context.get_key('AAA', 0).AndReturn(key_mock)
 
-    zsyncsource.curl = curl_orig
-    zsyncsource.pyme.core = pyme_core
+    self.mox.ReplayAll()
+
+    self.assertTrue(source._GPGVerify('local_file', 'remote_sig', context))
 
   def testGetFileNoGPG(self):
     """Test the GetFile method."""
     remote = 'https://www/nss_cache'
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
-    path_orig = zsyncsource.os.path
-    path = self.mock()
-    path.expects(pmock.once()).exists(pmock.eq(current_file)).will(
-        pmock.return_value(True))
-    path.expects(pmock.once()).exists(pmock.eq(local)).will(
-        pmock.return_value(True))
-    zsyncsource.os.path = path
 
-    zsync_orig = zsyncsource.zsync
-    zsync_mock = self.mock()
-    zsync_object_mock = self.mock()
-    zsync_mock.expects(pmock.once()).method('Zsync').will(
-        pmock.return_value(zsync_object_mock))
-    zsync_object_mock.expects(pmock.once()).Begin(pmock.eq(remote + '.zsync'))
-    zsync_object_mock.expects(pmock.once()).SubmitSource(pmock.eq(current_file))
-    zsync_object_mock.expects(pmock.once()).Fetch(pmock.eq(local))
-    zsyncsource.zsync = zsync_mock
+    self.mox.StubOutWithMock(os.path, 'exists')
+    os.path.exists(current_file).AndReturn(True)
+    os.path.exists(local).AndReturn(True)
+
+
+    zsync_mock = self.mox.CreateMockAnything()
+    zsync_mock.Begin(remote + '.zsync')
+    zsync_mock.SubmitSource(current_file)
+    zsync_mock.Fetch(local)
+
+    self.mox.StubOutWithMock(zsync, 'Zsync')
+    zsync.Zsync(conn=mox.IgnoreArg(), retry_delay=5, retry_max=3).AndReturn(zsync_mock)
+
+    self.mox.ReplayAll()
 
     source = zsyncsource.ZSyncSource({})
 
     self.assertEquals(source._GetFile(remote, local, current_file), local)
-    zsyncsource.os.path = path_orig
-    zsyncsource.zsync = zsync_orig
 
   def testGetFileNoGPGEmptyMap(self):
     """Test the GetFile method with an empty map."""
     remote = 'https://www/nss_cache'
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
-    path_orig = zsyncsource.os.path
-    path = self.mock()
-    path.expects(pmock.once()).exists(pmock.eq(current_file)).will(
-        pmock.return_value(True))
-    path.expects(pmock.once()).exists(pmock.eq(local)).will(
-        pmock.return_value(False))
-    zsyncsource.os.path = path
 
-    zsync_orig = zsyncsource.zsync
-    zsync_mock = self.mock()
-    zsync_object_mock = self.mock()
-    zsync_mock.expects(pmock.once()).method('Zsync').will(
-        pmock.return_value(zsync_object_mock))
-    zsync_object_mock.expects(pmock.once()).Begin(pmock.eq(remote + '.zsync'))
-    zsync_object_mock.expects(pmock.once()).SubmitSource(pmock.eq(current_file))
-    zsync_object_mock.expects(pmock.once()).Fetch(pmock.eq(local))
-    zsyncsource.zsync = zsync_mock
+    self.mox.StubOutWithMock(os.path, 'exists')
+    os.path.exists(current_file).AndReturn(True)
+    os.path.exists(local).AndReturn(False)
+
+    zsync_mock = self.mox.CreateMockAnything()
+    zsync_mock.Begin(remote + '.zsync')
+    zsync_mock.SubmitSource(current_file)
+    zsync_mock.Fetch(local)
+
+    self.mox.StubOutWithMock(zsync, 'Zsync')
+    zsync.Zsync(conn=mox.IgnoreArg(), retry_delay=5, retry_max=3).AndReturn(zsync_mock)
 
     source = zsyncsource.ZSyncSource({})
 
+    self.mox.ReplayAll()
+
     self.assertRaises(error.EmptyMap, source._GetFile, remote, local,
                       current_file)
-    zsyncsource.os.path = path_orig
-    zsyncsource.zsync = zsync_orig
 
   def testGetFileGPG(self):
     """Test the GetFile method with gpg verification."""
     remote = 'https://www/nss_cache'
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
-    path_orig = zsyncsource.os.path
-    mocker = mox.Mox()
-    path = mocker.CreateMock(zsyncsource.os.path)
-    path.exists(current_file).AndReturn(True)
-    path.exists(local).AndReturn(True)
-    zsyncsource.os.path = path
 
-    zsync_orig = zsyncsource.zsync
-    zsync_object_mock = mocker.CreateMock(zsyncsource.zsync.Zsync)
-    zsync_mock = mocker.CreateMock(zsyncsource.zsync)
-    zsync_mock.Zsync(conn=mox.IgnoreArg(),
-                     retry_delay=5, retry_max=3).AndReturn(zsync_object_mock)
+    self.mox.StubOutWithMock(os.path, 'exists')
+    os.path.exists(current_file).AndReturn(True)
+    os.path.exists(local).AndReturn(True)
+
+    zsync_object_mock = self.mox.CreateMock(zsync.Zsync)
     zsync_object_mock.Begin(remote + '.zsync')
     zsync_object_mock.SubmitSource(current_file)
     zsync_object_mock.Fetch(local)
-    zsyncsource.zsync = zsync_mock
-    self.gpg_called = False
+    self.mox.StubOutWithMock(zsync, 'Zsync')
+    zsync.Zsync(conn=mox.IgnoreArg(),
+                retry_delay=5, retry_max=3).AndReturn(zsync_object_mock)
+
     source = zsyncsource.ZSyncSource({'gpg': True})
 
-    def FakeGPGVerify(local_path, remote_sig):
-      self.assertEquals(local_path, local)
-      self.assertEquals(remote_sig, remote + '.asc')
-      self.gpg_called = True
-      return True
+    self.mox.StubOutWithMock(source, '_GPGVerify')
+    source._GPGVerify(local, remote + '.asc').AndReturn(True)
 
-    source._GPGVerify = FakeGPGVerify
-    # test
-    mocker.ReplayAll()
+    self.mox.ReplayAll()
+
     self.assertEquals(local,
                       source._GetFile(remote, local, current_file))
-    mocker.VerifyAll()
-
-    self.assertTrue(self.gpg_called)
-    zsyncsource.os.path = path_orig
-    zsyncsource.zsync = zsync_orig
 
   def testGetFileGPGFail(self):
     """Test the GetFile method with gpg verification failing."""
+    # TODO(jaq): the duplicate calls in this test indicate that GetFileViaZsync is bad.
     remote = 'https://www/nss_cache'
     local = '/tmp/nss_cache'
     current_file = '/etc/nss_cache'
 
-    def new_exists(path):
-      self.exists_called = True
-      return True
+    self.mox.StubOutWithMock(os.path, 'exists')
+    os.path.exists(current_file).AndReturn(True)
+    os.path.exists(local).AndReturn(True)
+    os.path.exists(local).AndReturn(True)    
 
-    exists_orig = zsyncsource.os.path.exists
-    zsyncsource.os.path.exists = new_exists
+    zsync_mock1 = self.mox.CreateMock(zsync.Zsync)
+    zsync_mock1.Begin(remote + '.zsync')
+    zsync_mock1.SubmitSource(current_file)
+    zsync_mock1.Fetch(local)
 
-    zsync_orig = zsyncsource.zsync
-    zsync_mock = self.mock()
-    zsync_object_mock = self.mock()
-    zsync_mock.expects(pmock.once()).method('Zsync').will(
-        pmock.return_value(zsync_object_mock))
-    zsync_object_mock.expects(pmock.once()).Begin(pmock.eq(remote + '.zsync'))
-    zsync_object_mock.expects(pmock.once()).SubmitSource(pmock.eq(current_file))
-    zsync_object_mock.expects(pmock.once()).Fetch(pmock.eq(local))
-    zsyncsource.zsync = zsync_mock
-    self.gpg_called = False
+    zsync_mock2 = self.mox.CreateMock(zsync.Zsync)
+    zsync_mock2.Begin(remote + '.zsync')
+    zsync_mock2.Fetch(local)
+
+    self.mox.StubOutWithMock(zsync, 'Zsync')
+    zsync.Zsync(conn=mox.IgnoreArg(), retry_delay=5, retry_max=3).AndReturn(zsync_mock1)
+    zsync.Zsync(conn=mox.IgnoreArg(), retry_delay=5, retry_max=3).AndReturn(zsync_mock2)
+
     source = zsyncsource.ZSyncSource({'gpg': True})
-    def MockGPGVerify(local_path, remote_sig):
-      self.gpg_called = True
-      return False
 
-    source._GPGVerify = MockGPGVerify
-    self.assertRaises(error.InvalidMap,
-                      source._GetFile, remote,
-                      local, current_file)
-    self.assertTrue(self.gpg_called)
-    self.assertTrue(self.exists_called)
-    zsyncsource.os.path.exists = exists_orig
-    zsyncsource.zsync = zsync_orig
+    self.mox.StubOutWithMock(source, '_GPGVerify')
+    source._GPGVerify(mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(False)
+    source._GPGVerify(mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(False)    
+
+    self.mox.ReplayAll()
+
+    self.assertRaises(error.InvalidMap, source._GetFile,
+                      remote, local, current_file)
+
+
+if __name__ == '__main__':
+  unittest.main()

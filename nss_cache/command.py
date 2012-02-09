@@ -21,6 +21,7 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+
 import calendar
 import inspect
 import logging
@@ -31,13 +32,15 @@ import StringIO
 import tempfile
 import time
 
-from nss_cache import caches
 from nss_cache import config
 from nss_cache import error
 from nss_cache import lock
 from nss_cache import nss
-from nss_cache import sources
-from nss_cache import update
+
+from nss_cache.caches import cache_factory
+from nss_cache.sources import source_factory
+from nss_cache.update import map_updater
+from nss_cache.update import files_updater
 
 
 class Command(object):
@@ -251,8 +254,16 @@ class Update(Command):
       self.log.error('Failed to acquire lock, aborting!')
       return self.ERR_LOCK
 
+    retval = 0
     for map_name in conf.maps:
-      self.log.debug('operating on map: %s', map_name)
+      if map_name not in conf.options:
+        self.log.error('No such map name defined in config: %s', map_name)
+        return 1
+
+      if incremental:
+        self.log.info('Updating and verifying %s cache.', map_name)
+      else:
+        self.log.info('Rebuilding and verifying %s cache.', map_name)
 
       cache_options = conf.options[map_name].cache
       source_options = conf.options[map_name].source
@@ -272,7 +283,7 @@ class Update(Command):
       # temp dirs do not mess with our output routines.
       old_cwd = os.getcwd()
       tempdir = tempfile.mkdtemp(dir=cache_options['dir'],
-                                 prefix='nsscache-')
+                                 prefix='nsscache-%s-' % map_name)
       if not os.path.isabs(cache_options['dir']):
         cache_options['dir'] = os.path.abspath(cache_options['dir'])
       if not os.path.isabs(conf.timestamp_dir):
@@ -280,34 +291,38 @@ class Update(Command):
       if not os.path.isabs(tempdir):
         tempdir = os.path.abspath(tempdir)
       os.chdir(tempdir)
-
-      source = sources.base.Create(source_options)
-
-      updater = self._Updater(map_name, source, cache_options, conf)
-
-      if incremental:
-        self.log.info('Updating and verifying %s cache.', map_name)
-      else:
-        self.log.info('Rebuilding and verifying %s cache.', map_name)
+      # End chdir dirty hack.
 
       try:
+        source = source_factory.Create(source_options)
+
+        updater = self._Updater(map_name, source, cache_options, conf)
+
+        if incremental:
+          self.log.info('Updating and verifying %s cache.', map_name)
+        else:
+          self.log.info('Rebuilding and verifying %s cache.', map_name)
+
         retval = updater.UpdateFromSource(source, incremental=incremental,
                                           force_write=force_write)
       except error.PermissionDenied:
         self.log.error('Permission denied: could not update map %r.  Aborting',
                        map_name)
-        retval = 1
+        retval += 1
       except (error.EmptyMap, error.InvalidMap), e:
         self.log.error(e)
-        retval = 1
+        retval += 1
+      except error.InvalidMerge, e:
+        self.log.warn('Could not merge map %r: %s.  Skipping.',
+                       map_name, e)
+      finally:
+        # Start chdir cleanup
+        os.chdir(old_cwd)
+        print "udpate rmtree %s" % tempdir
+        shutil.rmtree(tempdir)
+        # End chdir cleanup
 
-      os.chdir(old_cwd)
-      shutil.rmtree(tempdir)
-
-    if retval:
-      return retval
-
-    return 0
+    return retval
 
   def _Updater(self, map_name, source, cache_options, conf):
     # Bit ugly. This just checks the class attribute UPDATER
@@ -316,19 +331,18 @@ class Update(Command):
     # refactor though.
     if hasattr(source, 'UPDATER') and source.UPDATER == config.UPDATER_FILE:
       if map_name == config.MAP_AUTOMOUNT:
-        updater = update.files.AutomountUpdater(map_name, conf.timestamp_dir,
-                                                cache_options)
+        return files_updater.FileAutomountUpdater(map_name, conf.timestamp_dir,
+                                                     cache_options)
       else:
-        updater = update.files.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                                cache_options)
+        return files_updater.FileMapUpdater(map_name, conf.timestamp_dir,
+                                               cache_options)
     else:
       if map_name == config.MAP_AUTOMOUNT:
-        updater = update.maps.AutomountUpdater(map_name, conf.timestamp_dir,
+        return map_updater.AutomountUpdater(map_name, conf.timestamp_dir,
                                                cache_options)
       else:
-        updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                               cache_options)
-    return updater
+        return map_updater.MapUpdater(map_name, conf.timestamp_dir,
+                                         cache_options)
 
 
 class Verify(Command):
@@ -428,7 +442,7 @@ class Verify(Command):
       self.log.debug('built NSS map of %d entries', len(nss_map))
 
       cache_options = conf.options[map_name].cache
-      cache = caches.base.Create(cache_options, map_name)
+      cache = cache_factory.Create(cache_options, map_name)
 
       try:
         cache_map = cache.GetMap()
@@ -468,7 +482,7 @@ class Verify(Command):
       for map_name in possible_sources:
         source_options = conf.options[map_name].source
         try:
-          source = sources.base.Create(source_options)
+          source = source_factory.Create(source_options)
         except error.SourceUnavailable, e:
           self.log.debug('map %s dumps source error %s', map_name, e)
           self.log.error('Map %s is unvavailable!', map_name)
@@ -654,8 +668,8 @@ class Status(Command):
     """
     cache_options = conf.options[map_name].cache
 
-    updater = update.maps.SingleMapUpdater(map_name, conf.timestamp_dir,
-                                           cache_options, automount_mountpoint)
+    updater = map_updater.MapUpdater(map_name, conf.timestamp_dir,
+                                     cache_options, automount_mountpoint)
 
     modify_dict = {'key': 'last-modify-timestamp',
                    'map': map_name}
@@ -663,8 +677,8 @@ class Status(Command):
                    'map': map_name}
     if map_name == config.MAP_AUTOMOUNT:
       # have to find out *which* automount map from a cache object!
-      cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
-                                 automount_mountpoint=automount_mountpoint)
+      cache = cache_factory.Create(cache_options, config.MAP_AUTOMOUNT,
+                                   automount_mountpoint=automount_mountpoint)
       automount = cache.GetMapLocation()
       modify_dict['automount'] = automount
       update_dict['automount'] = automount
@@ -722,8 +736,8 @@ class Status(Command):
 
     # now get the contents of the master map, and get the status for each map
     # we find
-    cache = caches.base.Create(cache_options, config.MAP_AUTOMOUNT,
-                               automount_mountpoint=None)
+    cache = cache_factory.Create(cache_options, config.MAP_AUTOMOUNT,
+                                 automount_mountpoint=None)
     master_map = cache.GetMap()
 
     for map_entry in master_map:

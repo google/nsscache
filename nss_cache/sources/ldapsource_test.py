@@ -23,19 +23,23 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import time
 import unittest
+
 import ldap
+import mox
 
 from nss_cache import error
-from nss_cache import maps
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 from nss_cache.sources import ldapsource
 
-import pmock
 
-
-class TestLdapSource(pmock.MockTestCase):
+class TestLdapSource(mox.MoxTestBase):
 
   def setUp(self):
     """Initialize a basic config dict."""
+    super(TestLdapSource, self).setUp()
     self.config = {'uri': 'TEST_URI',
                    'base': 'TEST_BASE',
                    'filter': 'TEST_FILTER',
@@ -49,72 +53,16 @@ class TestLdapSource(pmock.MockTestCase):
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
 
-  def ConnMock(self, success=None):
-    """Return a mock for ldap connections."""
-    ldap_conn = self.mock()
-
-    if success is True:
-      ldap_conn\
-                 .expects(pmock.once())\
-                 .method('simple_bind_s')
-    elif success is False:
-      ldap_conn\
-                 .expects(pmock.at_least_once())\
-                 .method('simple_bind_s')\
-                 .will(pmock.raise_exception(ldap.SERVER_DOWN))
-    elif success is None:
-      # do nothing, this is here for clarity -- we aren't expected to be
-      # called with any methods but need to hold values like conn.timelimit
-      pass
-
-    return ldap_conn
-
-  def FakeBind(self):
-    """Return an unbound method for mocking Bind() in __init__()."""
-
-    def StubBind(self, configuration):
-      """Stub method for testing."""
-      pass
-    return StubBind
-
-  def FakeDefaults(self):
-    """Return an unbound method for mocking _SetDefaults in __init__()."""
-
-    def StubDefaults(self, configuration):
-      """Stub method for testing."""
-      pass
-    return StubDefaults
-
-  def MockedSource(self, configuration, mock_defaults=True, mock_bind=True):
-    """Return a source object with __init__ mocked."""
-
-    if configuration is None:
-      configuration = {'uri': 'ldap://foo'}
-
-    if mock_defaults is True:
-      original_set_defaults = ldapsource.LdapSource._SetDefaults
-      ldapsource.LdapSource._SetDefaults = self.FakeDefaults()
-    if mock_bind is True:
-      original_bind = ldapsource.LdapSource.Bind
-      ldapsource.LdapSource.Bind = self.FakeBind()
-
-    source = ldapsource.LdapSource(configuration, conn=self.ConnMock())
-
-    if mock_defaults is True:
-      ldapsource.LdapSource._SetDefaults = original_set_defaults
-    if mock_bind is True:
-      ldapsource.LdapSource.Bind = original_bind
-
-    return source
-
-  #
-  # Our tests are defined below here.
-  #
-
-  def testDefaults(self):
-    """Test that we set the expected defaults for LDAP connections."""
-    # get a mocked source, but don't mock _SetDefaults!
-    source = self.MockedSource(configuration=None, mock_defaults=False)
+  def testDefaultConfiguration(self):
+    config = {'uri': 'ldap://foo'}
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(cred='', who='')
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(uri='ldap://foo',
+                                        retry_max=3,
+                                        retry_delay=5).AndReturn(mock_rlo)
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
 
     self.assertEquals(source.conf['bind_dn'],
                       ldapsource.LdapSource.BIND_DN)
@@ -134,27 +82,18 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEquals(source.conf['tls_cacertfile'],
                       ldapsource.LdapSource.TLS_CACERTFILE)
 
-  def testOverrideDefaults(self):
-    """Test that we override the defaults for LDAP connections."""
-    configuration = self.config
-    configuration['scope'] = ldap.SCOPE_BASE
-    source = self.MockedSource(configuration=configuration,
-                               mock_defaults=False)
-
-    # Wow.  This is a freakin weird bug.  A mock that goes unused
-    # raises a type error unless we call dir() on a list's iterator.
-    #
-    # Comment the below out if you don't believe me!
-    #
-    # The iterator returned is a python listiterator generated from
-    # an empty list stored in pmock.Mock()._invokables, called via
-    # Mock.verify() by the pmock MockTestCase framework.
-    #
-    # This is not reproducible via a simple MockTestCase setup,
-    # so frankly, I'm stumped for now.  I'm leaving this in so we can
-    # take a further look and confirm a possible python bug, instead
-    # of working around it another way.
-    dir(source.conn._get_match_order_invokables().__iter__())
+  def testOverrideDefaultConfiguration(self):
+    config = dict(self.config)
+    config['scope'] = ldap.SCOPE_BASE
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY',
+        uri='TEST_URI').AndReturn(mock_rlo)
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
 
     self.assertEquals(source.conf['scope'], ldap.SCOPE_BASE)
     self.assertEquals(source.conf['bind_dn'], 'TEST_BIND_DN')
@@ -167,74 +106,66 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEquals(source.conf['tls_cacertfile'],
                       'TEST_TLS_CACERTFILE')
 
-  def testTrapAndRetryServerDown(self):
-    """We trap ldap.SERVER_DOWN and retry as per configuration."""
-    self.config['retry_delay'] = 5
-    self.config['retry_max'] = 3
-    self.config['bind_dn'] = ''
-    self.config['bind_password'] = ''
+  def testTrapServerDownAndRetry(self):
+    config = dict(self.config)
+    config['bind_dn'] = ''
+    config['bind_password'] = ''
+    config['retry_delay'] = 5
+    config['retry_max'] = 3
 
-    sleep_mock = self.mock()
-    sleep_mock\
-                .expects(pmock.once())\
-                .sleep(pmock.eq(5))
-    sleep_mock\
-                .expects(pmock.once())\
-                .sleep(pmock.eq(5))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='',
+        who='').MultipleTimes().AndRaise(ldap.SERVER_DOWN)
 
-    original_sleep = time.sleep
-    time.sleep = sleep_mock.sleep
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max=3,
+        retry_delay=5).MultipleTimes().AndReturn(mock_rlo)
 
-    self.assertRaises(error.SourceUnavailable, ldapsource.LdapSource,
-                      conf=self.config, conn=self.ConnMock(success=False))
+    self.mox.StubOutWithMock(time, 'sleep')
+    time.sleep(5)
+    time.sleep(5)
 
-    time.sleep = original_sleep
+    self.mox.ReplayAll()
 
-  #
-  # TODO(jaq):  Convert all unit tests below here to generate any shared mocks.
-  #
+    self.assertRaises(error.SourceUnavailable,
+                      ldapsource.LdapSource,
+                      config)
 
-  def testIteration(self):
-    """Test that iteration over the LDAPDataSource behaves correctly."""
-    ldap_conn = self.mock()
+  def testIterationOverLdapDataSource(self):
+    config = dict(self.config)
 
-    # Expect a simple bind
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq(''),
-                              cred=pmock.eq(''))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base=config['base'],
+                    filterstr='TEST_FILTER',
+                    scope='TEST_SCOPE',
+                    attrlist='TEST_ATTRLIST').AndReturn('TEST_RES')
 
-    # Expect a search and returning the msg id 37.
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq(self.config['base']),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq('TEST_SCOPE'),
-                       attrlist=pmock.eq('TEST_ATTRLIST'))\
-               .after('simple_bind_s')\
-               .will(pmock.return_value(37))
-
-    # Expect result on the same msg id, and return a dataset
     dataset = [('dn', 'payload')]
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0), timeout=pmock.eq(-1))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY, dataset)))\
-               .id('res #1')
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, dataset))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
-    # Expect another call to result, and return that we're at the end of the
-    # list.
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq(-1))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
 
-    dummy_config = {'uri': 'foo'}
-    source = ldapsource.LdapSource(dummy_config, ldap_conn)
-    source.Search(search_base=self.config['base'],
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    source.Search(search_base=config['base'],
                   search_filter='TEST_FILTER',
                   search_scope='TEST_SCOPE',
                   attrs='TEST_ATTRLIST')
@@ -247,7 +178,6 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual(1, count)
 
   def testGetPasswdMap(self):
-    """Test that GetPasswdMap returns a sensible passwd map."""
     test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
                           {'uidNumber': [1000],
                            'gidNumber': [1000],
@@ -257,38 +187,39 @@ class TestLdapSource(pmock.MockTestCase):
                            'loginShell': ['/bin/sh'],
                            'userPassword': ['p4ssw0rd'],
                            'modifyTimestamp': ['20070227012807Z']})
+    config = dict(self.config)
+    attrlist = ['uid', 'uidNumber', 'gidNumber',
+                'gecos', 'cn', 'homeDirectory',
+                'loginShell', 'modifyTimestamp']
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['uid', 'uidNumber', 'gidNumber',
-                                          'gecos', 'cn', 'homeDirectory',
-                                          'loginShell', 'modifyTimestamp']))\
-               .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_posix_account])))\
-               .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr='TEST_FILTER',
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_posix_account]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetPasswdMap()
 
     self.assertEqual(1, len(data))
@@ -298,43 +229,44 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('Testguy McTest', first.name)
 
   def testGetGroupMap(self):
-    """Test that GetGroupmap returns a sensible map."""
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
                          'cn': ['testgroup'],
                          'memberUid': ['testguy', 'fooguy', 'barguy'],
                          'modifyTimestamp': ['20070227012807Z']})
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['cn', 'gidNumber', 'memberUid',
-                                          'modifyTimestamp']))\
-               .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_posix_group])))\
-               .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    config = dict(self.config)
+    attrlist = ['cn', 'gidNumber', 'memberUid',
+                'modifyTimestamp']
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr='TEST_FILTER',
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_posix_group]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetGroupMap()
 
     self.assertEqual(1, len(data))
@@ -344,7 +276,6 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('testgroup', ent.name)
 
   def testGetShadowMap(self):
-    """Test that GetShadowMap returns a sensible map."""
     test_shadow = ('cn=test,ou=People,dc=example,dc=com',
                    {'uid': ['test'],
                     'shadowLastChange': ['11296'],
@@ -355,40 +286,41 @@ class TestLdapSource(pmock.MockTestCase):
                     'shadowFlag': ['134537556'],
                     'modifyTimestamp': ['20070227012807Z'],
                     'userPassword': ['{CRYPT}p4ssw0rd']})
+    config = dict(self.config)
+    attrlist = ['uid', 'shadowLastChange',
+                'shadowMin', 'shadowMax',
+                'shadowWarning', 'shadowInactive',
+                'shadowExpire', 'shadowFlag',
+                'userPassword', 'modifyTimestamp']
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['uid', 'shadowLastChange',
-                                          'shadowMin', 'shadowMax',
-                                          'shadowWarning', 'shadowInactive',
-                                          'shadowExpire', 'shadowFlag',
-                                          'userPassword', 'modifyTimestamp']))\
-               .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_shadow])))\
-               .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr='TEST_FILTER',
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_shadow]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetShadowMap()
 
     self.assertEqual(1, len(data))
@@ -399,45 +331,45 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('p4ssw0rd', ent.passwd)
 
   def testGetNetgroupMap(self):
-    """Test that GetNetgroupMap returns a sensible map."""
     test_posix_netgroup = ('cn=test,ou=netgroup,dc=example,dc=com',
                            {'cn': ['test'],
                             'memberNisNetgroup': ['admins'],
                             'nisNetgroupTriple': ['(-,hax0r,)'],
                             'modifyTimestamp': ['20070227012807Z'],
                            })
+    config = dict(self.config)
+    attrlist = ['cn', 'memberNisNetgroup',
+                'nisNetgroupTriple',
+                'modifyTimestamp']
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['cn', 'memberNisNetgroup',
-                                          'nisNetgroupTriple',
-                                          'modifyTimestamp']))\
-                                          .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_posix_netgroup])))\
-                                         .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr='TEST_FILTER',
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetNetgroupMap()
 
     self.assertEqual(1, len(data))
@@ -448,45 +380,45 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('(-,hax0r,) admins', ent.entries)
 
   def testGetNetgroupMapWithDupes(self):
-    """Test that GetNetgroupMap returns a sensible map."""
     test_posix_netgroup = ('cn=test,ou=netgroup,dc=example,dc=com',
                            {'cn': ['test'],
                             'memberNisNetgroup': ['(-,hax0r,)'],
                             'nisNetgroupTriple': ['(-,hax0r,)'],
                             'modifyTimestamp': ['20070227012807Z'],
                            })
+    config = dict(self.config)
+    attrlist = ['cn', 'memberNisNetgroup',
+                'nisNetgroupTriple',
+                'modifyTimestamp']
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('TEST_FILTER'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['cn', 'memberNisNetgroup',
-                                          'nisNetgroupTriple',
-                                          'modifyTimestamp']))\
-                                          .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_posix_netgroup])))\
-                                         .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr='TEST_FILTER',
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetNetgroupMap()
 
     self.assertEqual(1, len(data))
@@ -497,43 +429,44 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('(-,hax0r,)', ent.entries)
 
   def testGetAutomountMap(self):
-    """Test that GetAutomountMap returns a sensible map."""
     test_automount = ('cn=user,ou=auto.home,ou=automounts,dc=example,dc=com',
                       {'cn': ['user'],
                        'automountInformation': ['-tcp,rw home:/home/user'],
                        'modifyTimestamp': ['20070227012807Z'],
                       })
+    config = dict(self.config)
+    attrlist = ['cn', 'automountInformation',
+                'modifyTimestamp']
+    filterstr = '(objectclass=automount)'
 
-    ldap_conn = self.mock()
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('(objectclass=automount)'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['cn', 'automountInformation',
-                                          'modifyTimestamp']))\
-                                          .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_automount])))\
-                                         .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr=filterstr,
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_automount]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
 
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetAutomountMap(location='TEST_BASE')
 
     self.assertEqual(1, len(data))
@@ -545,7 +478,6 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual('home:/home/user', ent.location)
 
   def testGetAutomountMasterMap(self):
-    """Test that GetAutomountMasterMap returns a sensible map."""
     test_master_ou = ('ou=auto.master,ou=automounts,dc=example,dc=com',
                       {'ou': ['auto.master']})
     test_automount = ('cn=/home,ou=auto.master,ou=automounts,dc=example,dc=com',
@@ -554,62 +486,61 @@ class TestLdapSource(pmock.MockTestCase):
                                                 'ou=automounts,dc=example,'
                                                 'dc=com'],
                        'modifyTimestamp': ['20070227012807Z']})
+    config = dict(self.config)
+    # first search for the dn of ou=auto.master
+    attrlist = ['dn']
+    filterstr = '(&(objectclass=automountMap)(ou=auto.master))'
+    scope = ldap.SCOPE_SUBTREE
 
-    ldap_conn = self.mock()
-    # first the search for the dn of ou=auto.master
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq('(&(objectclass=automountMap)'
-                                          '(ou=auto.master))'),
-                       scope=pmock.eq(ldap.SCOPE_SUBTREE),
-                       attrlist=pmock.eq(['dn']))\
-                       .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_master_ou])))\
-                                         .id('res #1')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #1')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
-    # next the search for the entries under ou=auto.master
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('ou=auto.master,ou=automounts,dc=example'
-                                     ',dc=com'),
-                       filterstr=pmock.eq('(objectclass=automount)'),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['cn', 'automountInformation',
-                                          'modifyTimestamp']))\
-                       .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('search')\
-               .will(pmock.return_value((ldap.RES_SEARCH_ENTRY,
-                                         [test_automount])))\
-                                         .id('res #2')
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .after('res #2')\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
-    
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr=filterstr,
+                    scope=scope,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_master_ou]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
+    # then search for the entries under ou=auto.master
+    attrlist = ['cn', 'automountInformation',
+                'modifyTimestamp']
+    filterstr = '(objectclass=automount)'
+    scope = ldap.SCOPE_ONELEVEL
+    base = 'ou=auto.master,ou=automounts,dc=example,dc=com'
+
+    mock_rlo.search(base=base,
+                    filterstr=filterstr,
+                    scope=scope,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
+
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_ENTRY, [test_automount]))
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
     data = source.GetAutomountMasterMap()
     self.assertEqual(1, len(data))
 
@@ -620,29 +551,33 @@ class TestLdapSource(pmock.MockTestCase):
     self.assertEqual(None, ent.options)
 
   def testVerify(self):
-    ldap_conn = self.mock()
+    attrlist = ['uid', 'uidNumber', 'gidNumber',
+                'gecos', 'cn', 'homeDirectory',
+                'loginShell', 'modifyTimestamp']
+    filterstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
 
-    ldap_conn\
-               .expects(pmock.once())\
-               .simple_bind_s(who=pmock.eq('TEST_BIND_DN'),
-                              cred=pmock.eq('TEST_BIND_PASSWORD'))
-    filtstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
-    ldap_conn\
-               .expects(pmock.once())\
-               .search(base=pmock.eq('TEST_BASE'),
-                       filterstr=pmock.eq(filtstr),
-                       scope=pmock.eq(ldap.SCOPE_ONELEVEL),
-                       attrlist=pmock.eq(['uid', 'uidNumber', 'gidNumber',
-                                          'gecos', 'cn', 'homeDirectory',
-                                          'loginShell', 'modifyTimestamp']))\
-               .will(pmock.return_value(37))
-    ldap_conn\
-               .expects(pmock.once())\
-               .result(pmock.eq(37), all=pmock.eq(0),
-                       timeout=pmock.eq('TEST_TIMELIMIT'))\
-               .will(pmock.return_value((ldap.RES_SEARCH_RESULT, None)))
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base='TEST_BASE',
+                    filterstr=filterstr,
+                    scope=ldap.SCOPE_ONELEVEL,
+                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
+                        'TEST_RES')
 
-    source = ldapsource.LdapSource(self.config, conn=ldap_conn)
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').AndReturn(
+                        (ldap.RES_SEARCH_RESULT, None))
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(self.config)
     self.assertEquals(0, source.Verify(time.gmtime(0)))
 
 
@@ -650,6 +585,7 @@ class TestUpdateGetter(unittest.TestCase):
 
   def setUp(self):
     """Create a dummy source object."""
+    super(TestUpdateGetter, self).setUp()
 
     class DummySource(list):
       """Dummy Source class for this test.
@@ -669,7 +605,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(maps.PasswdMap, type(data))
+    self.failUnlessEqual(passwd.PasswdMap, type(data))
 
   def testGroupEmptySourceGetUpdates(self):
     """Test that getUpdates on the GroupUpdateGetter works."""
@@ -678,7 +614,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(maps.GroupMap, type(data))
+    self.failUnlessEqual(group.GroupMap, type(data))
 
   def testShadowEmptySourceGetUpdates(self):
     """Test that getUpdates on the ShadowUpdateGetter works."""
@@ -687,7 +623,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(maps.ShadowMap, type(data))
+    self.failUnlessEqual(shadow.ShadowMap, type(data))
 
   def testAutomountEmptySourceGetsUpdates(self):
     """Test that getUpdates on the AutomountUpdateGetter works."""
@@ -696,7 +632,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(maps.AutomountMap, type(data))
+    self.failUnlessEqual(automount.AutomountMap, type(data))
 
   def testBadScopeException(self):
     """Test that a bad scope raises a config.ConfigurationError."""

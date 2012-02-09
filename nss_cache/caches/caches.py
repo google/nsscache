@@ -29,58 +29,11 @@ import tempfile
 
 from nss_cache import config
 from nss_cache import error
-from nss_cache import maps
-
-_cache_implementations = {}
-
-
-def RegisterImplementation(cache_name, map_name, cache):
-  """Register a Cache implementation with the CacheFactory.
-
-  Child modules are expected to call this method in the file-level scope
-  so that the CacheFactory is aware of them.
-
-  Args:
-    cache_name: (string) The name of the NSS backend.
-    map_name: (string) The name of the map handled by this Cache.
-    cache: A class type that is a subclass of Cache.
-
-  Returns: Nothing
-  """
-  if cache_name not in _cache_implementations:
-    _cache_implementations[cache_name] = {}
-  _cache_implementations[cache_name][map_name] = cache
-
-
-def Create(conf, map_name, automount_mountpoint=None):
-  """Cache creation factory method.
-
-  Args:
-   conf: a dictionary of configuration key/value pairs, including one
-     required attribute 'name'
-   map_name: a string identifying the map name to handle
-   automount_mountpoint: A string containing the automount mountpoint, used only
-     by automount maps.
-
-  Returns:
-    an instance of a Cache
-
-  Raises:
-    RuntimeError: problem instantiating the requested cache
-  """
-  if not _cache_implementations:
-    raise RuntimeError('no cache implementations exist')
-  cache_name = conf['name']
-
-  if cache_name not in _cache_implementations:
-    raise RuntimeError('cache not implemented: %r' % (cache_name,))
-  if map_name not in _cache_implementations[cache_name]:
-    raise RuntimeError('map %r not supported by cache %r' % (map_name,
-                                                             cache_name))
-
-  return _cache_implementations[cache_name][map_name](
-      conf, map_name, automount_mountpoint=automount_mountpoint)
-
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
 class Cache(object):
   """Abstract base class for Caches.
@@ -124,15 +77,15 @@ class Cache(object):
 
     # Setup the map we may be asked to load our cache into.
     if map_name == config.MAP_PASSWORD:
-      self.data = maps.PasswdMap()
+      self.data = passwd.PasswdMap()
     elif map_name == config.MAP_GROUP:
-      self.data = maps.GroupMap()
+      self.data = group.GroupMap()
     elif map_name == config.MAP_SHADOW:
-      self.data = maps.ShadowMap()
+      self.data = shadow.ShadowMap()
     elif map_name == config.MAP_NETGROUP:
-      self.data = maps.NetgroupMap()
+      self.data = netgroup.NetgroupMap()
     elif map_name == config.MAP_AUTOMOUNT:
-      self.data = maps.AutomountMap()
+      self.data = automount.AutomountMap()
     else:
       raise error.UnsupportedMap('Cache does not support %s' % map_name)
 
@@ -200,13 +153,14 @@ class Cache(object):
     """Return the final destination pathname of the cache file."""
     return os.path.join(self.output_dir, self.CACHE_FILENAME)
 
-  def GetMap(self, cache_info=None):
+  def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
     Must be implemented by the child class!
 
     Args:
-      cache_info:  optional extra info used by the child class
+      cache_filename:  optional extra info used by the child class
+
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
@@ -229,11 +183,13 @@ class Cache(object):
     raise NotImplementedError('%s must implement this method!' %
                               self.__class__.__name__)
 
-  def WriteMap(self, map_data=None):
+  def WriteMap(self, map_data=None, force_write=False):
     """Write a map to disk.
 
     Args:
       map_data: optional Map object to overwrite our current data with.
+      force_write: optional flag to indicate verification checks can be
+        ignored.
 
     Returns:
       0 if succesful, 1 if not
@@ -253,11 +209,26 @@ class Cache(object):
       self.log.warn('cache write failed, exiting')
       return 1
 
-    if self.Verify(entries_written):
+    if force_write or self.Verify(entries_written):
       # TODO(jaq): in the future we should handle return codes from
       # Commit()
       self._Commit()
+      # Create an index for this map.
+      self.WriteIndex()
       return 0
 
     self.log.warn('verification failed, exiting')
     return 1
+
+  def WriteIndex(self):
+    """Build an index for this cache.
+
+    No-op, but child classes may override this.
+    """
+    pass
+
+  def Write(self, writable_map):
+    raise NotImplementedError
+
+  def Verify(self, entries_written):
+    raise NotImplementedError

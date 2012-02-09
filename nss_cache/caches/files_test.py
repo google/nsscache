@@ -22,25 +22,32 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import os
+import shutil
 import tempfile
 import unittest
+import sys
 
-import pmock
+import mox
 
 from nss_cache import config
-from nss_cache import maps
-
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 from nss_cache.caches import files
 
 
-class TestFilesCache(pmock.MockTestCase):
+class TestFilesCache(mox.MoxTestBase):
 
   def setUp(self):
+    super(TestFilesCache, self).setUp()
     self.workdir = tempfile.mkdtemp()
     self.config = {'dir': self.workdir}
 
   def tearDown(self):
-    os.rmdir(self.workdir)
+    super(TestFilesCache, self).tearDown()
+    shutil.rmtree(self.workdir)
 
   def testInstantiation(self):
     cache = files.FilesCache(self.config, config.MAP_PASSWORD)
@@ -48,13 +55,12 @@ class TestFilesCache(pmock.MockTestCase):
 
   def testWrite(self):
     cache = files.FilesPasswdMapHandler(self.config)
-    entry = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    pmap = maps.PasswdMap([entry])
+    entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    pmap = passwd.PasswdMap([entry])
     written = cache.Write(pmap)
     self.assertTrue('foo' in written)
     self.assertFalse(entry in pmap)  # we emptied pmap to avoid mem leaks
-    self.assertFalse(cache.cache_file.closed)
-    os.unlink(cache.cache_filename)
+    self.assertFalse(cache.temp_cache_file.closed)
 
   def testCacheFilenameSuffixOption(self):
     new_config = {'cache_filename_suffix': 'blarg'}
@@ -65,24 +71,22 @@ class TestFilesCache(pmock.MockTestCase):
     self.assertEqual(os.path.join(self.workdir, 'test.blarg'),
                      cache.GetCacheFilename())
 
-    cache.cache_file = open(os.path.join(self.workdir, 'pre-commit'), 'w')
-    cache.cache_file.write('\n')
-    cache.cache_filename = os.path.join(self.workdir,
-                                        'pre-commit')
+    cache.temp_cache_file = open(os.path.join(self.workdir, 'pre-commit'), 'w')
+    cache.temp_cache_file.write('\n')
+    cache.temp_cache_filename = os.path.join(self.workdir,
+                                             'pre-commit')
     cache._Commit()
     expected_cache_filename = os.path.join(self.workdir,
                                            'test.blarg')
     self.failUnless(os.path.exists(expected_cache_filename))
-    os.unlink(expected_cache_filename)
 
   def testWritePasswdEntry(self):
     """We correctly write a typical entry in /etc/passwd format."""
     cache = files.FilesPasswdMapHandler(self.config)
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(pmock.eq('root:x:0:0:Rootsy:/root:/bin/bash\n'))
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('root:x:0:0:Rootsy:/root:/bin/bash\n')
 
-    map_entry = maps.PasswdMapEntry()
+    map_entry = passwd.PasswdMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
     map_entry.uid = 0
@@ -90,68 +94,80 @@ class TestFilesCache(pmock.MockTestCase):
     map_entry.gecos = 'Rootsy'
     map_entry.dir = '/root'
     map_entry.shell = '/bin/bash'
+
+    self.mox.ReplayAll()
+
     cache._WriteData(file_mock, map_entry)
 
   def testWriteGroupEntry(self):
     """We correctly write a typical entry in /etc/group format."""
     cache = files.FilesGroupMapHandler(self.config)
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(pmock.eq('root:x:0:zero_cool,acid_burn\n'))
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('root:x:0:zero_cool,acid_burn\n')
 
-    map_entry = maps.GroupMapEntry()
+    map_entry = group.GroupMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = 'x'
     map_entry.gid = 0
     map_entry.members = ['zero_cool', 'acid_burn']
+
+    self.mox.ReplayAll()
+
     cache._WriteData(file_mock, map_entry)
 
   def testWriteShadowEntry(self):
     """We correctly write a typical entry in /etc/shadow format."""
     cache = files.FilesShadowMapHandler(self.config)
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(pmock.eq('root:$1$zomgmd5support:::::::\n'))
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('root:$1$zomgmd5support:::::::\n')
 
-    map_entry = maps.ShadowMapEntry()
+    map_entry = shadow.ShadowMapEntry()
     map_entry.name = 'root'
     map_entry.passwd = '$1$zomgmd5support'
+
+    self.mox.ReplayAll()
+
     cache._WriteData(file_mock, map_entry)
 
   def testWriteNetgroupEntry(self):
     """We correctly write a typical entry in /etc/netgroup format."""
     cache = files.FilesNetgroupMapHandler(self.config)
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(
-        pmock.eq('administrators unix_admins noc_monkeys (-,zero_cool,)\n'))
-    
-    map_entry = maps.NetgroupMapEntry()
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('administrators unix_admins noc_monkeys (-,zero_cool,)\n')
+
+    map_entry = netgroup.NetgroupMapEntry()
     map_entry.name = 'administrators'
     map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
+
+    self.mox.ReplayAll()
+
     cache._WriteData(file_mock, map_entry)
 
   def testWriteAutomountEntry(self):
     """We correctly write a typical entry in /etc/auto.* format."""
     cache = files.FilesAutomountMapHandler(self.config)
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(pmock.eq('scratch -tcp,rw,intr,bg fileserver:/scratch\n'))
-    
-    map_entry = maps.AutomountMapEntry()
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('scratch -tcp,rw,intr,bg fileserver:/scratch\n')
+
+    map_entry = automount.AutomountMapEntry()
     map_entry.key = 'scratch'
     map_entry.options = '-tcp,rw,intr,bg'
     map_entry.location = 'fileserver:/scratch'
-    cache._WriteData(file_mock, map_entry)
 
-    file_mock = self.mock()
-    invocation = file_mock.expects(pmock.once())
-    invocation.write(pmock.eq('scratch fileserver:/scratch\n'))
-    
-    map_entry = maps.AutomountMapEntry()
+    self.mox.ReplayAll()
+    cache._WriteData(file_mock, map_entry)
+    self.mox.VerifyAll()
+
+    file_mock = self.mox.CreateMock(sys.stdout)
+    file_mock.write('scratch fileserver:/scratch\n')
+
+    map_entry = automount.AutomountMapEntry()
     map_entry.key = 'scratch'
     map_entry.options = None
     map_entry.location = 'fileserver:/scratch'
+
+    self.mox.ReplayAll()
+
     cache._WriteData(file_mock, map_entry)
 
   def testAutomountSetsFilename(self):
@@ -174,7 +190,33 @@ class TestFilesCache(pmock.MockTestCase):
     cache = files.FilesAutomountMapHandler(conf)
     self.assertFalse(os.path.exists(os.path.join(self.workdir, 'auto.master')))
     data = cache.GetMap()
-    self.assertTrue(len(data) == 0)
+    self.assertFalse(data)
+
+  def testIndexCreation(self):
+    cache = files.FilesPasswdMapHandler(self.config)
+    entries = [passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+               passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+               passwd.PasswdMapEntry(dict(name='quux', uid=12, gid=11)),
+              ]
+    pmap = passwd.PasswdMap(entries)
+    cache.Write(pmap)
+    cache.WriteIndex()
+
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    self.failUnless(os.path.exists(index_filename),
+                    'Index not created %s' % index_filename)
+    f = open(index_filename)
+    self.assertEqual('bar\x0031\x00\x00\n', f.readline())
+    self.assertEqual('foo\x0016\x00\x00\n', f.readline())
+    self.assertEqual('quux\x000\x00\x00\n', f.readline())
+
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    self.failUnless(os.path.exists(index_filename),
+                    'Index not created %s' % index_filename)
+    f = open(index_filename)
+    self.assertEqual('10\x0016\x00\n', f.readline())
+    self.assertEqual('11\x0031\x00\n', f.readline())
+    self.assertEqual('12\x000\x00\x00\n', f.readline())
 
 
 if __name__ == '__main__':

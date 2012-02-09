@@ -22,22 +22,28 @@ __author__ = 'blaedd@google.com (David MacKinnon)'
 
 import time
 import unittest
-import StringIO
 
-from nss_cache import error
-from nss_cache import maps
-from nss_cache.sources import httpsource
-from nss_cache.util import files
-
-import pmock
+import mox
 import pycurl
 
-class TestHttpFilesSource(pmock.MockTestCase):
+from nss_cache import error
+
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
+
+from nss_cache.sources import httpsource
+from nss_cache.util import file_formats
+
+
+class TestHttpSource(unittest.TestCase):
 
   def setUp(self):
     """Initialize a basic config dict."""
-    self.config = {
-                   'passwd_url': 'PASSWD_URL',
+    super(TestHttpSource, self).setUp()
+    self.config = {'passwd_url': 'PASSWD_URL',
                    'shadow_url': 'SHADOW_URL',
                    'group_url': 'GROUP_URL',
                    'retry_delay': 'TEST_RETRY_DELAY',
@@ -45,8 +51,7 @@ class TestHttpFilesSource(pmock.MockTestCase):
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
 
-  def testDefaults(self):
-    """Test that we set the expected defaults for HTTP connections."""
+  def testDefaultConfiguration(self):
     source = httpsource.HttpFilesSource({})
     self.assertEquals(source.conf['passwd_url'],
                       httpsource.HttpFilesSource.PASSWD_URL)
@@ -61,8 +66,7 @@ class TestHttpFilesSource(pmock.MockTestCase):
     self.assertEquals(source.conf['tls_cacertfile'],
                       httpsource.HttpFilesSource.TLS_CACERTFILE)
 
-  def testOverrideDefaults(self):
-    """Test that we override the defaults for HTTP connections."""
+  def testOverrideDefaultConfiguration(self):
     source = httpsource.HttpFilesSource(self.config)
     self.assertEquals(source.conf['passwd_url'], 'PASSWD_URL')
     self.assertEquals(source.conf['group_url'], 'GROUP_URL')
@@ -72,196 +76,210 @@ class TestHttpFilesSource(pmock.MockTestCase):
     self.assertEquals(source.conf['tls_cacertfile'], 'TEST_TLS_CACERTFILE')
 
 
-class TestHttpUpdateGetter(pmock.MockTestCase):
-  def setUp(self):
-    """Set up a basic getter, standard config and some timestamps."""
-    self.getter = httpsource.UpdateGetter()
-    self.ts = 1259641025
-    self.http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
-    self.config = {
-                   'passwd_url': 'PASSWD_URL',
-                   'shadow_url': 'SHADOW_URL',
-                   'group_url': 'GROUP_URL',
-                   'retry_delay': 'TEST_RETRY_DELAY',
-                   'retry_max': 'TEST_RETRY_MAX',
-                   'tls_cacertfile': 'TEST_TLS_CACERTFILE',
-                  }
-
-
-
-  def mockConnection(self, url, rcode, numtries=1):
-    """Mock connection.
-
-    Args:
-      url: URL it should expect
-      rcode: HTTP response code to return.
-      numtries: Number of times we should expect to go through the
-                perform/getinfo cycle.
-    """
-    conn_mock = self.mock()
-    conn_mock.expects(pmock.at_least_once()).method('setopt')
-    for _ in range(numtries):
-      conn_mock.expects(pmock.once()).perform()
-      conn_mock.expects(pmock.once()).getinfo(
-          pmock.eq(pycurl.RESPONSE_CODE)).will(pmock.return_value(rcode))
-    return conn_mock
+class TestHttpUpdateGetter(mox.MoxTestBase):
 
   def testFromTimestampToHttp(self):
-    """Transform ticks to HTTP timestamp."""
-    self.assertEquals(self.getter.FromTimestampToHttp(self.ts), self.http_ts)
+    ts = 1259641025
+    expected_http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
+    self.assertEquals(expected_http_ts,
+                      httpsource.UpdateGetter().FromTimestampToHttp(ts))
 
   def testFromHttpToTimestamp(self):
-    """Transform HTTP timestamp to ticks."""
-    self.assertEquals(self.getter.FromHttpToTimestamp(self.http_ts), self.ts)
+    expected_ts = 1259641025
+    http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
+    self.assertEquals(expected_ts,
+                      httpsource.UpdateGetter().FromHttpToTimestamp(http_ts))
 
-  def testGetUpdatesTimestampWorking(self):
-    """No updates on a 304 return code."""
-    mock_conn = self.mockConnection('https://TEST_URL', 304)
-    source = httpsource.HttpFilesSource({}, conn=mock_conn)
-    result = self.getter.GetUpdates(source, 'https://TEST_URL', 1)
-    self.assertEquals(result, [])
-
-  def testGetUpdatesTimestampNotMatch(self):
-    """Update if we give a timestamp and it doesn't match."""
-    def StubbedGetMap(cache_info):
-      map_mock = self.mock()
-      map_mock.expects(pmock.once()).SetModifyTimestamp(pmock.eq(self.ts))
-      return map_mock
-    mock_conn = self.mockConnection('https://TEST_URL', 200)
-    mock_conn.expects(pmock.once()).getinfo(
-        pmock.eq(pycurl.INFO_FILETIME)).will(pmock.return_value(self.ts))
-    source = httpsource.HttpFilesSource({}, conn=mock_conn)
-    self.getter.GetMap = StubbedGetMap
-    result = self.getter.GetUpdates(source, 'https://TEST_URL', 1)
-
-  def testRetryErrorCode(self):
-    """We retry as per configuration if we get a non 200/304 response code."""
-    self.config['retry_delay'] = 5
-    self.config['retry_max'] = 3
-    mock_conn = self.mockConnection('https://TEST_URL', 400, 3)
-
-    sleep_mock = self.mock()
-    sleep_mock.expects(pmock.once()).sleep(pmock.eq(5))
-    sleep_mock.expects(pmock.once()).sleep(pmock.eq(5))
-    original_sleep = time.sleep
-    time.sleep = sleep_mock.sleep
-
-    source_mock = self.mock()
-    source_mock.conf = self.config
-    source_mock.conn = mock_conn
-    log_stub = self.mock()
-    log_stub.set_default_stub(pmock.return_value(True))
-    source_mock.log = log_stub
-
-    self.assertRaises(error.SourceUnavailable, self.getter.GetUpdates,
-                      source=source_mock, url='https://TEST_URL', since=None)
-    time.sleep = original_sleep
-
-  def testHttpProtocol(self):
-    """We accept HTTP"""
+  def testAcceptHttpProtocol(self):
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform()
     # We use code 304 since it basically shortcuts to the end of the method.
-    mock_conn = self.mockConnection('http://TEST_URL', 304)
-    source = httpsource.HttpFilesSource({}, conn=mock_conn)
-    self.getter.GetUpdates(source, 'http://TEST_URL', None)
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
 
-  def testHttpsProtocol(self):
-    """We accept HTTPS"""
-    mock_conn = self.mockConnection('https://TEST_URL', 304)
-    source = httpsource.HttpFilesSource({}, conn=mock_conn)
-    self.getter.GetUpdates(source, 'https://TEST_URL', None)
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
 
-  def testInvalidProtocol(self):
-    """Raise error.ConfigurationError on unsupported protocol."""
+    self.mox.ReplayAll()
+    config = {}
+    source = httpsource.HttpFilesSource(config)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'http://TEST_URL', None)
+    self.assertEqual([], result)
+
+  def testAcceptHttpsProtocol(self):
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform()
+    # We use code 304 since it basically shortcuts to the end of the method.
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
+
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    self.mox.ReplayAll()
+    config = {}
+    source = httpsource.HttpFilesSource(config)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'https://TEST_URL', None)
+    self.assertEqual([], result)
+
+  def testRaiseConfigurationErrorOnUnsupportedProtocol(self):
     # connection should never be used in this case.
-    mock_conn = None
-    source = httpsource.HttpFilesSource({}, conn=mock_conn)
-    self.assertRaises(error.ConfigurationError, self.getter.GetUpdates,
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    self.mox.ReplayAll()
+    source = httpsource.HttpFilesSource({})
+    self.assertRaises(error.ConfigurationError,
+                      httpsource.UpdateGetter().GetUpdates,
                       source, 'ftp://test_url', None)
 
+  def testNoUpdatesForTemporaryFailure(self):
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform()
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
 
-class TestPasswdUpdateGetter(pmock.MockTestCase):
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    self.mox.ReplayAll()
+    config = {}
+    source = httpsource.HttpFilesSource(config)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'https://TEST_URL', 37)
+    self.assertEquals(result, [])
+
+  def testGetUpdatesIfTimestampNotMatch(self):
+    ts = 1259641025
+
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform()
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(200)
+    mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(ts)
+
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    mock_map = self.mox.CreateMockAnything()
+    mock_map.SetModifyTimestamp(ts)
+
+    getter = httpsource.UpdateGetter()
+    self.mox.StubOutWithMock(getter, 'GetMap')
+    getter.GetMap(cache_info=mox.IgnoreArg()).AndReturn(mock_map)
+
+    self.mox.ReplayAll()
+    config = {}
+    source = httpsource.HttpFilesSource(config)
+    result = getter.GetUpdates(source, 'https://TEST_URL', 1)
+    self.assertEqual(mock_map, result)
+
+  def testRetryOnErrorCodeResponse(self):
+    config = {'retry_delay': 5,
+              'retry_max': 3}
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform().MultipleTimes()
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).MultipleTimes().AndReturn(400)
+
+    self.mox.StubOutWithMock(time, 'sleep')
+    time.sleep(5)
+    time.sleep(5)
+
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    self.mox.ReplayAll()
+    source = httpsource.HttpFilesSource(config)
+
+    self.assertRaises(error.SourceUnavailable,
+                      httpsource.UpdateGetter().GetUpdates,
+                      source, url='https://TEST_URL', since=None)
+
+
+class TestPasswdUpdateGetter(unittest.TestCase):
 
   def setUp(self):
+    super(TestPasswdUpdateGetter, self).setUp()
     self.updater = httpsource.PasswdUpdateGetter()
 
   def testGetParser(self):
-    """Get a passwd file parser."""
     parser = self.updater.GetParser()
     self.assertTrue(isinstance(self.updater.GetParser(),
-                               files.FilesPasswdMapParser))
+                               file_formats.FilesPasswdMapParser))
 
   def testCreateMap(self):
-    """Create a passwd map."""
     self.assertTrue(isinstance(self.updater.CreateMap(),
-                               maps.PasswdMap))
+                               passwd.PasswdMap))
 
 
-class TestShadowUpdateGetter(pmock.MockTestCase):
+class TestShadowUpdateGetter(unittest.TestCase):
 
   def setUp(self):
+    super(TestShadowUpdateGetter, self).setUp()
     self.updater = httpsource.ShadowUpdateGetter()
 
   def testGetParser(self):
-    """Get a shadow file parser."""
     parser = self.updater.GetParser()
     self.assertTrue(isinstance(self.updater.GetParser(),
-                               files.FilesShadowMapParser))
+                               file_formats.FilesShadowMapParser))
 
   def testCreateMap(self):
-    """Create a shadow map."""
     self.assertTrue(isinstance(self.updater.CreateMap(),
-                               maps.ShadowMap))
+                               shadow.ShadowMap))
 
 
-class TestGroupUpdateGetter(pmock.MockTestCase):
+class TestGroupUpdateGetter(unittest.TestCase):
 
   def setUp(self):
+    super(TestGroupUpdateGetter, self).setUp()
     self.updater = httpsource.GroupUpdateGetter()
 
   def testGetParser(self):
-    """Get a group file parser."""
     parser = self.updater.GetParser()
     self.assertTrue(isinstance(self.updater.GetParser(),
-                               files.FilesGroupMapParser))
+                               file_formats.FilesGroupMapParser))
 
   def testCreateMap(self):
-    """Create a group map."""
     self.assertTrue(isinstance(self.updater.CreateMap(),
-                               maps.GroupMap))
+                               group.GroupMap))
 
 
-class TestNetgroupUpdateGetter(pmock.MockTestCase):
+class TestNetgroupUpdateGetter(unittest.TestCase):
 
   def setUp(self):
+    super(TestNetgroupUpdateGetter, self).setUp()
     self.updater = httpsource.NetgroupUpdateGetter()
 
   def testGetParser(self):
-    """Get a netgroup file parser."""
     parser = self.updater.GetParser()
     self.assertTrue(isinstance(self.updater.GetParser(),
-                               files.FilesNetgroupMapParser))
+                               file_formats.FilesNetgroupMapParser))
 
   def testCreateMap(self):
-    """Create a netgroup map."""
     self.assertTrue(isinstance(self.updater.CreateMap(),
-                               maps.NetgroupMap))
+                               netgroup.NetgroupMap))
 
 
-class TestAutomountUpdateGetter(pmock.MockTestCase):
+class TestAutomountUpdateGetter(unittest.TestCase):
 
   def setUp(self):
+    super(TestAutomountUpdateGetter, self).setUp()
     self.updater = httpsource.AutomountUpdateGetter()
 
   def testGetParser(self):
-    """Get a automount file parser."""
     parser = self.updater.GetParser()
     self.assertTrue(isinstance(self.updater.GetParser(),
-                               files.FilesAutomountMapParser))
+                               file_formats.FilesAutomountMapParser))
 
   def testCreateMap(self):
-    """Create a automount map."""
     self.assertTrue(isinstance(self.updater.CreateMap(),
-                               maps.AutomountMap))
+                               automount.AutomountMap))
 
 
 if __name__ == '__main__':

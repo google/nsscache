@@ -24,7 +24,8 @@ import time
 import unittest
 
 from nss_cache import error
-from nss_cache import maps
+from nss_cache.maps import group
+from nss_cache.maps import passwd
 
 
 class TestPasswdMap(unittest.TestCase):
@@ -32,7 +33,7 @@ class TestPasswdMap(unittest.TestCase):
 
   def setUp(self):
     """Set some default avalible data for testing."""
-    self._good_entry = maps.PasswdMapEntry()
+    self._good_entry = passwd.PasswdMapEntry()
     self._good_entry.name = 'foo'
     self._good_entry.passwd = 'x'
     self._good_entry.uid = 10
@@ -43,16 +44,16 @@ class TestPasswdMap(unittest.TestCase):
 
   def testInit(self):
     """Construct an empty or seeded PasswdMap."""
-    self.assertEquals(maps.PasswdMap, type(maps.PasswdMap()),
+    self.assertEquals(passwd.PasswdMap, type(passwd.PasswdMap()),
                       msg='failed to create emtpy PasswdMap')
-    pmap = maps.PasswdMap([self._good_entry])
+    pmap = passwd.PasswdMap([self._good_entry])
     self.assertEquals(self._good_entry, pmap.PopItem(),
                       msg='failed to seed PasswdMap with list')
-    self.assertRaises(TypeError, maps.PasswdMap, ['string'])
+    self.assertRaises(TypeError, passwd.PasswdMap, ['string'])
 
   def testAdd(self):
     """Add raises exceptions for objects it can't add or verify."""
-    pmap = maps.PasswdMap()
+    pmap = passwd.PasswdMap()
     entry = self._good_entry
     self.assert_(pmap.Add(entry),
                  msg='failed to add new entry.')
@@ -64,7 +65,7 @@ class TestPasswdMap(unittest.TestCase):
     self.assertEquals(ret_entry, entry,
                       msg='failed to pop existing entry.')
 
-    gentry = maps.GroupMapEntry()
+    gentry = group.GroupMapEntry()
     gentry.name = 'foo'
     gentry.gid = 10
     self.assertRaises(TypeError, pmap.Add, gentry)
@@ -72,12 +73,12 @@ class TestPasswdMap(unittest.TestCase):
   def testContains(self):
     """Verify __contains__ works, and does a deep compare."""
     pentry_good = self._good_entry
-    pentry_like_good = maps.PasswdMapEntry()
+    pentry_like_good = passwd.PasswdMapEntry()
     pentry_like_good.name = 'foo'  # same Key(), but rest of attributes differ
-    pentry_bad = maps.PasswdMapEntry()
+    pentry_bad = passwd.PasswdMapEntry()
     pentry_bad.name = 'bar'
     
-    pmap = maps.PasswdMap([pentry_good])
+    pmap = passwd.PasswdMap([pentry_good])
 
     self.assertTrue(pentry_good in pmap,
                     msg='expected entry to be in map')
@@ -88,7 +89,7 @@ class TestPasswdMap(unittest.TestCase):
 
   def testIterate(self):
     """Check that we can iterate over PasswdMap."""
-    pmap = maps.PasswdMap()
+    pmap = passwd.PasswdMap()
     pmap.Add(self._good_entry)
     ret_entries = []
     for entry in pmap:
@@ -100,7 +101,7 @@ class TestPasswdMap(unittest.TestCase):
 
   def testLen(self):
     """Verify we have correctly overridden __len__ in MapEntry."""
-    pmap = maps.PasswdMap()
+    pmap = passwd.PasswdMap()
     self.assertEquals(len(pmap), 0,
                       msg='expected len(pmap) to be 0')
     pmap.Add(self._good_entry)
@@ -109,7 +110,7 @@ class TestPasswdMap(unittest.TestCase):
 
   def testExists(self):
     """Verify Exists() checks for presence of MapEntry objects."""
-    pmap = maps.PasswdMap()
+    pmap = passwd.PasswdMap()
     entry = self._good_entry
     self.assertFalse(pmap.Exists(entry))
     pmap.Add(entry)
@@ -120,14 +121,14 @@ class TestPasswdMap(unittest.TestCase):
     
     # Setup some MapEntry objects with distinct Key()s
     pentry1 = self._good_entry
-    pentry2 = maps.PasswdMapEntry()
+    pentry2 = passwd.PasswdMapEntry()
     pentry2.name = 'john'
-    pentry3 = maps.PasswdMapEntry()
+    pentry3 = passwd.PasswdMapEntry()
     pentry3.name = 'jane'
 
     # Setup some Map objects
-    pmap_big = maps.PasswdMap([pentry1, pentry2])
-    pmap_small = maps.PasswdMap([pentry3])
+    pmap_big = passwd.PasswdMap([pentry1, pentry2])
+    pmap_small = passwd.PasswdMap([pentry3])
 
     # Merge small into big
     self.assertTrue(pmap_big.Merge(pmap_small),
@@ -144,29 +145,29 @@ class TestPasswdMap(unittest.TestCase):
                      msg='Re-merging small into big succeeded.')
 
     # An empty merge should do nothing
-    self.assertFalse(pmap_big.Merge(maps.PasswdMap()),
+    self.assertFalse(pmap_big.Merge(passwd.PasswdMap()),
                      msg='Empty Merge should have done nothing.')
 
     # Merge a GroupMap should throw TypeError
-    gmap = maps.GroupMap()
+    gmap = group.GroupMap()
     self.assertRaises(TypeError, pmap_big.Merge, gmap)
 
     # Merge an older map should throw an UnsupportedMap
-    old_map = maps.PasswdMap(modify_time=1)
-    new_map = maps.PasswdMap(modify_time=2)
-    self.assertRaises(error.UnsupportedMap, new_map.Merge, old_map)
-    old_map = maps.PasswdMap(update_time=1)
-    new_map = maps.PasswdMap(update_time=2)
-    self.assertRaises(error.UnsupportedMap, new_map.Merge, old_map)
+    old_map = passwd.PasswdMap(modify_time=1)
+    new_map = passwd.PasswdMap(modify_time=2)
+    self.assertRaises(error.InvalidMerge, new_map.Merge, old_map)
+    old_map = passwd.PasswdMap(update_time=1)
+    new_map = passwd.PasswdMap(update_time=2)
+    self.assertRaises(error.InvalidMerge, new_map.Merge, old_map)
 
   def testPopItem(self):
     """Verify you can retrieve MapEntry with PopItem."""
-    pmap = maps.PasswdMap([self._good_entry])
+    pmap = passwd.PasswdMap([self._good_entry])
     self.assertEquals(pmap.PopItem(), self._good_entry)
 
   def testLastModificationTimestamp(self):
     """Test setting/getting of timestamps on maps."""
-    m = maps.PasswdMap()
+    m = passwd.PasswdMap()
     # we only work in whole-second resolution
     now = time.gmtime(time.time())
     
@@ -182,12 +183,12 @@ class TestPasswdMapEntry(unittest.TestCase):
   
   def testInit(self):
     """Construct empty and seeded PasswdMapEntry."""
-    entry = maps.PasswdMapEntry()
-    self.assertEquals(type(entry), maps.PasswdMapEntry,
+    entry = passwd.PasswdMapEntry()
+    self.assertEquals(type(entry), passwd.PasswdMapEntry,
                       msg='Could not create empty PasswdMapEntry')
     seed = {'name': 'foo', 'passwd': 'x', 'uid': 10, 'gid': 10, 'gecos': '',
             'dir': '', 'shell': ''}
-    entry = maps.PasswdMapEntry(seed)
+    entry = passwd.PasswdMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded PasswdMapEntry')
     self.assertEquals(entry.name, 'foo',
@@ -207,7 +208,7 @@ class TestPasswdMapEntry(unittest.TestCase):
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
-    entry = maps.PasswdMapEntry()
+    entry = passwd.PasswdMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.name, 'foo',
                       msg='Could not set attribute: name')
@@ -234,13 +235,13 @@ class TestPasswdMapEntry(unittest.TestCase):
     """Verify we are doing a deep compare in __eq__."""
     
     # Setup some things to compare
-    entry_good = maps.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    entry_same_as_good = maps.PasswdMapEntry({'name': 'foo',
+    entry_good = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    entry_same_as_good = passwd.PasswdMapEntry({'name': 'foo',
                                               'uid': 10,
                                               'gid': 10})
-    entry_like_good = maps.PasswdMapEntry()
+    entry_like_good = passwd.PasswdMapEntry()
     entry_like_good.name = 'foo'  # same Key(), but rest of attributes differ
-    entry_bad = maps.PasswdMapEntry()
+    entry_bad = passwd.PasswdMapEntry()
     entry_bad.name = 'bar'
     
     self.assertEquals(entry_good, entry_good,
@@ -254,14 +255,14 @@ class TestPasswdMapEntry(unittest.TestCase):
     
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
-    entry = maps.PasswdMapEntry()
+    entry = passwd.PasswdMapEntry()
 
     # by leaving _KEY unset, we should bomb.
     self.failIf(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
-    entry = maps.PasswdMapEntry()
+    entry = passwd.PasswdMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
 

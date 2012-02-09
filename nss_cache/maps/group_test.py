@@ -27,7 +27,8 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import unittest
 
-from nss_cache import maps
+from nss_cache.maps import group
+from nss_cache.maps import passwd
 
 
 class TestGroupMap(unittest.TestCase):
@@ -36,7 +37,7 @@ class TestGroupMap(unittest.TestCase):
   def __init__(self, obj):
     """Set some default avalible data for testing."""
     super(TestGroupMap, self).__init__(obj)
-    self._good_entry = maps.GroupMapEntry()
+    self._good_entry = group.GroupMapEntry()
     self._good_entry.name = 'foo'
     self._good_entry.passwd = 'x'
     self._good_entry.gid = 10
@@ -44,16 +45,16 @@ class TestGroupMap(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty or seeded GroupMap."""
-    self.assertEquals(maps.GroupMap, type(maps.GroupMap()),
+    self.assertEquals(group.GroupMap, type(group.GroupMap()),
                       msg='failed to create an empty GroupMap')
-    gmap = maps.GroupMap([self._good_entry])
+    gmap = group.GroupMap([self._good_entry])
     self.assertEquals(self._good_entry, gmap.PopItem(),
                       msg='failed to seed GroupMap with list')
-    self.assertRaises(TypeError, maps.GroupMap, ['string'])
+    self.assertRaises(TypeError, group.GroupMap, ['string'])
 
   def testAdd(self):
     """Add throws an error for objects it can't verify."""
-    gmap = maps.GroupMap()
+    gmap = group.GroupMap()
     entry = self._good_entry
     self.assert_(gmap.Add(entry), msg='failed to append new entry.')
 
@@ -62,7 +63,7 @@ class TestGroupMap(unittest.TestCase):
     ret_entry = gmap.PopItem()
     self.assertEquals(ret_entry, entry, msg='failed to pop correct entry.')
 
-    pentry = maps.PasswdMapEntry()
+    pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
     pentry.uid = 10
     pentry.gid = 10
@@ -74,10 +75,10 @@ class TestGroupMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty and seeded GroupMapEntry."""
-    self.assert_(maps.GroupMapEntry(),
+    self.assert_(group.GroupMapEntry(),
                  msg='Could not create empty GroupMapEntry')
     seed = {'name': 'foo', 'gid': 10}
-    entry = maps.GroupMapEntry(seed)
+    entry = group.GroupMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded PasswdMapEntry')
     self.assertEquals(entry.name, 'foo',
@@ -91,7 +92,7 @@ class TestGroupMapEntry(unittest.TestCase):
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
-    entry = maps.GroupMapEntry()
+    entry = group.GroupMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.name, 'foo',
                       msg='Could not set attribute: name')
@@ -108,14 +109,14 @@ class TestGroupMapEntry(unittest.TestCase):
 
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
-    entry = maps.GroupMapEntry()
+    entry = group.GroupMapEntry()
     
     # Empty object should bomb
     self.failIf(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
-    entry = maps.GroupMapEntry()
+    entry = group.GroupMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
 

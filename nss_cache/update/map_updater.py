@@ -21,7 +21,7 @@
 These classes contains all the business logic for updating cache objects.
 They also contain the code for reading, writing, and updating timestamps.
 
-SingleMapUpdater:  Class used for all single map caches.
+FileMapUpdater:  Class used for all single map caches.
 AutomountMapUpdater:  Class used for updating automount map caches.
 """
 
@@ -29,41 +29,16 @@ __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
 
-from nss_cache import caches
 from nss_cache import error
-from nss_cache.update import base
+from nss_cache.caches import cache_factory
+from nss_cache.update import updater
 
 
-class SingleMapUpdater(base.Updater):
+class MapUpdater(updater.Updater):
   """Updates simple maps like passwd, group, shadow, and netgroup."""
 
-  def UpdateFromSource(self, source, incremental=True, force_write=False):
-    """Update this map's cache from the source provided.
-
-    The SingleMapUpdater expects to fetch as single map from the source
-    and write/merge it to disk.  We create a cache to write to, and then call
-    UpdateCacheFromSource() with that cache.
-
-    Note that AutomountUpdater also calls UpdateCacheFromSource() for each
-    cache it is writing, hence the distinct seperation.
-
-    Args:
-      source: A nss_cache.sources.Source object.
-      incremental: A boolean flag indicating that an incremental update should
-        be performed, defaults to True.
-      force_write: A boolean flag forcing empty map updates, defaults to False.
-
-    Returns:
-      An int indicating success of update (0 == good, fail otherwise).
-    """
-    # Create the single cache we write to
-    cache = caches.base.Create(self.cache_options, self.map_name)
-
-    return self.UpdateCacheFromSource(cache, source, incremental,
-                                      force_write, location=None)
-
-  def UpdateCacheFromSource(self, cache, source, incremental, force_write,
-                            location=None):
+  def UpdateCacheFromSource(self, cache, source, incremental=False,
+                            force_write=False, location=None):
     """Update a single cache, from a given source.
 
     Args:
@@ -79,6 +54,7 @@ class SingleMapUpdater(base.Updater):
       An int indicating the success of an update (0 == good, fail otherwise).
     """
     return_val = 0
+    incremental = incremental and self.can_do_incremental
 
     timestamp = self.GetModifyTimestamp()
     if timestamp is None and incremental is True:
@@ -90,7 +66,7 @@ class SingleMapUpdater(base.Updater):
                                  since=timestamp,
                                  location=location)
       try:
-        return_val += self.IncrementalUpdateFromMap(cache, source_map)
+        return_val += self._IncrementalUpdateFromMap(cache, source_map)
       except (error.CacheNotFound, error.EmptyMap):
         self.log.warning('Local cache is invalid, faulting to a full sync.')
         incremental = False
@@ -104,7 +80,7 @@ class SingleMapUpdater(base.Updater):
 
     return return_val
 
-  def IncrementalUpdateFromMap(self, cache, new_map):
+  def _IncrementalUpdateFromMap(self, cache, new_map):
     """Merge a given map into the provided cache.
 
     Args:
@@ -168,14 +144,14 @@ class SingleMapUpdater(base.Updater):
     return_val = cache.WriteMap(map_data=new_map)
 
     # We did an update, write our timestamps unless there is an error.
-    if return_val is 0:
+    if return_val == 0:
       self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
       self.WriteUpdateTimestamp()
 
     return return_val
 
 
-class AutomountUpdater(base.Updater):
+class AutomountUpdater(updater.Updater):
   """Update an automount map.
 
   Automount maps are a unique case.  They are not a single set of map entries,
@@ -183,7 +159,7 @@ class AutomountUpdater(base.Updater):
   of maps and updating each map as well as the list of maps.
 
   This class is written to re-use the individual update code in the
-  SingleMapUpdater class.
+  FileMapUpdater class.
   """
 
   # automount-specific options
@@ -210,7 +186,7 @@ class AutomountUpdater(base.Updater):
     """Update the automount master map, and every map it points to.
 
     We fetch a full copy of the master map everytime, and then use the
-    SingleMapUpdater to write each map the master map points to, as well
+    FileMapUpdater to write each map the master map points to, as well
     as the master map itself.
 
     During this process, the master map will be modified.  It starts
@@ -251,8 +227,8 @@ class AutomountUpdater(base.Updater):
     if self.local_master:
       self.log.info('Using local master map to determine maps to update.')
       # we need the local map to determine which of the other maps to update
-      cache = caches.base.Create(self.cache_options, self.map_name,
-                                 automount_mountpoint=None)
+      cache = cache_factory.Create(self.cache_options, self.map_name,
+                                   automount_mountpoint=None)
       try:
         local_master = cache.GetMap()
       except error.CacheNotFound:
@@ -262,15 +238,14 @@ class AutomountUpdater(base.Updater):
 
     # update specific maps, e.g. auto.home and auto.auto
     for map_entry in master_map:
-
       source_location = map_entry.location  # e.g. ou=auto.auto in ldap
       automount_mountpoint = map_entry.key        # e.g. /auto mountpoint
       self.log.debug('looking at %s mount.', automount_mountpoint)
 
       # create the cache to update
-      cache = caches.base.Create(self.cache_options,
-                                 self.map_name,
-                                 automount_mountpoint=automount_mountpoint)
+      cache = cache_factory.Create(self.cache_options,
+                                   self.map_name,
+                                   automount_mountpoint=automount_mountpoint)
 
       # update the master map with the location of the map in the cache
       # e.g. /etc/auto.auto replaces ou=auto.auto
@@ -284,21 +259,21 @@ class AutomountUpdater(base.Updater):
 
       self.log.info('Updating %s mount.', map_entry.key)
       # update this map (e.g. /etc/auto.auto)
-      updater = SingleMapUpdater(self.map_name,
+      update_obj = MapUpdater(self.map_name,
                                  self.timestamp_dir,
                                  self.cache_options,
                                  automount_mountpoint=automount_mountpoint)
-      return_val += updater.UpdateCacheFromSource(cache, source, incremental,
-                                                  force_write, source_location)
+      return_val += update_obj.UpdateCacheFromSource(cache, source, incremental,
+                                                     force_write, source_location)
     # with sub-maps updated, write modified master map to disk if configured to
     if not self.local_master:
       # automount_mountpoint=None defaults to master
-      cache = caches.base.Create(self.cache_options,
-                                 self.map_name,
-                                 automount_mountpoint=None)
-      updater = SingleMapUpdater(self.map_name,
-                                 self.timestamp_dir,
-                                 self.cache_options)
-      return_val += updater.FullUpdateFromMap(cache, master_map)
+      cache = cache_factory.Create(self.cache_options,
+                                   self.map_name,
+                                   automount_mountpoint=None)
+      update_obj = MapUpdater(self.map_name,
+                           self.timestamp_dir,
+                           self.cache_options)
+      return_val += update_obj.FullUpdateFromMap(cache, master_map)
 
     return return_val

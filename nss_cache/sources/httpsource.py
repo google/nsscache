@@ -30,13 +30,21 @@ import time
 import urlparse
 
 from nss_cache import error
-from nss_cache import maps
-from nss_cache.sources import base
-from nss_cache.util import files
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
+from nss_cache.sources import source
+from nss_cache.util import file_formats
 from nss_cache.util import curl
 
 
-class HttpFilesSource(base.Source):
+def RegisterImplementation(registration_callback):
+  registration_callback(HttpFilesSource)
+
+
+class HttpFilesSource(source.Source):
   """Source for data fetched via HTTP."""
   # HTTP defaults
   PASSWD_URL = ''
@@ -95,7 +103,7 @@ class HttpFilesSource(base.Source):
       for all data.
 
     Returns:
-      instance of maps.PasswdMap
+      instance of passwd.PasswdMap
     """
     return PasswdUpdateGetter().GetUpdates(self, self.conf['passwd_url'], since)
 
@@ -107,7 +115,7 @@ class HttpFilesSource(base.Source):
       for all data.
 
     Returns:
-      instance of maps.ShadowMap
+      instance of shadow.ShadowMap
     """
     return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'],
                                            since)
@@ -120,7 +128,7 @@ class HttpFilesSource(base.Source):
       for all data.
 
     Returns:
-      instance of maps.GroupMap
+      instance of group.GroupMap
     """
     return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'], since)
 
@@ -133,7 +141,7 @@ class HttpFilesSource(base.Source):
       for all data.
 
     Returns:
-      instance of maps.NetgroupMap
+      instance of netgroup.NetgroupMap
     """
     return NetgroupUpdateGetter().GetUpdates(self, self.conf['netgroup_url'],
                                              since)
@@ -146,7 +154,7 @@ class HttpFilesSource(base.Source):
     set our search scope to be 'one'.
 
     Args:
-      location: Currently a string containing our search base, later we
+      location: Currently a string containing our search source, later we
         may support hostname and additional parameters.
       since: Get data only changed since this timestamp (inclusive) or None
         for all data.
@@ -169,7 +177,7 @@ class HttpFilesSource(base.Source):
     """Return the autmount master map from this source.
 
     Returns:
-      an instance of maps.AutomountMap
+      an instance of automount.AutomountMap
     """
     master_map = self.GetAutomountMap(location='auto.master')
     for map_entry in master_map:
@@ -306,11 +314,11 @@ class AutomountUpdateGetter(UpdateGetter):
 
   def GetParser(self):
     """Returns a MapParser to parse FilesAutomount cache."""
-    return files.FilesAutomountMapParser()
+    return file_formats.FilesAutomountMapParser()
 
   def CreateMap(self):
     """Returns a new AutomountMap instance."""
-    return maps.AutomountMap()
+    return automount.AutomountMap()
 
 
 class PasswdUpdateGetter(UpdateGetter):
@@ -318,11 +326,11 @@ class PasswdUpdateGetter(UpdateGetter):
 
   def GetParser(self):
     """Returns a MapParser to parse FilesPasswd cache."""
-    return files.FilesPasswdMapParser()
+    return file_formats.FilesPasswdMapParser()
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
-    return maps.PasswdMap()
+    return passwd.PasswdMap()
 
 
 class ShadowUpdateGetter(UpdateGetter):
@@ -330,11 +338,11 @@ class ShadowUpdateGetter(UpdateGetter):
 
   def GetParser(self):
     """Returns a MapParser to parse FilesShadow cache."""
-    return files.FilesShadowMapParser()
+    return file_formats.FilesShadowMapParser()
 
   def CreateMap(self):
     """Returns a new ShadowMap instance to have ShadowMapEntries added to it."""
-    return maps.ShadowMap()
+    return shadow.ShadowMap()
 
 
 class GroupUpdateGetter(UpdateGetter):
@@ -342,23 +350,19 @@ class GroupUpdateGetter(UpdateGetter):
 
   def GetParser(self):
     """Returns a MapParser to parse FilesGroup cache."""
-    return files.FilesGroupMapParser()
+    return file_formats.FilesGroupMapParser()
 
   def CreateMap(self):
     """Returns a new GroupMap instance to have GroupMapEntries added to it."""
-    return maps.GroupMap()
+    return group.GroupMap()
 
 class NetgroupUpdateGetter(UpdateGetter):
   """Get netgroup updates."""
 
   def GetParser(self):
     """Returns a MapParser to parse FilesNetgroup cache."""
-    return files.FilesNetgroupMapParser()
+    return file_formats.FilesNetgroupMapParser()
 
   def CreateMap(self):
     """Returns a new NetgroupMap instance to have GroupMapEntries added to it."""
-    return maps.NetgroupMap()
-
-
-# Finally, register the Source
-base.RegisterImplementation(HttpFilesSource)
+    return netgroup.NetgroupMap()

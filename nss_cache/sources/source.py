@@ -26,56 +26,6 @@ import logging
 from nss_cache import config
 from nss_cache import error
 
-_source_implementations = {}
-
-
-def RegisterImplementation(source):
-  """Register a Source implementation with the factory method.
-
-  Sources being registered are expected to have a name attribute,
-  unique to themselves.
-
-  Child modules are expected to call this method in the file-level
-  scope.
-
-  Args:
-    source: A class type that is a subclass of Source
-
-  Returns:
-    Nothing
-
-  Raises:
-    RuntimeError: no 'name' entry in this source.
-  """
-  if 'name' not in source.__dict__:
-    raise RuntimeError("'name' not defined in Source %r" % (source,))
-
-  _source_implementations[source.name] = source
-
-
-def Create(conf):
-  """Source creation factory method.
-
-  Args:
-   conf: a dictionary of configuration key/value pairs, including one
-           required attribute 'name'.
-
-  Returns:
-    A Source instance.
-
-  Raises:
-    RuntimeError: no sources are registered with RegisterImplementation
-  """
-  if not _source_implementations:
-    raise RuntimeError('no source implementations exist')
-
-  source_name = conf['name']
-
-  if source_name not in _source_implementations.keys():
-    raise RuntimeError('source not implemented: %r' % (source_name,))
-
-  return _source_implementations[source_name](conf)
-
 
 class Source(object):
   """Abstract base class for map data sources."""
@@ -123,6 +73,14 @@ class Source(object):
       return self.GetAutomountMap(since, location=location)
 
     raise error.UnsupportedMap('Source can not fetch %s' % map_name)
+
+  def GetAutomountMap(self, since=None, location=None):
+    """Get an automount map from this source."""
+    raise NotImplementedError
+
+  def GetAutomountMasterMap(self):
+    """Get an automount map from this source."""
+    raise NotImplementedError
 
   def Verify(self):
     """Perform verification of the source availability.
@@ -180,6 +138,3 @@ class FileSource(object):
       return self.GetAutomountFile(dst_file, current_file, location=location)
 
     raise error.UnsupportedMap('Source can not fetch %s' % map_name)
-
-
-

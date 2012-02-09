@@ -27,7 +27,8 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import unittest
 
-from nss_cache import maps
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
 
 
 class TestNetgroupMap(unittest.TestCase):
@@ -36,22 +37,22 @@ class TestNetgroupMap(unittest.TestCase):
   def __init__(self, obj):
     """Set some default avalible data for testing."""
     super(TestNetgroupMap, self).__init__(obj)
-    self._good_entry = maps.NetgroupMapEntry()
+    self._good_entry = netgroup.NetgroupMapEntry()
     self._good_entry.name = 'foo'
     self._good_entry.entries = [('-', 'bob', None), 'othernetgroup']
     
   def testInit(self):
     """Construct an empty or seeded NetgroupMap."""
-    self.assertEquals(maps.NetgroupMap, type(maps.NetgroupMap()),
+    self.assertEquals(netgroup.NetgroupMap, type(netgroup.NetgroupMap()),
                       msg='failed to create an empty NetgroupMap')
-    nmap = maps.NetgroupMap([self._good_entry])
+    nmap = netgroup.NetgroupMap([self._good_entry])
     self.assertEquals(self._good_entry, nmap.PopItem(),
                       msg='failed to seed NetgroupMap with list')
-    self.assertRaises(TypeError, maps.NetgroupMap, ['string'])
+    self.assertRaises(TypeError, netgroup.NetgroupMap, ['string'])
 
   def testAdd(self):
     """Add throws an error for objects it can't verify."""
-    nmap = maps.NetgroupMap()
+    nmap = netgroup.NetgroupMap()
     entry = self._good_entry
     self.assert_(nmap.Add(entry), msg='failed to append new entry.')
 
@@ -60,7 +61,7 @@ class TestNetgroupMap(unittest.TestCase):
     ret_entry = nmap.PopItem()
     self.assertEquals(ret_entry, entry, msg='failed to pop correct entry.')
 
-    pentry = maps.PasswdMapEntry()
+    pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
     pentry.uid = 10
     pentry.gid = 10
@@ -72,11 +73,11 @@ class TestNetgroupMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty and seeded NetgroupMapEntry."""
-    self.assert_(maps.NetgroupMapEntry(),
+    self.assert_(netgroup.NetgroupMapEntry(),
                  msg='Could not create empty NetgroupMapEntry')
     entries = ['bar', ('baz', '-', None)]
     seed = {'name': 'foo', 'entries': entries}
-    entry = maps.NetgroupMapEntry(seed)
+    entry = netgroup.NetgroupMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded NetgroupMapEntry')
     self.assertEquals(entry.name, 'foo',
@@ -86,7 +87,7 @@ class TestNetgroupMapEntry(unittest.TestCase):
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
-    entry = maps.NetgroupMapEntry()
+    entry = netgroup.NetgroupMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.name, 'foo',
                       msg='Could not set attribute: name')
@@ -97,16 +98,17 @@ class TestNetgroupMapEntry(unittest.TestCase):
 
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
-    entry = maps.NetgroupMapEntry()
+    entry = netgroup.NetgroupMapEntry()
     
     # Empty object should bomb
     self.failIf(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
-    entry = maps.NetgroupMapEntry()
+    entry = netgroup.NetgroupMapEntry()
     entry.name = 'foo'
     self.assertEquals(entry.Key(), entry.name)
+
 
 if __name__ == '__main__':
   unittest.main()

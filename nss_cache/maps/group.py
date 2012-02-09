@@ -26,10 +26,10 @@ GroupMapEntry:  A group map entry based on the MapEntry class.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
-class GroupMap(base.Map):
+class GroupMap(maps.Map):
   """This class represents an NSS group map.
   
   Map data is stored as a list of MapEntry objects, see the abstract
@@ -47,7 +47,7 @@ class GroupMap(base.Map):
     return super(GroupMap, self).Add(entry)
 
 
-class GroupMapEntry(base.MapEntry):
+class GroupMapEntry(maps.MapEntry):
   """This class represents NSS group map entries."""
   # Using slots saves us over 2x memory on large maps.
   __slots__ = ('name', 'passwd', 'gid', 'members')

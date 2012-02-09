@@ -26,10 +26,10 @@ AutomountMapEntry:  A automount map entry based on the MapEntry class.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
-class AutomountMap(base.Map):
+class AutomountMap(maps.Map):
   """This class represents an NSS automount map.
   
   Map data is stored as a list of MapEntry objects, see the abstract
@@ -47,7 +47,7 @@ class AutomountMap(base.Map):
     return super(AutomountMap, self).Add(entry)
 
 
-class AutomountMapEntry(base.MapEntry):
+class AutomountMapEntry(maps.MapEntry):
   """This class represents NSS automount map entries."""
   __slots__ = ('key', 'location', 'options')
   _KEY = 'key'

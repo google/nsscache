@@ -27,7 +27,9 @@ import subprocess
 
 from nss_cache import config
 from nss_cache import error
-from nss_cache import maps
+from nss_cache.maps import group
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
 # TODO(v): this should be a config option someday, but it's as standard
 # as libc so at the moment we'll leave it be for simplicity.
@@ -49,10 +51,10 @@ def GetMap(map_name):
 
 def GetPasswdMap():
   """Returns a PasswdMap built from nss calls."""
-  passwd_map = maps.PasswdMap()
+  passwd_map = passwd.PasswdMap()
 
   for nss_entry in pwd.getpwall():
-    map_entry = maps.PasswdMapEntry()
+    map_entry = passwd.PasswdMapEntry()
     map_entry.name = nss_entry[0]
     map_entry.passwd = nss_entry[1]
     map_entry.uid = nss_entry[2]
@@ -67,10 +69,10 @@ def GetPasswdMap():
 
 def GetGroupMap():
   """Returns a GroupMap built from nss calls."""
-  group_map = maps.GroupMap()
+  group_map = group.GroupMap()
 
   for nss_entry in grp.getgrall():
-    map_entry = maps.GroupMapEntry()
+    map_entry = group.GroupMapEntry()
     map_entry.name = nss_entry[0]
     map_entry.passwd = nss_entry[1]
     map_entry.gid = nss_entry[2]
@@ -85,14 +87,15 @@ def GetGroupMap():
 def GetShadowMap():
   """Returns a ShadowMap built from nss calls."""
   getent = _SpawnGetent(config.MAP_SHADOW)
+  (getent_stdout, getent_stderr) = getent.communicate()
 
   # The following is going to be map-specific each time, so no point in
   # making more methods.
-  shadow_map = maps.ShadowMap()
+  shadow_map = shadow.ShadowMap()
 
-  for line in getent.fromchild:
+  for line in getent_stdout.split():
     nss_entry = line.strip().split(':')
-    map_entry = maps.ShadowMapEntry()
+    map_entry = shadow.ShadowMapEntry()
     map_entry.name = nss_entry[0]
     map_entry.passwd = nss_entry[1]
     if nss_entry[2] != '':
@@ -111,12 +114,10 @@ def GetShadowMap():
       map_entry.flag = int(nss_entry[8])
     shadow_map.Add(map_entry)
 
-  error_stream = getent.childerr.read()
+  if getent_stderr:
+    logging.debug('captured error %s', getent_stderr)
 
-  if error_stream:
-    logging.debug('captured error %s', error_stream)
-
-  retval = getent.wait()
+  retval = getent.returncode
 
   if retval != 0:
     logging.warning('%s returned error code: %d', GETENT, retval)
@@ -127,6 +128,6 @@ def GetShadowMap():
 def _SpawnGetent(map_name):
   """Run 'getent map' in a subprocess for reading NSS data."""
   getent = subprocess.Popen([GETENT, map_name],
-                            stderr=subprocess.STDOUT)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
   return getent

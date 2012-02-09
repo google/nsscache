@@ -25,10 +25,11 @@ specifically tested in passwd_test.py instead.
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import time
 import unittest
 
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
 class TestMap(unittest.TestCase):
@@ -36,7 +37,37 @@ class TestMap(unittest.TestCase):
   
   def testIsAbstract(self):
     """Creating a Map should raise a TypeError."""
-    self.assertRaises(TypeError, base.Map)
+    self.assertRaises(TypeError, maps.Map)
+
+  def testModifyTimestamp(self):
+    class StubMap(maps.Map):
+      pass
+
+    foo = StubMap()
+    now = time.gmtime()
+    foo.SetModifyTimestamp(now)
+    self.assertEquals(now,
+                      foo.GetModifyTimestamp())
+    self.assertRaises(TypeError,
+                      foo.SetModifyTimestamp,
+                      1)
+    foo.SetModifyTimestamp(None)
+    self.assertEqual(None, foo.GetModifyTimestamp())
+    
+  def testUpdateTimestamp(self):
+    class StubMap(maps.Map):
+      pass
+
+    foo = StubMap()
+    now = time.gmtime()
+    foo.SetUpdateTimestamp(now)
+    self.assertEquals(now,
+                      foo.GetUpdateTimestamp())
+    self.assertRaises(TypeError,
+                      foo.SetUpdateTimestamp,
+                      1)
+    foo.SetUpdateTimestamp(None)
+    self.assertEqual(None, foo.GetUpdateTimestamp())
 
 
 class TestMapEntry(unittest.TestCase):
@@ -44,7 +75,7 @@ class TestMapEntry(unittest.TestCase):
   
   def testIsAbstract(self):
     """Creating a MapEntry should raise a TypeError."""
-    self.assertRaises(TypeError, base.MapEntry)
+    self.assertRaises(TypeError, maps.MapEntry)
 
 
 if __name__ == '__main__':

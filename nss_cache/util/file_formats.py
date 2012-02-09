@@ -23,7 +23,11 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import logging
 
-from nss_cache import maps
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
 try:
   SetType = set
@@ -68,7 +72,7 @@ class FilesPasswdMapParser(FilesMapParser):
   def _ReadEntry(self, entry):
     """Return a PasswdMapEntry from a record in the target cache."""
     entry = entry.split(':')
-    map_entry = maps.PasswdMapEntry()
+    map_entry = passwd.PasswdMapEntry()
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = entry[0]
     map_entry.passwd = entry[1]
@@ -86,7 +90,7 @@ class FilesGroupMapParser(FilesMapParser):
   def _ReadEntry(self, line):
     """Return a GroupMapEntry from a record in the target cache."""
     line = line.split(':')
-    map_entry = maps.GroupMapEntry()
+    map_entry = group.GroupMapEntry()
     # map entries expect strict typing, so convert as appropriate
     map_entry.name = line[0]
     map_entry.passwd = line[1]
@@ -101,7 +105,7 @@ class FilesShadowMapParser(FilesMapParser):
   def _ReadEntry(self, line):
     """Return a ShadowMapEntry from a record in the target cache."""
     line = line.split(':')
-    map_entry = maps.ShadowMapEntry()
+    map_entry = shadow.ShadowMapEntry()
     # map entries expect strict typing, so convert as appropriate
     map_entry.name = line[0]
     map_entry.passwd = line[1]
@@ -127,7 +131,7 @@ class FilesNetgroupMapParser(FilesMapParser):
 
   def _ReadEntry(self, line):
     """Return a NetgroupMapEntry from a record in the target cache."""
-    map_entry = maps.NetgroupMapEntry()
+    map_entry = netgroup.NetgroupMapEntry()
 
     # the first word is our name, but since the whole line is space delimited
     # avoid .split(' ') since groups can have thousands of members.
@@ -162,7 +166,7 @@ class FilesAutomountMapParser(FilesMapParser):
       An AutomountMapEntry if the line is successfully parsed, None otherwise.
     """
     line = line.split()
-    map_entry = maps.AutomountMapEntry()
+    map_entry = automount.AutomountMapEntry()
     try:
       map_entry.key = line[0]
       if len(line) > 2:

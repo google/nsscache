@@ -26,11 +26,18 @@ import time
 import ldap
 
 from nss_cache import error
-from nss_cache import maps
-from nss_cache.sources import base
+from nss_cache.maps import automount
+from nss_cache.maps import group
+from nss_cache.maps import netgroup
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
+from nss_cache.sources import source
 
-
-class LdapSource(base.Source):
+def RegisterImplementation(registration_callback):
+  registration_callback(LdapSource)
+  
+  
+class LdapSource(source.Source):
   """Source for data in LDAP.
 
   After initialisation, one can search the data source for 'objects'
@@ -454,12 +461,12 @@ class PasswdUpdateGetter(UpdateGetter):
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
-    return maps.PasswdMap()
+    return passwd.PasswdMap()
 
   def Transform(self, obj):
     """Transforms a LDAP posixAccount data structure into a PasswdMapEntry."""
 
-    pw = maps.PasswdMapEntry()
+    pw = passwd.PasswdMapEntry()
 
     if 'gecos' in obj:
       pw.gecos = obj['gecos'][0]
@@ -494,12 +501,12 @@ class GroupUpdateGetter(UpdateGetter):
 
   def CreateMap(self):
     """Return a GroupMap instance."""
-    return maps.GroupMap()
+    return group.GroupMap()
 
   def Transform(self, obj):
     """Transforms a LDAP posixGroup object into a group(5) entry."""
 
-    gr = maps.GroupMapEntry()
+    gr = group.GroupMapEntry()
 
     gr.name = obj['cn'][0]
     # group passwords are deferred to gshadow
@@ -527,11 +534,11 @@ class ShadowUpdateGetter(UpdateGetter):
 
   def CreateMap(self):
     """Return a ShadowMap instance."""
-    return maps.ShadowMap()
+    return shadow.ShadowMap()
 
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
-    shadow_ent = maps.ShadowMapEntry()
+    shadow_ent = shadow.ShadowMapEntry()
     shadow_ent.name = obj['uid'][0]
     # TODO(jaq): does nss_ldap check the contents of the userPassword
     # attribute?
@@ -571,11 +578,11 @@ class NetgroupUpdateGetter(UpdateGetter):
 
   def CreateMap(self):
     """Return a NetgroupMap instance."""
-    return maps.NetgroupMap()
+    return netgroup.NetgroupMap()
 
   def Transform(self, obj):
     """Transforms an LDAP nisNetgroup object into a netgroup(5) entry."""
-    netgroup_ent = maps.NetgroupMapEntry()
+    netgroup_ent = netgroup.NetgroupMapEntry()
     netgroup_ent.name = obj['cn'][0]
 
     entries = set()
@@ -600,11 +607,11 @@ class AutomountUpdateGetter(UpdateGetter):
 
   def CreateMap(self):
     """Return a AutomountMap instance."""
-    return maps.AutomountMap()
+    return automount.AutomountMap()
 
   def Transform(self, obj):
     """Transforms an LDAP automount object into an autofs(5) entry."""
-    automount_ent = maps.AutomountMapEntry()
+    automount_ent = automount.AutomountMapEntry()
     automount_ent.key = obj['cn'][0]
 
     automount_information = obj['automountInformation'][0]
@@ -619,6 +626,3 @@ class AutomountUpdateGetter(UpdateGetter):
 
     return automount_ent
 
-
-# Finally, register the Source
-base.RegisterImplementation(LdapSource)

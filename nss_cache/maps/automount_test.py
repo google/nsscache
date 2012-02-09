@@ -27,7 +27,8 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import unittest
 
-from nss_cache import maps
+from nss_cache.maps import automount
+from nss_cache.maps import passwd
 
 
 class TestAutomountMap(unittest.TestCase):
@@ -36,23 +37,23 @@ class TestAutomountMap(unittest.TestCase):
   def __init__(self, obj):
     """Set some default avalible data for testing."""
     super(TestAutomountMap, self).__init__(obj)
-    self._good_entry = maps.AutomountMapEntry()
+    self._good_entry = automount.AutomountMapEntry()
     self._good_entry.key = 'foo'
     self._good_entry.options = '-tcp'
     self._good_entry.location = 'nfsserver:/mah/stuff'
     
   def testInit(self):
     """Construct an empty or seeded AutomountMap."""
-    self.assertEquals(maps.AutomountMap, type(maps.AutomountMap()),
+    self.assertEquals(automount.AutomountMap, type(automount.AutomountMap()),
                       msg='failed to create an empty AutomountMap')
-    amap = maps.AutomountMap([self._good_entry])
+    amap = automount.AutomountMap([self._good_entry])
     self.assertEquals(self._good_entry, amap.PopItem(),
                       msg='failed to seed AutomountMap with list')
-    self.assertRaises(TypeError, maps.AutomountMap, ['string'])
+    self.assertRaises(TypeError, automount.AutomountMap, ['string'])
 
   def testAdd(self):
     """Add throws an error for objects it can't verify."""
-    amap = maps.AutomountMap()
+    amap = automount.AutomountMap()
     entry = self._good_entry
     self.assert_(amap.Add(entry), msg='failed to append new entry.')
 
@@ -61,7 +62,7 @@ class TestAutomountMap(unittest.TestCase):
     ret_entry = amap.PopItem()
     self.assertEquals(ret_entry, entry, msg='failed to pop correct entry.')
 
-    pentry = maps.PasswdMapEntry()
+    pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
     pentry.uid = 10
     pentry.gid = 10
@@ -73,10 +74,10 @@ class TestAutomountMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty and seeded AutomountMapEntry."""
-    self.assert_(maps.AutomountMapEntry(),
+    self.assert_(automount.AutomountMapEntry(),
                  msg='Could not create empty AutomountMapEntry')
     seed = {'key': 'foo', 'location': '/dev/sda1'}
-    entry = maps.AutomountMapEntry(seed)
+    entry = automount.AutomountMapEntry(seed)
     self.assert_(entry.Verify(),
                  msg='Could not verify seeded AutomountMapEntry')
     self.assertEquals(entry.key, 'foo',
@@ -88,7 +89,7 @@ class TestAutomountMapEntry(unittest.TestCase):
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
-    entry = maps.AutomountMapEntry()
+    entry = automount.AutomountMapEntry()
     entry.key = 'foo'
     self.assertEquals(entry.key, 'foo',
                       msg='Could not set attribute: key')
@@ -101,16 +102,17 @@ class TestAutomountMapEntry(unittest.TestCase):
 
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
-    entry = maps.AutomountMapEntry()
+    entry = automount.AutomountMapEntry()
         
     # Empty object should bomb
     self.failIf(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'key' attribute."""
-    entry = maps.AutomountMapEntry()
+    entry = automount.AutomountMapEntry()
     entry.key = 'foo'
     self.assertEquals(entry.Key(), entry.key)
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -16,44 +16,22 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Unit tests for caches/base.py."""
+"""Unit tests for caches/caches.py."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import os
-import pmock
 import stat
 import tempfile
 import unittest
 
-from nss_cache.caches import base
+import mox
+
 from nss_cache import config
+from nss_cache.caches import caches
 
 
-class TestCacheFactory(unittest.TestCase):
-
-  def testRegister(self):
-
-    class DummyCache(base.Cache):
-      pass
-
-    old_cache_implementations = base._cache_implementations
-    base._cache_implementations = {}
-    base.RegisterImplementation('dummy', 'dummy', DummyCache)
-    self.failUnlessEqual(1, len(base._cache_implementations))
-    self.failUnlessEqual(1, len(base._cache_implementations['dummy']))
-    self.failUnlessEqual(DummyCache,
-                         base._cache_implementations['dummy']['dummy'])
-    base._cache_implementations = old_cache_implementations
-
-  def testCreateWithNoImplementations(self):
-    old_cache_implementations = base._cache_implementations
-    base._cache_implementations = {}
-    self.assertRaises(RuntimeError, base.Create, {}, 'map_name')
-    base._cache_implementations = old_cache_implementations
-
-
-class FakeCacheCls(base.Cache):
+class FakeCacheCls(caches.Cache):
 
   CACHE_FILENAME = 'shadow'
   def __init__(self, config, map_name):
@@ -67,7 +45,7 @@ class FakeCacheCls(base.Cache):
                         self.CACHE_FILENAME + '.test')
 
 
-class TestCls(pmock.MockTestCase):
+class TestCls(mox.MoxTestBase):
 
   def setUp(self):
     self.workdir = tempfile.mkdtemp()
@@ -100,36 +78,16 @@ class TestCls(pmock.MockTestCase):
     os.unlink(cache.GetCacheFilename())
 
 
-class TestCache(pmock.MockTestCase):
-
-  def setUp(self):
-    class DummyLogger(object):
-      def debug(self, message):
-        pass
-      
-      def info(self, message):
-        pass
-      
-      def warning(self, message):
-        pass
-
-    self.dummy_logger = DummyLogger()
-
+class TestCache(mox.MoxTestBase):
   def testWriteMap(self):
-
-    class DummyCache(pmock.Mock, base.Cache):
-      def _Commit(self):
-        pass
-
-    cache_map = DummyCache()
-    cache_map\
-                       .expects(pmock.once())\
-                       .Write(pmock.eq('writable_map'))\
-                       .will(pmock.return_value('entries_written'))
-    cache_map\
-                       .expects(pmock.once())\
-                       .Verify(pmock.eq('entries_written'))\
-                       .will(pmock.return_value(True))
+    cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
+    self.mox.StubOutWithMock(cache_map, '_Commit')
+    self.mox.StubOutWithMock(cache_map, 'Write')
+    self.mox.StubOutWithMock(cache_map, 'Verify')
+    cache_map._Commit()
+    cache_map.Write('writable_map').AndReturn('entries_written')
+    cache_map.Verify('entries_written').AndReturn(True)
+    self.mox.ReplayAll()
 
     self.assertEqual(0, cache_map.WriteMap('writable_map'))
 

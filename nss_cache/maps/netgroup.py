@@ -41,10 +41,10 @@ and similar cases.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
-class NetgroupMap(base.Map):
+class NetgroupMap(maps.Map):
   """This class represents an NSS netgroup map.
   
   Map data is stored as a list of MapEntry objects, see the abstract
@@ -62,7 +62,7 @@ class NetgroupMap(base.Map):
     return super(NetgroupMap, self).Add(entry)
 
 
-class NetgroupMapEntry(base.MapEntry):
+class NetgroupMapEntry(maps.MapEntry):
   """This class represents NSS netgroup map entries.
 
   The entries attribute is a list containing an arbitray mix of either

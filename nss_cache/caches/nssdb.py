@@ -26,11 +26,19 @@ import subprocess
 
 from nss_cache import config
 from nss_cache import error
-from nss_cache import maps
-from nss_cache.caches import base
+from nss_cache.caches import caches
+from nss_cache.maps import group 
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
+def RegisterAllImplementations(register_callback):
+  """Register our cache classes independently from the import scheme."""
+  register_callback('nssdb', 'passwd', NssDbPasswdHandler)
+  register_callback('nssdb', 'group', NssDbGroupHandler)
+  register_callback('nssdb', 'shadow', NssDbShadowHandler)
+  
 
-class NssDbCache(base.Cache):
+class NssDbCache(caches.Cache):
   """An implementation of a Cache specific to nss_db.
 
   nss_db uses one Berkeley DB database per map for the cache.  This class
@@ -58,11 +66,11 @@ class NssDbCache(base.Cache):
                                      automount_mountpoint=automount_mountpoint)
     self.makedb = conf.get('makedb', '/usr/bin/makedb')
 
-  def GetMap(self, cache_info=None):
+  def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
     Args:
-      cache_info: unused by this implementation of base.Cache
+      cache_filename: unused by this implementation of caches.Cache
     Returns:
       a Map containing the map cache
     """
@@ -297,7 +305,7 @@ class NssDbPasswdHandler(NssDbCache):
       entry = entry[:-1]
 
     entry = entry.split(':')
-    map_entry = maps.PasswdMapEntry()
+    map_entry = passwd.PasswdMapEntry()
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = entry[0]
     map_entry.passwd = entry[1]
@@ -320,9 +328,6 @@ class NssDbPasswdHandler(NssDbCache):
     """
     return ['.%s' % entry.name,
             '=%d' % entry.uid]
-
-
-base.RegisterImplementation('nssdb', 'passwd', NssDbPasswdHandler)
 
 
 class NssDbGroupHandler(NssDbCache):
@@ -384,7 +389,7 @@ class NssDbGroupHandler(NssDbCache):
       entry = entry[:-1]
 
     entry = entry.split(':')
-    map_entry = maps.GroupMapEntry()
+    map_entry = group.GroupMapEntry()
     # map entries expect strict typing, so convert as appropriate
     map_entry.name = entry[0]
     map_entry.passwd = entry[1]
@@ -404,9 +409,6 @@ class NssDbGroupHandler(NssDbCache):
     """
     return ['.%s' % entry.name,
             '=%d' % entry.gid]
-
-
-base.RegisterImplementation('nssdb', 'group', NssDbGroupHandler)
 
 
 class NssDbShadowHandler(NssDbCache):
@@ -476,7 +478,7 @@ class NssDbShadowHandler(NssDbCache):
       entry = entry[:-1]
 
     entry = entry.split(':')
-    map_entry = maps.ShadowMapEntry()
+    map_entry = shadow.ShadowMapEntry()
     # map entries expect strict typing, so convert as appropriate
     map_entry.name = entry[0]
     map_entry.passwd = entry[1]
@@ -506,6 +508,3 @@ class NssDbShadowHandler(NssDbCache):
       a list of strings
     """
     return ['.%s' % entry.name]
-
-
-base.RegisterImplementation('nssdb', 'shadow', NssDbShadowHandler)

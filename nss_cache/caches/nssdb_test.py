@@ -27,23 +27,30 @@ import shutil
 import tempfile
 import time
 import unittest
-import pmock
+import sys
+
+import mox
 
 from nss_cache import error
-from nss_cache import maps
+
 from nss_cache.caches import nssdb
+from nss_cache.maps import group
+from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 
 
 class TestSkipped(Exception):
   """Exception to raise if a test cannot be run."""
 
 
-class TestNssDbPasswdHandler(pmock.MockTestCase):
+class TestNssDbPasswdHandler(mox.MoxTestBase):
 
   def setUp(self):
+    super(TestNssDbPasswdHandler, self).setUp()
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
+    super(TestNssDbPasswdHandler, self).tearDown()
     # remove the test working directory
     shutil.rmtree(self.workdir)
 
@@ -71,24 +78,13 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
   def testNssDbPasswdHandlerWriteData(self):
     entry_string = 'foo:x:1000:1000:foo:/:/bin/sh'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % entry_string))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('=1000 %s\n' % entry_string))\
-                  .id('write #2')\
-                  .after('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % entry_string))\
-                  .id('write #3')\
-                  .after('write #2')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % entry_string)
+    makedb_stdin.write('=1000 %s\n' % entry_string)
+    makedb_stdin.write('00 %s\n' % entry_string)
 
-    passwd_map = maps.PasswdMap()
-    passwd_map_entry = maps.PasswdMapEntry()
+    passwd_map = passwd.PasswdMap()
+    passwd_map_entry = passwd.PasswdMapEntry()
     passwd_map_entry.name = 'foo'
     passwd_map_entry.uid = 1000
     passwd_map_entry.gid = 1000
@@ -101,42 +97,25 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     writer = nssdb.NssDbPasswdHandler({'makedb': '/bin/false',
                                        'dir': '/tmp'})
 
+    self.mox.ReplayAll()
+
     writer.WriteData(makedb_stdin, passwd_map_entry, 0)
 
   def testNssDbPasswdHandlerWrite(self):
     ent = 'foo:x:1000:1000:foo:/:/bin/sh'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % ent))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('=1000 %s\n' % ent))\
-                  .id('write #2')\
-                  .after('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % ent))\
-                  .id('write #3')\
-                  .after('write #2')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .method('close')\
-                  .after('write #3')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % ent)
+    makedb_stdin.write('=1000 %s\n' % ent)
+    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.close()
 
-    makedb_stdout = self.mock()
-    makedb_stdout\
-                   .expects(pmock.once())\
-                   .read()\
-                   .will(pmock.return_value(''))
-    makedb_stdout\
-                   .expects(pmock.once())\
-                   .method('close')
+    makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.read().AndReturn('')
+    makedb_stdout.close()
 
-    m = maps.PasswdMap()
-    pw = maps.PasswdMapEntry()
+    m = passwd.PasswdMap()
+    pw = passwd.PasswdMapEntry()
     pw.name = 'foo'
     pw.uid = 1000
     pw.gid = 1000
@@ -162,7 +141,10 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
 
     writer = nssdb.NssDbPasswdHandler({'makedb': '/usr/bin/makedb',
                                        'dir': self.workdir})
+
     writer._SpawnMakeDb = SpawnMakeDb
+
+    self.mox.ReplayAll()
 
     writer.Write(m)
 
@@ -176,8 +158,8 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     if not os.path.exists('/usr/bin/makedb'):
       raise TestSkipped('no /usr/bin/makedb')
     # create a map
-    m = maps.PasswdMap()
-    e = maps.PasswdMapEntry()
+    m = passwd.PasswdMap()
+    e = passwd.PasswdMapEntry()
     e.name = 'foo'
     e.uid = 1000
     e.gid = 2000
@@ -210,8 +192,8 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     fltr = TestFilter()
     logging.getLogger('NssDbPasswdHandler').addFilter(fltr)
     # create a map
-    m = maps.PasswdMap()
-    e = maps.PasswdMapEntry()
+    m = passwd.PasswdMap()
+    e = passwd.PasswdMapEntry()
     e.name = 'foo'
     e.uid = 1000
     e.gid = 2000
@@ -252,12 +234,14 @@ class TestNssDbPasswdHandler(pmock.MockTestCase):
     os.unlink(temp_filename)
 
 
-class TestNssDbGroupHandler(pmock.MockTestCase):
+class TestNssDbGroupHandler(mox.MoxTestBase):
 
   def setUp(self):
+    super(TestNssDbGroupHandler, self).setUp()
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
+    super(TestNssDbGroupHandler, self).tearDown()
     # remove the test working directory
     shutil.rmtree(self.workdir)
 
@@ -282,24 +266,13 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
   def testNssDbGroupHandlerWriteData(self):
     ent = 'foo:x:1000:bar'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % ent))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('=1000 %s\n' % ent))\
-                  .id('write #2')\
-                  .after('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % ent))\
-                  .id('write #3')\
-                  .after('write #2')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % ent)
+    makedb_stdin.write('=1000 %s\n' % ent)
+    makedb_stdin.write('00 %s\n' % ent)
 
-    m = maps.GroupMap()
-    g = maps.GroupMapEntry()
+    m = group.GroupMap()
+    g = group.GroupMapEntry()
     g.name = 'foo'
     g.gid = 1000
     g.passwd = 'x'
@@ -310,42 +283,25 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     writer = nssdb.NssDbGroupHandler({'makedb': '/bin/false',
                                       'dir': '/tmp'})
 
+    self.mox.ReplayAll()
+
     writer.WriteData(makedb_stdin, g, 0)
 
   def testNssDbGroupHandlerWrite(self):
     ent = 'foo:x:1000:bar'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % ent))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('=1000 %s\n' % ent))\
-                  .id('write #2')\
-                  .after('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % ent))\
-                  .id('write #3')\
-                  .after('write #2')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .method('close')\
-                  .after('write #3')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % ent)
+    makedb_stdin.write('=1000 %s\n' % ent)
+    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.close()
 
-    makedb_stdout = self.mock()
-    makedb_stdout\
-                   .expects(pmock.once())\
-                   .read()\
-                   .will(pmock.return_value(''))
-    makedb_stdout\
-                   .expects(pmock.once())\
-                   .method('close')
+    makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.read().AndReturn('')
+    makedb_stdout.close()
 
-    m = maps.GroupMap()
-    g = maps.GroupMapEntry()
+    m = group.GroupMap()
+    g = group.GroupMapEntry()
     g.name = 'foo'
     g.gid = 1000
     g.passwd = 'x'
@@ -369,21 +325,22 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     writer = nssdb.NssDbGroupHandler({'makedb': '/usr/bin/makedb',
                                       'dir': self.workdir})
     writer._SpawnMakeDb = SpawnMakeDb
+    self.mox.ReplayAll()
 
     writer.Write(m)
 
     tmpgroup = os.path.join(self.workdir, 'group.db')
     self.failIf(os.path.exists(tmpgroup))
-    # # just clean it up, Write() doesn't Commit()
-    # writer._Rollback()
+    # just clean it up, Write() doesn't Commit()
+    writer._Rollback()
 
   def testVerify(self):
     # Can't test if no makedb
     if not os.path.exists('/usr/bin/makedb'):
       raise TestSkipped('no /usr/bin/makedb')
     # create a map
-    m = maps.GroupMap()
-    e = maps.GroupMapEntry()
+    m = group.GroupMap()
+    e = group.GroupMapEntry()
     e.name = 'foo'
     e.gid = 2000
     self.failUnless(m.Add(e))
@@ -414,8 +371,8 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     logging.getLogger('NssDbGroupHandler').addFilter(fltr)
 
     # create a map
-    m = maps.GroupMap()
-    e = maps.GroupMapEntry()
+    m = group.GroupMap()
+    e = group.GroupMapEntry()
     e.name = 'foo'
     e.gid = 2000
     self.failUnless(m.Add(e))
@@ -441,12 +398,14 @@ class TestNssDbGroupHandler(pmock.MockTestCase):
     logging.getLogger('NssDbGroupHandler').removeFilter(fltr)
 
 
-class TestNssDbShadowHandler(pmock.MockTestCase):
+class TestNssDbShadowHandler(mox.MoxTestBase):
 
   def setUp(self):
+    super(TestNssDbShadowHandler, self).setUp()
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
+    super(TestNssDbShadowHandler, self).tearDown()
     # remove the test working directory
     shutil.rmtree(self.workdir)
 
@@ -470,19 +429,12 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
   def testNssDbShadowHandlerWriteData(self):
     ent = 'foo:!!:::::::0'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % ent))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % ent))\
-                  .id('write #2')\
-                  .after('write #1')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % ent)
+    makedb_stdin.write('00 %s\n' % ent)
 
-    m = maps.ShadowMap()
-    s = maps.ShadowMapEntry()
+    m = shadow.ShadowMap()
+    s = shadow.ShadowMapEntry()
     s.name = 'foo'
 
     self.failUnless(m.Add(s))
@@ -490,34 +442,24 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     writer = nssdb.NssDbShadowHandler({'makedb': '/bin/false',
                                        'dir': '/tmp'})
 
+    self.mox.ReplayAll()
+
     writer.WriteData(makedb_stdin, s, 0)
 
   def testNssDbShadowHandlerWrite(self):
     ent = 'foo:*:::::::0'
 
-    makedb_stdin = self.mock()
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('.foo %s\n' % ent))\
-                  .id('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .write(pmock.eq('00 %s\n' % ent))\
-                  .id('write #2')\
-                  .after('write #1')
-    makedb_stdin\
-                  .expects(pmock.once())\
-                  .method('close')\
-                  .after('write #2')
+    makedb_stdin = self.mox.CreateMock(sys.stdin)
+    makedb_stdin.write('.foo %s\n' % ent)
+    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.close()
 
-    makedb_stdout = self.mock()
-    makedb_stdout.expects(pmock.once()).read().will(pmock.return_value(''))
-    makedb_stdout\
-                   .expects(pmock.once())\
-                   .method('close')
+    makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.read().AndReturn('')
+    makedb_stdout.close()
 
-    m = maps.ShadowMap()
-    s = maps.ShadowMapEntry()
+    m = shadow.ShadowMap()
+    s = shadow.ShadowMapEntry()
     s.name = 'foo'
     s.passwd = '*'
     s.Verify()
@@ -539,6 +481,7 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     writer = nssdb.NssDbShadowHandler({'makedb': '/usr/bin/makedb',
                                        'dir': self.workdir})
     writer._SpawnMakeDb = SpawnMakeDb
+    self.mox.ReplayAll()
 
     writer.Write(m)
 
@@ -551,8 +494,8 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     # Can't test if no makedb
     if not os.path.exists('/usr/bin/makedb'):
       raise TestSkipped('no /usr/bin/makedb')
-    m = maps.ShadowMap()
-    s = maps.ShadowMapEntry()
+    m = shadow.ShadowMap()
+    s = shadow.ShadowMapEntry()
     s.name = 'foo'
     self.failUnless(m.Add(s))
 
@@ -584,8 +527,8 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
     logging.getLogger('NssDbShadowHandler').addFilter(fltr)
 
     # create a map
-    m = maps.ShadowMap()
-    s = maps.ShadowMapEntry()
+    m = shadow.ShadowMap()
+    s = shadow.ShadowMapEntry()
     s.name = 'foo'
     self.failUnless(m.Add(s))
 
@@ -613,18 +556,19 @@ class TestNssDbShadowHandler(pmock.MockTestCase):
 class TestNssDbCache(unittest.TestCase):
 
   def setUp(self):
+    super(TestNssDbCache, self).setUp()
     self.workdir = tempfile.mkdtemp()
 
   def tearDown(self):
-    # remove the test working directory
-    os.rmdir(self.workdir)
+    super(TestNssDbCache, self).tearDown()
+    shutil.rmtree(self.workdir)
 
   def testWriteTestBdb(self):
     # Can't test if no makedb
     if not os.path.exists('/usr/bin/makedb'):
       raise TestSkipped('no /usr/bin/makedb')
-    data = maps.PasswdMap()
-    pw = maps.PasswdMapEntry()
+    data = passwd.PasswdMap()
+    pw = passwd.PasswdMapEntry()
     pw.name = 'foo'
     pw.passwd = 'x'
     pw.uid = 1000
@@ -729,7 +673,7 @@ class TestNssDbCache(unittest.TestCase):
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     cache_map = cache.GetMap()
-    self.assertEquals(False, cache_map.Merge(maps.PasswdMap()))
+    self.assertEquals(False, cache_map.Merge(passwd.PasswdMap()))
     os.unlink(update_ts_filename)
     os.unlink(db_filename)
 

@@ -31,6 +31,11 @@ class CacheNotFound(Error):
   pass
 
 
+class CacheInvalid(Error):
+  """Raised when a cache is invalid."""
+  pass
+
+
 class CommandParseError(Error):
   """Raised when the command line fails to parse correctly."""
   pass
@@ -69,3 +74,7 @@ class InvalidMap(Error):
 class SourceUnavailable(Error):
   """Raised when a source is unavailable."""
   pass
+
+
+class InvalidMerge(Error):
+  """An invalid merge was attempted."""

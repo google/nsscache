@@ -64,8 +64,10 @@ class Map(object):
     Args:
       iterable: A tuple or list that can be iterated over and added to the Map,
         defaults to None.
-      modify_time: An optional modify time for this Map, defaults to None.
-      update_time: An optional update tiem for this Map, defaults to None.
+      modify_time: An optional modify time.struct_time for this Map,
+        defaults to None.
+      update_time: An optional update time.struct_time for this Map,
+         defaults to None.
 
     Raises:
       TypeError: If the objects in the iterable are of the wrong type.
@@ -73,8 +75,7 @@ class Map(object):
     if self.__class__ is Map:
       raise TypeError('Map is an abstract class.')
     self._data = {}
-    # Last mod timestamp should be either None or an integer number
-    # of seconds since the epoch.  (aka unix time_t)
+    # Last mod timestamp should be either None or a time.struct_time.
     self._last_modification_timestamp = modify_time
     # Last update timestamp, same as previous
     self._last_update_timestamp = update_time
@@ -160,7 +161,7 @@ class Map(object):
 
     Raises:
       TypeError: Merging differently typed Maps.
-      UnsupportedMap: Attempt to Merge an older map into a newer one.
+      InvalidMerge: Attempt to Merge an older map into a newer one.
     """
     if type(self) != type(other):
       raise TypeError(
@@ -168,12 +169,16 @@ class Map(object):
           (type(self), type(other)))
 
     if other.GetModifyTimestamp() < self.GetModifyTimestamp():
-      raise error.UnsupportedMap(
-          'Attempt to Merge a map with an older modify time into a newer one.')
+      raise error.InvalidMerge(
+          'Attempt to Merge a map with an older modify time into a newer one: '
+          'other: %s, self: %s' %
+          (other.GetModifyTimestamp(), self.GetModifyTimestamp()))
 
     if other.GetUpdateTimestamp() < self.GetUpdateTimestamp():
-      raise error.UnsupportedMap(
-          'Attempt to Merge a map with an older update time into a newer one.')
+      raise error.InvalidMerge(
+          'Attempt to Merge a map with an older update time into a newer one: '
+          'other: %s, self: %s' %
+          (other.GetUpdateTimestamp(), self.GetUpdateTimestamp()))
 
     self.log.info('merging from a map of %d entries', len(other))
 
@@ -239,10 +244,10 @@ class Map(object):
     Raises:
       TypeError: The argument is not an int or None.
     """
-    if value is None or isinstance(value, int):
+    if value is None or isinstance(value, time.struct_time):
       self._last_update_timestamp = value
     else:
-      raise TypeError('timestamp can only be int or None, not %r',
+      raise TypeError('timestamp can only be None or time.struct_time, not %r',
                       value)
 
   def GetUpdateTimestamp(self):

@@ -26,10 +26,10 @@ PasswdMapEntry:  A passwd map entry based on the MapEntry class.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-from nss_cache.maps import base
+from nss_cache.maps import maps
 
 
-class PasswdMap(base.Map):
+class PasswdMap(maps.Map):
   """This class represents an NSS passwd map.
   
   Map data is stored as a list of MapEntry objects, see the abstract
@@ -53,7 +53,7 @@ class PasswdMap(base.Map):
     return super(PasswdMap, self).Add(entry)
 
 
-class PasswdMapEntry(base.MapEntry):
+class PasswdMapEntry(maps.MapEntry):
   """This class represents NSS passwd map entries."""
   # Using slots saves us over 2x memory on large maps.
   __slots__ = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')

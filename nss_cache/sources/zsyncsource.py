@@ -38,12 +38,15 @@ except ImportError:
 import nss_cache
 from nss_cache import config
 from nss_cache import error
+from nss_cache.sources import source
 from nss_cache.util import curl
 
-from nss_cache.sources import base
+
+def RegisterImplementation(registration_callback):
+  registration_callback(ZSyncSource)
 
 
-class ZSyncSource(base.FileSource):
+class ZSyncSource(source.FileSource):
   """File based source using ZSync."""
 
   # Update method used by this source
@@ -104,10 +107,17 @@ class ZSyncSource(base.FileSource):
     """Import the GPG public key given in the config file."""
     gpg_context = pyme.core.Context()
     try:
+      self.log.debug('Opening %s to read in the gpg pub key',
+                     self.conf['gpg_pubkeyfile'])
+      self.log.debug('Access: %s', os.access(self.conf['gpg_pubkeyfile'], os.R_OK))
       sigfile = pyme.core.Data(file=self.conf['gpg_pubkeyfile'])
       gpg_context.op_import(sigfile)
       gpg_result = gpg_context.op_import_result()
-      self.conf['gpg_fingerprint'] = gpg_result.imports[0].fpr
+      self.log.debug('keys considered: %s, imported: %s, not imported %s',
+                     gpg_result.considered, gpg_result.imported,
+                     gpg_result.not_imported)
+      if gpg_result.considered > 0:
+        self.conf['gpg_fingerprint'] = gpg_result.imports[0].fpr
     except pyme.errors.GPGMEError, e:
       self.log.error(e.getstring())
       self.log.fatal('Unable to import pubkeyfile, aborting')
@@ -166,7 +176,11 @@ class ZSyncSource(base.FileSource):
     signed = pyme.core.Data(file=local_path)
     context.op_verify(sig, signed, None)
     result = context.op_verify_result()
-    sign = result.signatures[0]
+    if len(result.signatures) > 0:
+      sign = result.signatures[0]
+    else:
+      self.log.error('No signatures in result: %s', result)
+      return False
     while sign:
       if self.conf.get('gpg_fingerprint') == sign.fpr:
         self.log.info('Successfully verified file %r signed by %r', local_path,
@@ -179,6 +193,28 @@ class ZSyncSource(base.FileSource):
     return False
 
   def _GetFile(self, remote, local_path, current_file):
+    """Retrieve a file.
+
+    Try a zsync against the local cache, however if that fails try doing
+    a full update via zsync.
+
+    Args:
+      remote: Remote URL to fetch.
+      local_path: local file to use.
+      current_file: path to the current cache file.
+    Returns:
+      local path
+    """
+    try:
+      return self._GetFileViaZsync(remote, local_path, current_file)
+    except error.InvalidMap:
+      if current_file:
+        self.log.warning('Partial zsync failed - trying full zsync...')
+        return self._GetFileViaZsync(remote, local_path, None)
+      else:
+        raise
+
+  def _GetFileViaZsync(self, remote, local_path, current_file):
     """Retrieve a file using zsync.
 
     Args:
@@ -198,11 +234,11 @@ class ZSyncSource(base.FileSource):
         zs.SubmitSource(current_file)
       zs.Fetch(local_path)
     except zsync.error.Error, e:
-      self.log.exception(e)
-      self.log.warning('Unable to retrieve zsync file: %s', e)
-      raise error.InvalidMap('Failed to fetch map via zsync')
+      raise error.InvalidMap('Unable to retrieve zsync file: %s' % e)
+
     if not os.path.exists(local_path):
       raise error.EmptyMap()
+
     if self.conf['gpg']:
       remote_sig = remote + self.conf['gpg_suffix']
       if not self._GPGVerify(local_path, remote_sig):
@@ -300,5 +336,3 @@ class ZSyncSource(base.FileSource):
       self.GetPasswdFile(tmpfile.name, None)
     os.chdir(old_dir)
     return 0
-
-base.RegisterImplementation(ZSyncSource)
