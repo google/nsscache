@@ -1,10 +1,16 @@
+nsscache (0.21.17-2) unstable; urgency=low
+
+  * Delete debugging print.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Fri, 10 Feb 2012 10:45:42 +1100
+
 nsscache (0.21.17-1) unstable; urgency=low
 
   * New upstream release.
    * Clean up temp directories on error.
    * Port unit tests to use python-mox instead of pmock.
 
- -- Jamie Wilkinson <jaq@google.com>  Fri, 10 Feb 2012 10:10:42 +1100
+ -- Jamie Wilkinson <jaq@debian.org>  Fri, 10 Feb 2012 10:10:42 +1100
 
 nsscache (0.21.16-0gg2) lucid; urgency=low
 
