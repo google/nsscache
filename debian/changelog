@@ -1,3 +1,77 @@
+nsscache (0.21.17-1) unstable; urgency=low
+
+  * New upstream release.
+   * Clean up temp directories on error.
+   * Port unit tests to use python-mox instead of pmock.
+
+ -- Jamie Wilkinson <jaq@google.com>  Fri, 10 Feb 2012 10:10:42 +1100
+
+nsscache (0.21.16-0gg2) lucid; urgency=low
+
+  * Fix subprocess communication with getent so that nsscache -v verify
+    works again.
+
+ -- Joel Sing <jsing@google.com>  Wed, 05 Oct 2011 18:21:06 +1100
+
+nsscache (0.21.16-0gg1) unstable; urgency=low
+
+  * If a zsync fetch fails against the local cache, fall back to a full
+    fetch via zsync.
+
+ -- Joel Sing <jsing@google.com>  Wed, 08 Jun 2011 17:04:17 +1000
+
+nsscache (0.21.15-0gg1) unstable; urgency=low
+
+  * Create indexes for the latest libnss-cache.
+  * Add python-mox to the build dependencies.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 16 May 2011 16:44:51 +1000
+
+nsscache (0.21.14-0gg2) unstable; urgency=low
+
+  * Add a postinst that will clear out accidental nsscache turds from /etc.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 09 May 2011 16:24:44 +1000
+
+nsscache (0.21.14-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * Raise InvalidMap if the zsync decompress fails.
+   * Handle EmptyMap before trying to gpg decrypt the result.
+   * Handle missing and multiple signatures from pyme without crashing.
+   * Catch InvalidMap in the command object.
+
+ -- Jamie Wilkinson <jaq@google.com>  Thu, 05 May 2011 14:46:23 +1000
+
+nsscache (0.21.13-0gg1) unstable; urgency=low
+
+  * New upstream release.
+   * No longer falls back to pycurl to retrieve a full file if zsync
+    fetches fail.
+
+ -- Jamie Wilkinson <jaq@google.com>  Mon, 02 May 2011 14:35:13 +1000
+
+nsscache (0.21.12-0gg2) unstable; urgency=low
+
+  * Fix package dependencies on pycurl and python-ldap.
+
+ -- Jamie Wilkinson <jaq@google.com>  Thu, 28 Apr 2011 10:11:19 +1000
+
+nsscache (0.21.12-0gg1) unstable; urgency=low
+
+  * If a timestamp stored locally is more than an hour in the future,
+    ignore it and use 'now'.
+
+ -- Jamie Wilkinson <jaq@google.com>  Thu, 10 Mar 2011 10:21:32 -0800
+
+nsscache (0.21.11-0gg1) unstable; urgency=low
+
+  * Fix the unit tests for full updates, and make the handling of the
+    --force-write flag act as documented.
+  * Update the test runner to show log output if --verbosity is enabled.
+
+ -- Jamie Wilkinson <jaq@google.com>  Tue, 08 Mar 2011 17:25:43 -0800
+
 nsscache (0.21.10-0gg1) unstable; urgency=low
 
   * New upstream release.

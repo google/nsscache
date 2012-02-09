@@ -1,4 +1,2 @@
 version=3
 http://code.google.com/p/nsscache/downloads/list .*/nsscache-(.*)\.tar\.gz debian
-version=3
-http://code.google.com/p/nsscache/downloads/list .*/nsscache-(.*)\.tar\.gz debian
