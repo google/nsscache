@@ -140,7 +140,6 @@ class TestUpdateCommand(mox.MoxTestBase):
 
   def tearDown(self):
     super(TestUpdateCommand, self).tearDown()
-    print "test rmtree %s" % self.workdir
     shutil.rmtree(self.workdir)
 
   def testConstructor(self):

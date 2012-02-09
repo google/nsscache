@@ -318,7 +318,6 @@ class Update(Command):
       finally:
         # Start chdir cleanup
         os.chdir(old_cwd)
-        print "udpate rmtree %s" % tempdir
         shutil.rmtree(tempdir)
         # End chdir cleanup
 
