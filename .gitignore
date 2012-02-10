@@ -1,0 +1,10 @@
+MANIFEST
+build
+debian/files
+debian/nsscache.debhelper.log
+debian/nsscache.postinst.debhelper
+debian/nsscache.prerm.debhelper
+debian/nsscache.substvars
+debian/nsscache
+dist
+*.pyc
