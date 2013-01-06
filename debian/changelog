@@ -1,3 +1,9 @@
+nsscache (0.21.18-1) lucid; urgency=low
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sun, 06 Jan 2013 18:52:48 +1100
+
 nsscache (0.21.17-2) unstable; urgency=low
 
   * Delete debugging print.
