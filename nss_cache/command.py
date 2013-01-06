@@ -294,27 +294,28 @@ class Update(Command):
       # End chdir dirty hack.
 
       try:
-        source = source_factory.Create(source_options)
+        try:
+          source = source_factory.Create(source_options)
 
-        updater = self._Updater(map_name, source, cache_options, conf)
+          updater = self._Updater(map_name, source, cache_options, conf)
 
-        if incremental:
-          self.log.info('Updating and verifying %s cache.', map_name)
-        else:
-          self.log.info('Rebuilding and verifying %s cache.', map_name)
+          if incremental:
+            self.log.info('Updating and verifying %s cache.', map_name)
+          else:
+            self.log.info('Rebuilding and verifying %s cache.', map_name)
 
-        retval = updater.UpdateFromSource(source, incremental=incremental,
+          retval = updater.UpdateFromSource(source, incremental=incremental,
                                           force_write=force_write)
-      except error.PermissionDenied:
-        self.log.error('Permission denied: could not update map %r.  Aborting',
+        except error.PermissionDenied:
+          self.log.error('Permission denied: could not update map %r.  Aborting',
                        map_name)
-        retval += 1
-      except (error.EmptyMap, error.InvalidMap), e:
-        self.log.error(e)
-        retval += 1
-      except error.InvalidMerge, e:
-        self.log.warn('Could not merge map %r: %s.  Skipping.',
-                       map_name, e)
+          retval += 1
+        except (error.EmptyMap, error.InvalidMap), e:
+          self.log.error(e)
+          retval += 1
+        except error.InvalidMerge, e:
+          self.log.warn('Could not merge map %r: %s.  Skipping.',
+                         map_name, e)
       finally:
         # Start chdir cleanup
         os.chdir(old_cwd)
