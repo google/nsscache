@@ -335,6 +335,9 @@ class TestUpdateCommand(mox.MoxTestBase):
 
   def testUpdateMapsWithBadMapName(self):
     c = command.Update()
+    self.mox.StubOutWithMock(c, '_Lock')
+    c._Lock(force=False, path=None).AndReturn(True)
+    self.mox.ReplayAll()
     # Create an invalid map name.
     self.assertEqual(1, c.Run(self.conf, ['-m', config.MAP_PASSWORD + 'invalid']))
 
