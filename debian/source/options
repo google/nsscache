@@ -1,0 +1,2 @@
+# Ignore files not included in release tarball.
+extend-diff-ignore = "(^|/)(MANIFEST(\.in)?|nsscache\.spec|runtests\.py)$"
