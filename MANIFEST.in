@@ -2,5 +2,7 @@ include nsscache.conf
 include nsscache.conf.5
 include nsscache.1
 include nsscache.cron
+include nsscache.spec
 include COPYING
 include THANKS
+include runtests.py
