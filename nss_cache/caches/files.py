@@ -29,11 +29,17 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import os.path
 import re
+import sys
 
 from nss_cache import config
 from nss_cache import error
 from nss_cache.caches import caches
 from nss_cache.util import file_formats
+
+if sys.version >= (2, 5):
+  def LongestLength(l): return len(max(l, key=len))
+else: # Python < 2.4, 50% slower
+  def LongestLength(l): return max([len(x) for x in l])
 
 
 def RegisterAllImplementations(register_callback):
@@ -214,8 +220,8 @@ class FilesCache(caches.Cache):
       self.log.debug('Writing index %s', index_filename)
 
       index = self._indices[index_name]
-      key_length = len(max(index.keys(), key=len))
-      pos_length = len(max(index.values(), key=len))
+      key_length = LongestLength(index.keys())
+      pos_length = LongestLength(index.values())
       max_length = key_length + pos_length
       # Open for write/truncate
       index_file = open(index_filename, 'w')
