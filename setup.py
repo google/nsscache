@@ -31,6 +31,10 @@ distutils.core.setup(name='nsscache',
                      url='http://code.google.com/p/nsscache/',
                      description='nsscache tool and library',
                      license='GPL',
+                     long_description=
+'''nsscache is a Python library and a commandline frontend to that library
+that synchronises a local NSS cache against a remote directory service, such
+as LDAP.''',
                      classifiers=['Development Status :: 4 - Beta',
                                   'Environment :: Console',
                                   'Indended Audience :: System Administrators',
