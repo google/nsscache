@@ -21,7 +21,9 @@
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import bsddb
+import fcntl
 import os
+import select
 import subprocess
 
 from nss_cache import config
@@ -36,7 +38,7 @@ def RegisterAllImplementations(register_callback):
   register_callback('nssdb', 'passwd', NssDbPasswdHandler)
   register_callback('nssdb', 'group', NssDbGroupHandler)
   register_callback('nssdb', 'shadow', NssDbShadowHandler)
-  
+
 
 class NssDbCache(caches.Cache):
   """An implementation of a Cache specific to nss_db.
@@ -128,7 +130,15 @@ class NssDbCache(caches.Cache):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
                               close_fds=True)
+    fcntl.fcntl(makedb.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
+    makedb.allout = ""
     return makedb
+
+  def _Read(self, proc):
+    while len(select.select([proc.stdout],(),(),0)[0]) > 0:
+      data = proc.stdout.read()
+      if len(data) == 0: break # sigh... select() says there's data.
+      proc.allout += data
 
   def Write(self, map_data):
     """Write the map to the cache file.
@@ -150,14 +160,16 @@ class NssDbCache(caches.Cache):
 
     enumeration_index = 0
     makedb = self._SpawnMakeDb()
+    self.makedbproc = makedb
     try:
 
       try:
         while True:
           entry = map_data.PopItem()
+          self._Read(makedb)
           if makedb.poll() is not None:
             self.log.error('early exit from makedb! child output: %s',
-                           makedb.stdout.read())
+                           makedb.allout)
             # in this case, no matter how the child exited, we complain
             return None
           self.WriteData(makedb.stdin, entry, enumeration_index)
@@ -171,8 +183,11 @@ class NssDbCache(caches.Cache):
       self.log.debug('%d entries written, %d keys', enumeration_index,
                      len(written_keys))
 
-      map_data = makedb.stdout.read()
+      # wait for subprocess to commit data before we move live.
+      makedb.wait()
+      self._Read(makedb)
       makedb.stdout.close()
+      map_data = makedb.allout
       if map_data:
         self.log.debug('makedb output: %r', map_data)
 
@@ -183,7 +198,9 @@ class NssDbCache(caches.Cache):
 
     except:
       self.log.debug('Wrote %d entries before exception', enumeration_index)
-      self.log.debug('makedb output: %s', makedb.stdout.read())
+      self.log.debug('makedb output: %s', makedb.allout)
+      # wait for subprocess to commit data before we roll back.
+      makedb.wait()
       self._Rollback()
       raise
 
