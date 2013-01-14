@@ -1,3 +1,9 @@
+nsscache (0.21.19-1) unstable; urgency=low
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Mon, 14 Jan 2013 22:20:11 +0000
+
 nsscache (0.21.18-2) unstable; urgency=low
 
   * Fix unmanaged files in tarball, by adding to debian/source/options.  (Closes: #643227) 
