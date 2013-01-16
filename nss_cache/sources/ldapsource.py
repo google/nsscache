@@ -81,6 +81,8 @@ class LdapSource(source.Source):
       self.conn = rlo(uri=conf['uri'],
                       retry_max=conf['retry_max'],
                       retry_delay=conf['retry_delay'])
+      if conf['tls_starttls'] == 1:
+          self.conn.start_tls_s()
     else:
       self.conn = conn
 
@@ -112,6 +114,8 @@ class LdapSource(source.Source):
       configuration['tls_cacertdir'] = self.TLS_CACERTDIR
     if not 'tls_cacertfile' in configuration:
       configuration['tls_cacertfile'] = self.TLS_CACERTFILE
+    if not 'tls_starttls' in configuration:
+      configuration['tls_starttls'] = 0
 
     # Translate tls_require into appropriate constant, if necessary.
     if configuration['tls_require_cert'] == 'never':
@@ -124,6 +128,13 @@ class LdapSource(source.Source):
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_ALLOW
     elif configuration['tls_require_cert'] == 'try':
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_TRY
+
+    # Should we issue STARTTLS?
+    if configuration['tls_starttls'] in (1, '1', 'on', 'yes', 'true'):
+        configuration['tls_starttls'] = 1
+    #if not configuration['tls_starttls']:
+    else:
+      configuration['tls_starttls'] = 0
 
     # Setting global ldap defaults.
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
