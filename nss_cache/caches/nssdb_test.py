@@ -43,6 +43,16 @@ class TestSkipped(Exception):
   """Exception to raise if a test cannot be run."""
 
 
+class MakeDbDummy(object):
+  allout = ""
+      
+  def wait(self):
+    return 0
+
+  def poll(self):
+    return None
+
+
 class TestNssDbPasswdHandler(mox.MoxTestBase):
 
   def setUp(self):
@@ -111,6 +121,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -126,12 +137,6 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     pw.Verify()
     self.failUnless(m.Add(pw))
 
-    class MakeDbDummy(object):
-      def wait(self):
-        return 0
-
-      def poll(self):
-        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -297,6 +302,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -308,13 +314,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     g.members = ['bar']
     g.Verify()
     self.failUnless(m.Add(g))
-
-    class MakeDbDummy(object):
-      def wait(self):
-        return 0
-
-      def poll(self):
-        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -455,6 +454,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
+    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -464,13 +464,6 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     s.passwd = '*'
     s.Verify()
     self.failUnless(m.Add(s))
-
-    class MakeDbDummy(object):
-      def wait(self):
-        return 0
-
-      def poll(self):
-        return None
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
