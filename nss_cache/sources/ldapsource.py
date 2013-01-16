@@ -563,7 +563,7 @@ class ShadowUpdateGetter(UpdateGetter):
       shadow_ent.flag = 0
     if 'userPassword' in obj:
       passwd = obj['userPassword'][0]
-      if passwd[:7] == '{CRYPT}':
+      if passwd[:7].lower() == '{crypt}':
         shadow_ent.passwd = passwd[7:]
       else:
         logging.info('Ignored password that was not in crypt format')
