@@ -101,7 +101,7 @@ class Cache(object):
       self.log.debug('opened temporary cache filename %r',
                      self.temp_cache_filename)
     except OSError, e:
-      if e.errno == 13:
+      if e.errno == errno.EACCES:
         self.log.info('Got OSError (%s) when trying to create temporary file',
                       e)
         raise error.PermissionDenied('OSError: ' + str(e))
