@@ -27,6 +27,7 @@ format created here.
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import errno
 import os.path
 import re
 import shutil
