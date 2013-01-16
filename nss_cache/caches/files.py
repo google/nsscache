@@ -29,6 +29,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import os.path
 import re
+import shutil
 import sys
 
 from nss_cache import config
@@ -225,6 +226,13 @@ class FilesCache(caches.Cache):
       max_length = key_length + pos_length
       # Open for write/truncate
       index_file = open(index_filename, 'w')
+      # setup permissions
+      try:
+        shutil.copymode(self.GetCompatFilename(), index_filename)
+      except OSError, e:
+        if e.errno == errno.ENOENT:
+          os.chmod(self.index_filename,
+                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
         index_line = ('%s\0%s\0%s\n' %
