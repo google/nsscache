@@ -456,7 +456,7 @@ class PasswdUpdateGetter(UpdateGetter):
   def __init__(self):
     super(PasswdUpdateGetter, self).__init__()
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
-                  'homeDirectory', 'loginShell']
+                  'homeDirectory', 'loginShell', 'fullName']
     self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
 
   def CreateMap(self):
@@ -472,6 +472,8 @@ class PasswdUpdateGetter(UpdateGetter):
       pw.gecos = obj['gecos'][0]
     elif 'cn' in obj:
       pw.gecos = obj['cn'][0]
+    elif 'fullName' in obj:
+      pw.gecos = obj['fullName'][0]
     else:
       raise ValueError('Neither gecos nor cn found')
 

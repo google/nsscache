@@ -190,6 +190,7 @@ class TestLdapSource(mox.MoxTestBase):
     config = dict(self.config)
     attrlist = ['uid', 'uidNumber', 'gidNumber',
                 'gecos', 'cn', 'homeDirectory',
+                'fullName',
                 'loginShell', 'modifyTimestamp']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -553,6 +554,7 @@ class TestLdapSource(mox.MoxTestBase):
   def testVerify(self):
     attrlist = ['uid', 'uidNumber', 'gidNumber',
                 'gecos', 'cn', 'homeDirectory',
+                'fullName',
                 'loginShell', 'modifyTimestamp']
     filterstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
 
