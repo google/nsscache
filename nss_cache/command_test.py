@@ -91,6 +91,7 @@ class TestCommand(mox.MoxTestBase):
     mock_lock.Lock(force=False).AndReturn(True)
     mock_lock.Locked().AndReturn(True)
     mock_lock.Unlock()
+    mock_lock.Locked().AndReturn(False) # destructor
 
     self.mox.ReplayAll()
     c = command.Command()
@@ -185,6 +186,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     lock_mock = lock.PidFile(filename=None)
     lock_mock.Lock(force=False).AndReturn(True)
+    lock_mock.Locked().AndReturn(True)
     lock_mock.Unlock()
 
     self.conf.maps = [config.MAP_PASSWORD]
@@ -216,6 +218,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     lock_mock = lock.PidFile(filename=None)
     lock_mock.Lock(force=False).AndReturn(True)
+    lock_mock.Locked().AndReturn(True)
+    lock_mock.Unlock()
 
     self.conf.maps = [config.MAP_AUTOMOUNT]
     self.conf.cache = 'dummy'
@@ -256,7 +260,9 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     lock_mock = lock.PidFile(filename=None)
     lock_mock.Lock(force=False).AndReturn(True)
-
+    lock_mock.Locked().AndReturn(True)
+    lock_mock.Unlock()
+    
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
     modify_stamp = time.gmtime(1)
@@ -283,6 +289,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     lock_mock = lock.PidFile(filename=None)
     lock_mock.Lock(force=True).AndReturn(False)
+    lock_mock.Locked().AndReturn(True)
+    lock_mock.Unlock()
 
     self.mox.ReplayAll()
 
