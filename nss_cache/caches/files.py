@@ -31,6 +31,7 @@ import errno
 import os.path
 import re
 import shutil
+import stat
 import sys
 
 from nss_cache import config
@@ -232,7 +233,7 @@ class FilesCache(caches.Cache):
         shutil.copymode(self.GetCompatFilename(), index_filename)
       except OSError, e:
         if e.errno == errno.ENOENT:
-          os.chmod(self.index_filename,
+          os.chmod(index_filename,
                    stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
