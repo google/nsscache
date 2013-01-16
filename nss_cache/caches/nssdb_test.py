@@ -23,11 +23,12 @@ __author__ = 'jaq@google.com (Jamie Wilkinson)'
 import bsddb
 import logging
 import os.path
+import select
 import shutil
+import sys
 import tempfile
 import time
 import unittest
-import sys
 
 import mox
 
@@ -121,7 +122,6 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -137,6 +137,9 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     pw.Verify()
     self.failUnless(m.Add(pw))
 
+    self.mox.StubOutWithMock(select, 'select')
+    select.select([makedb_stdout], (), (), 0).AndReturn(([37], [], []))
+    select.select([makedb_stdout], (), (), 0).AndReturn(([], [], []))
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
@@ -302,7 +305,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -315,6 +317,10 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     g.Verify()
     self.failUnless(m.Add(g))
 
+    self.mox.StubOutWithMock(select, 'select')
+    select.select([makedb_stdout], (), (), 0).AndReturn(([37], [], []))
+    select.select([makedb_stdout], (), (), 0).AndReturn(([], [], []))
+    
     def SpawnMakeDb():
       makedb = MakeDbDummy()
       makedb.stdin = makedb_stdin
@@ -454,7 +460,6 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.fileno().AndReturn(37)
     makedb_stdout.read().AndReturn('')
     makedb_stdout.close()
 
@@ -464,6 +469,10 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     s.passwd = '*'
     s.Verify()
     self.failUnless(m.Add(s))
+
+    self.mox.StubOutWithMock(select, 'select')
+    select.select([makedb_stdout], (), (), 0).AndReturn(([37], [], []))
+    select.select([makedb_stdout], (), (), 0).AndReturn(([], [], []))
 
     def SpawnMakeDb():
       makedb = MakeDbDummy()
