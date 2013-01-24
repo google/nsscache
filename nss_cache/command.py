@@ -335,14 +335,16 @@ class Update(Command):
                                                      cache_options)
       else:
         return files_updater.FileMapUpdater(map_name, conf.timestamp_dir,
-                                               cache_options)
+                                            cache_options,
+                                            can_do_incremental=True)
     else:
       if map_name == config.MAP_AUTOMOUNT:
         return map_updater.AutomountUpdater(map_name, conf.timestamp_dir,
                                                cache_options)
       else:
         return map_updater.MapUpdater(map_name, conf.timestamp_dir,
-                                         cache_options)
+                                      cache_options,
+                                      can_do_incremental=True)
 
 
 class Verify(Command):
