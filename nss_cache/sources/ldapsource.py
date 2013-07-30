@@ -156,8 +156,10 @@ class LdapSource(source.Source):
       self.log.debug('opening ldap connection and binding to %s',
                      configuration['uri'])
       try:
-        if configuration['use_sasl']:
-          if configuration['sasl_mech'] and configuration['sasl_mech'].lower() == 'gssapi':
+        if 'use_sasl' in configuration and configuration['use_sasl']:
+          if ('sasl_mech' in configuration and
+	      configuration['sasl_mech'] and
+              configuration['sasl_mech'].lower() == 'gssapi'):
             sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
           # TODO: Add other sasl mechs
           else:
