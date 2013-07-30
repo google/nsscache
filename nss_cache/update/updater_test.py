@@ -67,6 +67,11 @@ class TestUpdater(mox.MoxTestBase):
                           'Expected %r, observed: %r' %
                           (modify_time, modify_stamp)))
 
+  def testWriteWhenTimestampIsNone(self):
+    update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
+    self.assertEqual(True, update_obj.WriteUpdateTimestamp(None))
+    self.assertEqual(True, update_obj.WriteModifyTimestamp(None))
+
   def testTimestampDefaultsToNone(self):
     """Missing or unreadable timestamps return None."""
     update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
