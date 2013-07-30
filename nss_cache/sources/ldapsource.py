@@ -24,6 +24,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 import logging
 import time
 import ldap
+import ldap.sasl
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -128,6 +129,9 @@ class LdapSource(source.Source):
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_ALLOW
     elif configuration['tls_require_cert'] == 'try':
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_TRY
+    
+    if not 'sasl_authzid' in configuration:
+      configuration['sasl_authzid'] = ''
 
     # Should we issue STARTTLS?
     if configuration['tls_starttls'] in (1, '1', 'on', 'yes', 'true'):
@@ -152,7 +156,16 @@ class LdapSource(source.Source):
       self.log.debug('opening ldap connection and binding to %s',
                      configuration['uri'])
       try:
-        self.conn.simple_bind_s(who=configuration['bind_dn'],
+        if configuration['use_sasl']:
+          if configuration['sasl_mech'] and configuration['sasl_mech'].lower() == 'gssapi':
+            sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
+          # TODO: Add other sasl mechs
+          else:
+            raise error.ConfigurationError('SASL mechanism not supported')
+
+          self.conn.sasl_interactive_bind_s('', sasl)
+        else:
+          self.conn.simple_bind_s(who=configuration['bind_dn'],
                                 cred=configuration['bind_password'])
         break
       except ldap.SERVER_DOWN, e:
