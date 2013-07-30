@@ -211,8 +211,12 @@ class LdapSource(source.Source):
       Search results from the prior call to self.Search()
     """
     while True:
-      result_type, data = self.conn.result(self.message_id, all=0,
-                                           timeout=self.conf['timelimit'])
+      try:
+        result_type, data = self.conn.result(self.message_id, all=0,
+                                             timeout=self.conf['timelimit'])
+      except ldap.NO_SUCH_OBJECT:
+        self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
+        return
 
       if result_type == ldap.RES_SEARCH_RESULT:
         self.log.debug('Returning due to RES_SEARCH_RESULT')
