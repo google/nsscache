@@ -74,6 +74,7 @@ class LdapSource(source.Source):
     self._dn_requested = False  # dn is a special-cased attribute
 
     self._SetDefaults(conf)
+    self._conf = conf
 
     if conn is None:
       # ReconnectLDAPObject should handle interrupted ldap transactions.
@@ -211,12 +212,25 @@ class LdapSource(source.Source):
       Search results from the prior call to self.Search()
     """
     while True:
-      try:
-        result_type, data = self.conn.result(self.message_id, all=0,
-                                             timeout=self.conf['timelimit'])
-      except ldap.NO_SUCH_OBJECT:
-        self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
-        return
+      result_type, data = None, None
+
+      timeout_retries = 0
+      while timeout_retries < self._conf['retry_max']:
+        try:
+          result_type, data = self.conn.result(self.message_id, all=0,
+                                               timeout=self.conf['timelimit'])
+	  break
+        except ldap.NO_SUCH_OBJECT:
+          self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
+          return
+        except ldap.TIMELIMIT_EXCEEDED:
+          timeout_retries += 1
+          self.log.warning('Timeout on LDAP results, attempt #%s.', timeout_retries)
+          if timeout_retries >= self._conf['retry_max']:
+            self.log.debug('max retries hit, returning')
+            return
+          self.log.debug('sleeping %d seconds', self._conf['retry_delay'])
+          time.sleep(self.conf['retry_delay'])
 
       if result_type == ldap.RES_SEARCH_RESULT:
         self.log.debug('Returning due to RES_SEARCH_RESULT')
