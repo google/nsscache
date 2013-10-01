@@ -169,7 +169,7 @@ class LdapSource(source.Source):
           self.conn.sasl_interactive_bind_s('', sasl)
         else:
           self.conn.simple_bind_s(who=configuration['bind_dn'],
-                                cred=configuration['bind_password'])
+                                cred=str(configuration['bind_password']))
         break
       except ldap.SERVER_DOWN, e:
         retry_count += 1
