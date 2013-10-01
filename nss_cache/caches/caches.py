@@ -153,6 +153,11 @@ class Cache(object):
     """Return the final destination pathname of the cache file."""
     return os.path.join(self.output_dir, self.CACHE_FILENAME)
 
+  def GetCompatFilename(self):
+    """Return the filename where the normal (not-cache) map would be."""
+    # TODO(jaq): Probably shouldn't hard code '/etc' here.
+    return os.path.join('/etc', self.map_name)
+
   def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
@@ -166,10 +171,6 @@ class Cache(object):
     """
     raise NotImplementedError('%s must implement this method!' %
                               self.__class__.__name__)
-
-  def GetCompatFilename(self):
-    """Return the filename where the normal (not-cache) map would be."""
-    return os.path.join(self.output_dir, self.map_name)
 
   def GetMapLocation(self):
     """Return the location of the Map in this cache.

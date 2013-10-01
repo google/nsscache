@@ -55,26 +55,23 @@ class TestCls(mox.MoxTestBase):
     os.rmdir(self.workdir)
 
   def testCopyOwnerMissing(self):
+    expected = os.stat(os.path.join('/etc', config.MAP_SHADOW))
+    expected = stat.S_IMODE(expected.st_mode)
     cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
     cache._Begin()
     cache._Commit()
     data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
-    self.assertEqual(stat.S_IMODE(data.st_mode),
-                     stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+    self.assertEqual(expected, stat.S_IMODE(data.st_mode))
     os.unlink(cache.GetCacheFilename())
 
   def testCopyOwnerPresent(self):
-    path = os.path.join(self.workdir, config.MAP_SHADOW)
-    f = open(path, 'wb')
-    f.close()
-    os.chmod(path, stat.S_IRUSR|stat.S_IWUSR)
+    expected = os.stat(os.path.join('/etc/', config.MAP_SHADOW))
+    expected = stat.S_IMODE(expected.st_mode)
     cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
     cache._Begin()
     cache._Commit()
     data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
-    self.assertEqual(stat.S_IMODE(data.st_mode),
-                     stat.S_IRUSR | stat.S_IWUSR)
-    os.unlink(path)
+    self.assertEqual(expected, stat.S_IMODE(data.st_mode))
     os.unlink(cache.GetCacheFilename())
 
 
