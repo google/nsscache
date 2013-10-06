@@ -1,2 +1,2 @@
 # Ignore files not included in release tarball.
-extend-diff-ignore = "(^|/)(MANIFEST(\.in)?|rpm/.*|dist/.*)$"
+extend-diff-ignore = "(^|/)(MANIFEST(\.in)?|rpm/.*|dist/.*|build/.*)$"
