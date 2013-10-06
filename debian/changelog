@@ -1,3 +1,9 @@
+nsscache (0.23-2) UNRELEASED; urgency=low
+
+  * Refactor debian/rules to install into /usr/share/nsscache.# 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Mon, 07 Oct 2013 09:52:13 +1100
+
 nsscache (0.23-1) unstable; urgency=low
 
   * New upstream release. 
