@@ -1,3 +1,9 @@
+nsscache (0.23-1) unstable; urgency=low
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sun, 06 Oct 2013 14:43:12 +1100
+
 nsscache (0.22-1) unstable; urgency=low
 
   * New upstream release.
