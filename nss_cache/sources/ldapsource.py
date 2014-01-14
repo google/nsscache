@@ -25,6 +25,7 @@ import calendar
 import logging
 import time
 import ldap
+import ldap.sasl
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -74,6 +75,7 @@ class LdapSource(source.Source):
     self._dn_requested = False  # dn is a special-cased attribute
 
     self._SetDefaults(conf)
+    self._conf = conf
 
     if conn is None:
       # ReconnectLDAPObject should handle interrupted ldap transactions.
@@ -129,6 +131,9 @@ class LdapSource(source.Source):
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_ALLOW
     elif configuration['tls_require_cert'] == 'try':
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_TRY
+    
+    if not 'sasl_authzid' in configuration:
+      configuration['sasl_authzid'] = ''
 
     # Should we issue STARTTLS?
     if configuration['tls_starttls'] in (1, '1', 'on', 'yes', 'true'):
@@ -153,8 +158,19 @@ class LdapSource(source.Source):
       self.log.debug('opening ldap connection and binding to %s',
                      configuration['uri'])
       try:
-        self.conn.simple_bind_s(who=configuration['bind_dn'],
-                                cred=configuration['bind_password'])
+        if 'use_sasl' in configuration and configuration['use_sasl']:
+          if ('sasl_mech' in configuration and
+	      configuration['sasl_mech'] and
+              configuration['sasl_mech'].lower() == 'gssapi'):
+            sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
+          # TODO: Add other sasl mechs
+          else:
+            raise error.ConfigurationError('SASL mechanism not supported')
+
+          self.conn.sasl_interactive_bind_s('', sasl)
+        else:
+          self.conn.simple_bind_s(who=configuration['bind_dn'],
+                                cred=str(configuration['bind_password']))
         break
       except ldap.SERVER_DOWN, e:
         retry_count += 1
@@ -197,8 +213,25 @@ class LdapSource(source.Source):
       Search results from the prior call to self.Search()
     """
     while True:
-      result_type, data = self.conn.result(self.message_id, all=0,
-                                           timeout=self.conf['timelimit'])
+      result_type, data = None, None
+
+      timeout_retries = 0
+      while timeout_retries < self._conf['retry_max']:
+        try:
+          result_type, data = self.conn.result(self.message_id, all=0,
+                                               timeout=self.conf['timelimit'])
+	  break
+        except ldap.NO_SUCH_OBJECT:
+          self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
+          return
+        except ldap.TIMELIMIT_EXCEEDED:
+          timeout_retries += 1
+          self.log.warning('Timeout on LDAP results, attempt #%s.', timeout_retries)
+          if timeout_retries >= self._conf['retry_max']:
+            self.log.debug('max retries hit, returning')
+            return
+          self.log.debug('sleeping %d seconds', self._conf['retry_delay'])
+          time.sleep(self.conf['retry_delay'])
 
       if result_type == ldap.RES_SEARCH_RESULT:
         self.log.debug('Returning due to RES_SEARCH_RESULT')

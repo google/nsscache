@@ -177,6 +177,50 @@ class TestLdapSource(mox.MoxTestBase):
 
     self.assertEqual(1, count)
 
+  def testIterationTimeout(self):
+    config = dict(self.config)
+    config['retry_delay'] = 5
+    config['retry_max'] = 3
+
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search(base=config['base'],
+                    filterstr='TEST_FILTER',
+                    scope='TEST_SCOPE',
+                    attrlist='TEST_ATTRLIST').AndReturn('TEST_RES')
+
+    dataset = [('dn', 'payload')]
+    mock_rlo.result('TEST_RES',
+                    all=0,
+                    timeout='TEST_TIMELIMIT').MultipleTimes().AndRaise(ldap.TIMELIMIT_EXCEEDED)
+
+    self.mox.StubOutWithMock(time, 'sleep')
+    time.sleep(5)
+    time.sleep(5)
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max=3,
+        retry_delay=5).AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    source.Search(search_base=config['base'],
+                  search_filter='TEST_FILTER',
+                  search_scope='TEST_SCOPE',
+                  attrs='TEST_ATTRLIST')
+
+    count = 0
+    for r in source:
+      count += 1
+
+    self.assertEqual(0, count)
+
   def testGetPasswdMap(self):
     test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
                           {'uidNumber': [1000],

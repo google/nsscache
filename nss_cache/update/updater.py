@@ -223,10 +223,13 @@ class Updater(object):
 
     Args:
       timestamp:  An int with the number of seconds since epoch.
+	If timestamp is None, performs no action.
 
     Returns:
       A boolean indicating success of the write.
     """
+    if timestamp is None:
+      return True
     # blow away our cached value
     self.modify_time = None
     return self._WriteTimestamp(timestamp, self.modify_file)
