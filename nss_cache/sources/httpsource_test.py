@@ -49,6 +49,7 @@ class TestHttpSource(unittest.TestCase):
                    'retry_delay': 'TEST_RETRY_DELAY',
                    'retry_max': 'TEST_RETRY_MAX',
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
+                   'http_proxy': 'HTTP_PROXY',
                   }
 
   def testDefaultConfiguration(self):
@@ -65,6 +66,7 @@ class TestHttpSource(unittest.TestCase):
                       httpsource.HttpFilesSource.RETRY_DELAY)
     self.assertEquals(source.conf['tls_cacertfile'],
                       httpsource.HttpFilesSource.TLS_CACERTFILE)
+    self.assertEquals(source.conf['http_proxy'], None)
 
   def testOverrideDefaultConfiguration(self):
     source = httpsource.HttpFilesSource(self.config)
@@ -74,6 +76,7 @@ class TestHttpSource(unittest.TestCase):
     self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
     self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
     self.assertEquals(source.conf['tls_cacertfile'], 'TEST_TLS_CACERTFILE')
+    self.assertEquals(source.conf['http_proxy'], 'HTTP_PROXY')
 
 
 class TestHttpUpdateGetter(mox.MoxTestBase):

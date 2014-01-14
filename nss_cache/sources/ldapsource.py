@@ -21,6 +21,7 @@
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import calendar
 import logging
 import time
 import ldap
@@ -359,7 +360,7 @@ class LdapSource(source.Source):
     """Verify that this source is contactable and can be queried for data."""
     if since is None:
       # one minute in the future
-      since = time.gmtime(time.time() + 60)
+      since = int(time.time() + 60)
     results = self.GetPasswdMap(since=since)
     return len(results)
 
@@ -374,21 +375,21 @@ class UpdateGetter(object):
       ldap_ts_string: An LDAP timestamp string in the format %Y%m%d%H%M%SZ
 
     Returns:
-      a time.struct_time
+      number of seconds since epoch.
     """
     t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
-    return t
+    return int(calendar.timegm(t))
 
   def FromTimestampToLdap(self, ts):
     """Transforms nss_cache internal timestamp into a LDAP timestamp.
 
     Args:
-      ts: a time.struct_time
+      ts: number of seconds since epoch
 
     Returns:
       LDAP format timestamp string.
     """
-    t = time.strftime('%Y%m%d%H%M%SZ', ts)
+    t = time.strftime('%Y%m%d%H%M%SZ', time.gmtime(ts))
     return t
 
   def GetUpdates(self, source, search_base, search_filter,
