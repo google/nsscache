@@ -25,7 +25,6 @@ __author__ = ('vasilios@google.com (V Hoffman)',
 import os
 import shutil
 import tempfile
-import time
 import unittest
 
 import mox
@@ -56,8 +55,8 @@ class SingleMapUpdaterTest(mox.MoxTestBase):
 
   def testFullUpdate(self):
     """A full update reads the source, writes to cache, and updates times."""
-    original_modify_stamp = time.gmtime(1)
-    new_modify_stamp = time.gmtime(2)
+    original_modify_stamp = 1
+    new_modify_stamp = 2
 
     updater = map_updater.MapUpdater(
         config.MAP_PASSWORD, self.workdir, {})
@@ -94,8 +93,8 @@ class SingleMapUpdaterTest(mox.MoxTestBase):
       print map_object
       return len(map_object) == 2
 
-    original_modify_stamp = time.gmtime(1)
-    new_modify_stamp = time.gmtime(2)
+    original_modify_stamp = 1
+    new_modify_stamp = 2
     updater = map_updater.MapUpdater(
         config.MAP_PASSWORD, self.workdir, {}, can_do_incremental=True)
     updater.WriteModifyTimestamp(original_modify_stamp)
@@ -132,7 +131,7 @@ class SingleMapUpdaterTest(mox.MoxTestBase):
   def testFullUpdateOnMissingCache(self):
     """We fault to a full update if our cache is missing."""
 
-    original_modify_stamp = time.gmtime(1)
+    original_modify_stamp = 1
     updater = map_updater.MapUpdater(config.MAP_PASSWORD, self.workdir, {})
     updater.WriteModifyTimestamp(original_modify_stamp)
 

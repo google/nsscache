@@ -25,7 +25,6 @@ MapEntry:  Abstract class representing an entry in a NSS map.
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
-import time
 
 from nss_cache import error
 
@@ -64,9 +63,9 @@ class Map(object):
     Args:
       iterable: A tuple or list that can be iterated over and added to the Map,
         defaults to None.
-      modify_time: An optional modify time.struct_time for this Map,
+      modify_time: An optional modify time for this Map, defaults to None.
         defaults to None.
-      update_time: An optional update time.struct_time for this Map,
+      update_time: An optional update time for this Map, defaults to None.
          defaults to None.
 
     Raises:
@@ -75,9 +74,7 @@ class Map(object):
     if self.__class__ is Map:
       raise TypeError('Map is an abstract class.')
     self._data = {}
-    # Last mod timestamp should be either None or a time.struct_time.
     self._last_modification_timestamp = modify_time
-    # Last update timestamp, same as previous
     self._last_update_timestamp = update_time
 
     self.log = logging.getLogger(self.__class__.__name__)
@@ -216,15 +213,15 @@ class Map(object):
     """Set the last modify timestamp of this map.
 
     Args:
-      value: A time.struct_time.
+      value: An integer containing the number of seconds since epoch, or None.
 
     Raises:
       TypeError: The argument is not an int or None.
     """
-    if value is None or isinstance(value, time.struct_time):
+    if value is None or isinstance(value, int):
       self._last_modification_timestamp = value
     else:
-      raise TypeError('timestamp can only be None or time.struct_time, not %r'
+      raise TypeError('timestamp can only be int or None, not %r'
                       % value)
 
   def GetModifyTimestamp(self):
@@ -244,10 +241,10 @@ class Map(object):
     Raises:
       TypeError: The argument is not an int or None.
     """
-    if value is None or isinstance(value, time.struct_time):
+    if value is None or isinstance(value, int):
       self._last_update_timestamp = value
     else:
-      raise TypeError('timestamp can only be None or time.struct_time, not %r',
+      raise TypeError('timestamp can only be int or None, not %r',
                       value)
 
   def GetUpdateTimestamp(self):

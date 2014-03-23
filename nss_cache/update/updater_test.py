@@ -49,8 +49,8 @@ class TestUpdater(mox.MoxTestBase):
     """We read and write timestamps to the specified directory."""
     update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
     self.updater = updater
-    update_time = time.gmtime(1199149400)  # epoch
-    modify_time = time.gmtime(1199149200)
+    update_time = 1199149400
+    modify_time = 1199149200
 
     update_obj.WriteUpdateTimestamp(update_time)
     update_obj.WriteModifyTimestamp(modify_time)
@@ -103,12 +103,12 @@ class TestUpdater(mox.MoxTestBase):
   def testTimestampInTheFuture(self):
     """Timestamps in the future are turned into now."""
     update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
-    expected_time = time.gmtime(1)
-    update_time = time.gmtime(3600+1)
+    expected_time = 1
+    update_time = 3601
     update_file = open(update_obj.update_file, 'w')
     update_obj.WriteUpdateTimestamp(update_time)
-    self.mox.StubOutWithMock(time, 'gmtime')
-    time.gmtime().AndReturn(expected_time)
+    self.mox.StubOutWithMock(time, 'time')
+    time.time().AndReturn(expected_time)
     self.mox.ReplayAll()
     self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
 

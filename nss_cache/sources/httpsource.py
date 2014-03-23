@@ -73,6 +73,8 @@ class HttpFilesSource(source.Source):
       conn.setopt(pycurl.NOPROGRESS, 1)
       conn.setopt(pycurl.NOSIGNAL, 1)
       conn.setopt(pycurl.USERAGENT, 'nsscache')
+      if self.conf['http_proxy']:
+        conn.setopt(pycurl.PROXY, self.conf['http_proxy'])
 
     self.conn = conn
 
@@ -94,6 +96,9 @@ class HttpFilesSource(source.Source):
       configuration['retry_max'] = self.RETRY_MAX
     if not 'tls_cacertfile' in configuration:
       configuration['tls_cacertfile'] = self.TLS_CACERTFILE
+    if not 'http_proxy' in configuration:
+      configuration['http_proxy'] = None
+
 
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
@@ -212,7 +217,7 @@ class UpdateGetter(object):
       number of seconds since epoch
     """
     t = time.strptime(http_ts_string, '%a, %d %b %Y %H:%M:%S GMT')
-    return calendar.timegm(t)
+    return int(calendar.timegm(t))
 
   def GetUpdates(self, source, url, since):
     """Get updates from a source.
@@ -232,7 +237,6 @@ class UpdateGetter(object):
     proto = url.split(':')[0]
     # Newer libcurl allow you to disable protocols there. Unfortunately
     # it's not in dapper or hardy.
-
     if proto not in ('http', 'https'):
       raise error.ConfigurationError('Unsupported protocol %s' % proto)
 
@@ -240,7 +244,7 @@ class UpdateGetter(object):
     conn.setopt(pycurl.OPT_FILETIME, 1)
     conn.setopt(pycurl.ENCODING, 'bzip2, gzip')
     if since is not None:
-      conn.setopt(pycurl.TIMEVALUE, since)
+      conn.setopt(pycurl.TIMEVALUE, int(since))
       conn.setopt(pycurl.TIMECONDITION, pycurl.TIMECONDITION_IFMODSINCE)
 
     retry_count = 0

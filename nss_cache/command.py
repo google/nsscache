@@ -22,7 +22,6 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 
-import calendar
 import inspect
 import logging
 import optparse
@@ -685,27 +684,20 @@ class Status(Command):
       modify_dict['automount'] = automount
       update_dict['automount'] = automount
 
-    last_modify_timestamp = updater.GetModifyTimestamp()
-    last_update_timestamp = updater.GetUpdateTimestamp()
+    last_modify_timestamp = updater.GetModifyTimestamp() or 0
+    last_update_timestamp = updater.GetUpdateTimestamp() or 0
 
     if not epoch:
-      if last_modify_timestamp is not None:
-        last_modify_timestamp = time.asctime(last_modify_timestamp)
+      # If we are displaying the time as a string, do so in localtime.  This is
+      # the only place such a conversion is appropriate.
+      if last_modify_timestamp:
+        last_modify_timestamp = time.asctime(time.localtime(last_modify_timestamp))
       else:
         last_modify_timestamp = 'Unknown'
-      if last_update_timestamp is not None:
-        last_update_timestamp = time.asctime(last_update_timestamp)
+      if last_update_timestamp:
+        last_update_timestamp = time.asctime(time.localtime(last_update_timestamp))
       else:
         last_update_timestamp = 'Unknown'
-    else:
-      if last_modify_timestamp is not None:
-        last_modify_timestamp = calendar.timegm(last_modify_timestamp)
-      else:
-        last_modify_timestamp = 0
-      if last_update_timestamp is not None:
-        last_update_timestamp = calendar.timegm(last_update_timestamp)
-      else:
-        last_update_timestamp = 0
 
     modify_dict['value'] = last_modify_timestamp
     update_dict['value'] = last_update_timestamp

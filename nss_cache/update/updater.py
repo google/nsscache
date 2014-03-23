@@ -29,6 +29,7 @@ AutomountMapUpdater:  Class used for updating automount map caches.
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
+import calendar
 import logging
 import os
 import stat
@@ -106,8 +107,8 @@ class Updater(object):
       filename:  A String naming the file to read from.
 
     Returns:
-      A time.struct_time, or None if the timestamp file doesn't
-      exist or has errors.
+      An int with the number of seconds since epoch, or None if the timestamp
+      file doesn't exist or has errors.
     """
     if not os.path.exists(filename):
       return None
@@ -127,8 +128,8 @@ class Updater(object):
     if timestamp_string is not None:
       try:
         # Append UTC to force the timezone to parse the string in.
-        timestamp = time.strptime(timestamp_string + ' UTC',
-                                  '%Y-%m-%dT%H:%M:%SZ %Z')
+        timestamp = int(calendar.timegm(time.strptime(timestamp_string + ' UTC',
+                                                      '%Y-%m-%dT%H:%M:%SZ %Z')))
       except ValueError, e:
         self.log.error('cannot parse timestamp file %r: %s',
                        filename, e)
@@ -136,11 +137,11 @@ class Updater(object):
     else:
       timestamp = None
 
-    now = time.gmtime()
+    now = time.time()
     if timestamp > now:
       self.log.warn('timestamp %r from %r is in the future, now is %r',
-                    timestamp_string, filename, time.mktime(now))
-      if time.mktime(timestamp) - time.mktime(now) >= 60*60:
+                    timestamp_string, filename, now)
+      if timestamp - now >= 60*60:
         self.log.info('Resetting timestamp to now.')
         timestamp = now
 
@@ -162,7 +163,7 @@ class Updater(object):
     """
     (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
                                                  dir=self.timestamp_dir)
-    time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', timestamp)
+    time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp))
 
     try:
       os.write(filedesc, '%s\n' % time_string)
@@ -214,7 +215,7 @@ class Updater(object):
     # blow away our cached value
     self.update_time = None
     # default to now
-    update_timestamp = update_timestamp or time.gmtime()
+    update_timestamp = int(update_timestamp or time.time())
     return self._WriteTimestamp(update_timestamp, self.update_file)
 
   def WriteModifyTimestamp(self, timestamp):

@@ -169,7 +169,7 @@ class TestPasswdMap(unittest.TestCase):
     """Test setting/getting of timestamps on maps."""
     m = passwd.PasswdMap()
     # we only work in whole-second resolution
-    now = time.gmtime(time.time())
+    now = int(time.time())
     
     m.SetModifyTimestamp(now)
     self.assertEqual(now, m._last_modification_timestamp)

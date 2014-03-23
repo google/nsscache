@@ -192,7 +192,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
 
-    modify_stamp = time.gmtime(1)
+    modify_stamp = 1
     map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
     passwd_map = passwd.PasswdMap([map_entry])
     passwd_map.SetModifyTimestamp(modify_stamp)
@@ -224,7 +224,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.conf.maps = [config.MAP_AUTOMOUNT]
     self.conf.cache = 'dummy'
 
-    modify_stamp = time.gmtime(1)
+    modify_stamp = 1
     map_entry = automount.AutomountMapEntry()
     map_entry.key = '/home'
     map_entry.location = 'foo'
@@ -265,7 +265,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
-    modify_stamp = time.gmtime(1)
+    modify_stamp = 1
     map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
     passwd_map = passwd.PasswdMap([map_entry])
     passwd_map.SetModifyTimestamp(modify_stamp)
@@ -689,10 +689,10 @@ class TestStatusCommand(mox.MoxTestBase):
     # stub out parts of update.MapUpdater
     class DummyUpdater(map_updater.MapUpdater):
       def GetModifyTimestamp(self):
-        return time.gmtime(1)
+        return 1
 
       def GetUpdateTimestamp(self):
-        return time.gmtime(2)
+        return 2
 
     # Add dummy source to the set if implementations of sources
     source_factory.RegisterImplementation(DummySource)
@@ -804,7 +804,7 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                     epoch=False)
-    self.failUnlessEqual('Thu Jan  1 00:00:02 1970',
+    self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
                          values[1]['value'])
 
   def testGetAutomountMapMetadata(self):
