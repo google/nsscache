@@ -13,4 +13,7 @@ export DH_VERBOSE=1
 	dh  $@
 
 override_dh_auto_install:
-	dh_auto_install -- --install-scripts=/usr/sbin
+	dh_auto_install -- --install-scripts=/usr/share/nsscache --root=debian/nsscache --install-layout=deb --install-lib=/usr/share/nsscache
+
+override_dh_auto_build:
+

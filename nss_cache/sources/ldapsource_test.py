@@ -624,7 +624,7 @@ class TestLdapSource(mox.MoxTestBase):
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(self.config)
-    self.assertEquals(0, source.Verify(time.gmtime(0)))
+    self.assertEquals(0, source.Verify(0))
 
 
 class TestUpdateGetter(unittest.TestCase):
@@ -643,6 +643,18 @@ class TestUpdateGetter(unittest.TestCase):
         pass
 
     self.source = DummySource()
+
+  def testFromTimestampToLdap(self):
+    ts = 1259641025
+    expected_ldap_ts = '20091201041705Z'
+    self.assertEquals(expected_ldap_ts,
+                      ldapsource.UpdateGetter().FromTimestampToLdap(ts))
+
+  def testFromLdapToTimestamp(self):
+    expected_ts = 1259641025
+    ldap_ts = '20091201041705Z'
+    self.assertEquals(expected_ts,
+                      ldapsource.UpdateGetter().FromLdapToTimestamp(ldap_ts))
 
   def testPasswdEmptySourceGetUpdates(self):
     """Test that getUpdates on the PasswdUpdateGetter works."""

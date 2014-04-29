@@ -44,13 +44,13 @@ class TestMap(unittest.TestCase):
       pass
 
     foo = StubMap()
-    now = time.gmtime()
+    now = int(time.time())
     foo.SetModifyTimestamp(now)
     self.assertEquals(now,
                       foo.GetModifyTimestamp())
     self.assertRaises(TypeError,
                       foo.SetModifyTimestamp,
-                      1)
+                      1.1)
     foo.SetModifyTimestamp(None)
     self.assertEqual(None, foo.GetModifyTimestamp())
     
@@ -59,13 +59,13 @@ class TestMap(unittest.TestCase):
       pass
 
     foo = StubMap()
-    now = time.gmtime()
+    now = int(time.time())
     foo.SetUpdateTimestamp(now)
     self.assertEquals(now,
                       foo.GetUpdateTimestamp())
     self.assertRaises(TypeError,
                       foo.SetUpdateTimestamp,
-                      1)
+                      1.1)
     foo.SetUpdateTimestamp(None)
     self.assertEqual(None, foo.GetUpdateTimestamp())
 

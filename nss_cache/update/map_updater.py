@@ -28,7 +28,6 @@ AutomountMapUpdater:  Class used for updating automount map caches.
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
 
-
 from nss_cache import error
 from nss_cache.caches import cache_factory
 from nss_cache.update import updater
