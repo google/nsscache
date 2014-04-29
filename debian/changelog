@@ -1,3 +1,9 @@
+nsscache (0.24-1) unstable; urgency=medium
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 29 Apr 2014 19:46:00 +1000
+
 nsscache (0.23-2) unstable; urgency=low
 
   * Refactor debian/rules to install into /usr/share/nsscache.
