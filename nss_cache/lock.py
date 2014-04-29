@@ -173,11 +173,11 @@ class PidFile(object):
     commandline including the string 'nsscache'.
     """
     # Grab the pid
-    pid = self._file.read().strip()
+    pid_content = self._file.read()
     try:
-      pid = int(pid)
-    except ValueError, e:
-      self.log.warning('Not sending TERM, could not parse pid value: %r', pid)
+      pid = int(pid_content.strip())
+    except (AttributeError, ValueError), e:
+      self.log.warning('Not sending TERM, could not parse pid file content: %r', pid_content)
       return
 
     self.log.debug('retrieved pid %d' % pid)

@@ -231,7 +231,17 @@ class TestPidFile(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     locker.SendTerm()
-    
+
+  def testSendTermNonePid(self):
+    locker = lock.PidFile()
+    self.mox.StubOutWithMock(locker, '_file')
+    locker._file.read().AndReturn(None)
+    locker.PROC = self.workdir
+
+    self.mox.ReplayAll()
+
+    locker.SendTerm()
+
   def testSendTermTrapsENOENT(self):
     locker = lock.PidFile()
     self.mox.StubOutWithMock(locker, '_file')
