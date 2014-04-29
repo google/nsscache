@@ -226,7 +226,6 @@ class TestPidFile(mox.MoxTestBase):
     locker = lock.PidFile()
     self.mox.StubOutWithMock(locker, '_file')
     locker._file.read().AndReturn('\n')
-    locker._file.seek(0)
     locker.PROC = self.workdir
 
     self.mox.ReplayAll()
