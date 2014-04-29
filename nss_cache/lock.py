@@ -174,7 +174,11 @@ class PidFile(object):
     """
     # Grab the pid
     pid = self._file.read().strip()
+    #try:
     pid = int(pid)
+    #except ValueError, e:
+    #  self.log.warning('Not sending TERM, could not parse pid value: %r', pid)
+    #  retun
 
     self.log.debug('retrieved pid %d' % pid)
 

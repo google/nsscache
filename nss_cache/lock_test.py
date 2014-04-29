@@ -20,6 +20,8 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+
+import __builtin__
 import errno
 import fcntl
 import os
@@ -220,6 +222,17 @@ class TestPidFile(mox.MoxTestBase):
     os.remove(proc_filename)
     os.rmdir(proc_dir)
 
+  def testSendTermNoPid(self):
+    locker = lock.PidFile()
+    self.mox.StubOutWithMock(locker, '_file')
+    locker._file.read().AndReturn('\n')
+    locker._file.seek(0)
+    locker.PROC = self.workdir
+
+    self.mox.ReplayAll()
+
+    locker.SendTerm()
+    
   def testSendTermTrapsENOENT(self):
     locker = lock.PidFile()
     self.mox.StubOutWithMock(locker, '_file')
@@ -227,8 +240,8 @@ class TestPidFile(mox.MoxTestBase):
     locker._file.seek(0)
     locker.PROC = self.workdir
 
-    self.mox.StubOutWithMock(__builtins__, 'open')
-    __builtins__.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
+    self.mox.StubOutWithMock(__builtin__, 'open')
+    __builtin__.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
 
     self.mox.ReplayAll()
 

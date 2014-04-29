@@ -31,6 +31,7 @@ from nss_cache.command_test import *
 from nss_cache.config_test import *
 from nss_cache.error_test import *
 from nss_cache.nss_test import *
+from nss_cache.lock_test import *
 
 from nss_cache.caches.caches_test import *
 from nss_cache.caches.cache_factory_test import *
