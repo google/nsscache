@@ -1,5 +1,3 @@
-#!/usr/bin/python
-#
 # Copyright 2011 Google Inc.
 #
 # This program is free software; you can redistribute it and/or
