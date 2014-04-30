@@ -1,5 +1,3 @@
-#!/usr/bin/python
-#
 # Copyright 2007 Google Inc.
 #
 # This program is free software; you can redistribute it and/or
@@ -137,7 +135,9 @@ class Map(object):
     # Add to index if not already there.
     if not self._data.has_key(entry.Key()):
       self._index.append(entry.Key())
-
+    else:
+      self.log.warning('duplicate key detected when adding to map: %r, overwritten', entry.Key())
+    
     self._data[entry.Key()] = entry
     return True
 
