@@ -1,3 +1,9 @@
+nsscache (0.25-1) unstable; urgency=medium
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 01 May 2014 00:09:30 +1000
+
 nsscache (0.24-1) unstable; urgency=medium
 
   * New upstream release. 
