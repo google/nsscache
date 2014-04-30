@@ -106,6 +106,21 @@ class TestLdapSource(mox.MoxTestBase):
     self.assertEquals(source.conf['tls_cacertfile'],
                       'TEST_TLS_CACERTFILE')
 
+  def testDebugLevelSet(self):
+    config = dict(self.config)
+    config['ldap_debug'] = 3
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.set_option(ldap.OPT_DEBUG_LEVEL, 3)
+    mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY',
+        uri='TEST_URI').AndReturn(mock_rlo)
+    
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
+
   def testTrapServerDownAndRetry(self):
     config = dict(self.config)
     config['bind_dn'] = ''

@@ -86,6 +86,8 @@ class LdapSource(source.Source):
                       retry_delay=conf['retry_delay'])
       if conf['tls_starttls'] == 1:
           self.conn.start_tls_s()
+      if 'ldap_debug' in conf:
+        self.conn.set_option(ldap.OPT_DEBUG_LEVEL, conf['ldap_debug'])
     else:
       self.conn = conn
 
