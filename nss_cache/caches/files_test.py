@@ -206,17 +206,17 @@ class TestFilesCache(mox.MoxTestBase):
     self.failUnless(os.path.exists(index_filename),
                     'Index not created %s' % index_filename)
     f = open(index_filename)
-    self.assertEqual('bar\x0031\x00\x00\n', f.readline())
-    self.assertEqual('foo\x0016\x00\x00\n', f.readline())
-    self.assertEqual('quux\x000\x00\x00\n', f.readline())
+    self.assertEqual('bar\x0015\x00\x00\n', f.readline())
+    self.assertEqual('foo\x000\x00\x00\x00\n', f.readline())
+    self.assertEqual('quux\x0030\x00\n', f.readline())
 
     index_filename = cache.GetCacheFilename() + '.ixuid'
     self.failUnless(os.path.exists(index_filename),
                     'Index not created %s' % index_filename)
     f = open(index_filename)
-    self.assertEqual('10\x0016\x00\n', f.readline())
-    self.assertEqual('11\x0031\x00\n', f.readline())
-    self.assertEqual('12\x000\x00\x00\n', f.readline())
+    self.assertEqual('10\x000\x00\x00\n', f.readline())
+    self.assertEqual('11\x0015\x00\n', f.readline())
+    self.assertEqual('12\x0030\x00\n', f.readline())
 
 
 if __name__ == '__main__':

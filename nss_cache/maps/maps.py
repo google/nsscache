@@ -74,6 +74,9 @@ class Map(object):
     if self.__class__ is Map:
       raise TypeError('Map is an abstract class.')
     self._data = {}
+    # The index preserves the order that entries are returned from the source
+    # (e.g. the LDAP server.)  It is not a set as sets are unordered.
+    self._index = []
     self._last_modification_timestamp = modify_time
     self._last_update_timestamp = update_time
 
@@ -94,8 +97,13 @@ class Map(object):
     return False
 
   def __iter__(self):
-    """Iterate over the MapEntry objects in this map."""
-    return iter(self._data.values())
+    """Iterate over the MapEntry objects in this map.
+
+    Actually this is a generator posing as an iterator so we can use the index
+    to emit values in the original order.
+    """
+    for index_key in self._index:
+      yield self._data[index_key]
 
   def __len__(self):
     """Returns the number of items in the map."""
@@ -111,7 +119,7 @@ class Map(object):
       entry: A maps.MapEntry instance.
 
     Returns:
-      A boolean indicating the add is successfull when True.
+      A boolean indicating the add is successful when True.
 
     Raises:
       TypeError: The object passed is not the right type.
@@ -125,6 +133,10 @@ class Map(object):
     if not entry.Verify():
       self.log.info('refusing to add entry, verify failed')
       return False
+
+    # Add to index if not already there.
+    if not self._data.has_key(entry.Key()):
+      self._index.append(entry.Key())
 
     self._data[entry.Key()] = entry
     return True
@@ -206,8 +218,12 @@ class Map(object):
     Raises:
       KeyError if there is nothing to return
     """
-    (unused_key, value) = self._data.popitem()  #Throws KeyError if empty.
-    return value
+    try:
+      # pop items off the start of the index, in sorted order.
+      index_key = self._index.pop(0)
+    except IndexError:
+      raise KeyError # Callers expect a KeyError rather than IndexError
+    return self._data.pop(index_key) # Throws the KeyError if empty.
 
   def SetModifyTimestamp(self, value):
     """Set the last modify timestamp of this map.

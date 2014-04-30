@@ -240,18 +240,18 @@ class MapAutomountUpdaterTest(mox.MoxTestBase):
     cache_master = self.mox.CreateMock(caches.Cache)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint='/auto').AndReturn(cache_auto)
-    cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint='/home').AndReturn(cache_home)
-    cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint=None).AndReturn(cache_master)
+    cache_factory.Create(mox.IgnoreArg(), 'automount', automount_mountpoint='/home').AndReturn(cache_home)
+    cache_factory.Create(mox.IgnoreArg(), 'automount', automount_mountpoint='/auto').AndReturn(cache_auto)
+    cache_factory.Create(mox.IgnoreArg(), 'automount', automount_mountpoint=None).AndReturn(cache_master)
 
     updater = map_updater.AutomountUpdater(
         config.MAP_AUTOMOUNT, self.workdir, {})
 
     self.mox.StubOutClassWithMocks(map_updater, 'MapUpdater')
-    updater_auto = map_updater.MapUpdater(config.MAP_AUTOMOUNT, self.workdir, {}, automount_mountpoint='/auto')
-    updater_auto.UpdateCacheFromSource(cache_auto, source_mock, True, False, 'ou=auto.auto,ou=automounts').AndReturn(0)
     updater_home = map_updater.MapUpdater(config.MAP_AUTOMOUNT, self.workdir, {}, automount_mountpoint='/home')
     updater_home.UpdateCacheFromSource(cache_home, source_mock, True, False, 'ou=auto.home,ou=automounts').AndReturn(0)
+    updater_auto = map_updater.MapUpdater(config.MAP_AUTOMOUNT, self.workdir, {}, automount_mountpoint='/auto')
+    updater_auto.UpdateCacheFromSource(cache_auto, source_mock, True, False, 'ou=auto.auto,ou=automounts').AndReturn(0)
     updater_master = map_updater.MapUpdater(config.MAP_AUTOMOUNT, self.workdir, {})
     updater_master.FullUpdateFromMap(cache_master, master_map).AndReturn(0)
 
@@ -300,8 +300,8 @@ class MapAutomountUpdaterTest(mox.MoxTestBase):
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
     cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint=None).AndReturn(cache_master)
-    cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint='/auto').AndReturn(cache_auto)
     cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint='/home').AndReturn(cache_home)
+    cache_factory.Create(mox.IgnoreArg(), mox.IgnoreArg(), automount_mountpoint='/auto').AndReturn(cache_auto)
 
     skip = map_updater.AutomountUpdater.OPT_LOCAL_MASTER
     updater = map_updater.AutomountUpdater(
