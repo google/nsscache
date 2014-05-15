@@ -78,7 +78,7 @@ class Cache(object):
     if map_name == config.MAP_PASSWORD:
       self.data = passwd.PasswdMap()
     elif map_name == config.MAP_SSHKEY:
-      self.data =sshkey.SshkeyMap()
+      self.data = sshkey.SshkeyMap()
     elif map_name == config.MAP_GROUP:
       self.data = group.GroupMap()
     elif map_name == config.MAP_SHADOW:
@@ -144,10 +144,11 @@ class Cache(object):
     except OSError, e:
       if e.errno == errno.ENOENT:
         if self.map_name == "sshkey":
-                os.chmod(self.temp_cache_filename,stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH)
+          os.chmod(self.temp_cache_filename,
+                   stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH)
         else:
-                os.chmod(self.temp_cache_filename,
-                 stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+          os.chmod(self.temp_cache_filename,
+                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
                    self.temp_cache_filename, self.GetCacheFilename())
     os.rename(self.temp_cache_filename, self.GetCacheFilename())

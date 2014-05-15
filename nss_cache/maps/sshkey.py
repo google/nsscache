@@ -1,6 +1,4 @@
-#!/usr/bin/python
-#
-# Copyright 2007 Google Inc.
+# Copyright 2014 Google Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,14 +22,14 @@ class.
 SshkeyMapEntry:  A sshkey map entry based on the MapEntry class.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = 'mimianddaniel@gmail.com'
 
 from nss_cache.maps import maps
 
 
 class SshkeyMap(maps.Map):
   """This class represents an NSS sshkey map.
-  
+
   Map data is stored as a list of MapEntry objects, see the abstract
   class Map.
   """
@@ -59,12 +57,12 @@ class SshkeyMapEntry(maps.MapEntry):
   __slots__ = ('name', 'sshkey')
   _KEY = 'name'
   _ATTRS = ('name', 'sshkey')
-  
+
   def __init__(self, data=None):
     """Construct a SshkeyMapEntry, setting reasonable defaults."""
     self.name = None
     self.sshkey = None
 
     super(SshkeyMapEntry, self).__init__(data)
-      # Seed data with defaults if still empty
+    # Seed data with defaults if still empty
     if self.sshkey is None: self.sshkey = ''
