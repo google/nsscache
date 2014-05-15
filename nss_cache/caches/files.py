@@ -46,6 +46,7 @@ else: # Python < 2.4, 50% slower
 def RegisterAllImplementations(register_callback):
   """Register our cache classes independently from the import scheme."""
   register_callback('files', 'passwd', FilesPasswdMapHandler)
+  register_callback('files', 'sshkey', FilesSshkeyMapHandler)
   register_callback('files', 'group', FilesGroupMapHandler)
   register_callback('files', 'shadow', FilesShadowMapHandler)
   register_callback('files', 'netgroup', FilesNetgroupMapHandler)
@@ -240,6 +241,43 @@ class FilesCache(caches.Cache):
                        '\0' * (max_length - len(key) - len(pos))))
         index_file.write(index_line)
       index_file.close()
+
+
+class FilesSshkeyMapHandler(FilesCache):
+  """Concrete class for updating a nss_files module sshkey cache."""
+  CACHE_FILENAME = 'sshkey'
+  _INDEX_ATTRIBUTES = ('name',)
+
+  def __init__(self, conf, map_name=None, automount_mountpoint=None):
+    if map_name is None: map_name = config.MAP_SSHKEY
+    super(FilesSshkeyMapHandler, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
+    self.map_parser = file_formats.FilesSshkeyMapParser()
+
+  def _ExpectedKeysForEntry(self, entry):
+    """Generate a list of expected cache keys for this type of map.
+
+    Args:
+      entry: A SshkeyMapEntry
+
+    Returns:
+      A list of strings
+    """
+    return [entry.name]
+
+  def _WriteData(self, target, entry):
+    """Write a SshekeyMapEntry to the target cache.
+
+    Args:
+      target: A file-like object.
+      entry: A SshkeyMapEntry.
+
+    Returns:
+      Number of bytes written to the target.
+    """
+    sshkey_entry = '%s:%s' % (entry.name, entry.sshkey)
+    target.write(sshkey_entry + '\n')
+    return len(sshkey_entry) + 1
 
 
 class FilesPasswdMapHandler(FilesCache):

@@ -37,7 +37,7 @@ CFLAGS="%{optflags}" %{__python} setup.py build
 %config /etc/nsscache.conf
 %exclude /usr/bin/runtests.*
 /usr/bin/nsscache
-/usr/lib/python2.4/site-packages/nss_cache/
+/usr/lib/python2.6/site-packages/nss_cache/
 
 %changelog
 * Tue Jan 06 2009 Oliver Hookins <oliver.hookins@anchor.com.au> - 0.8.3-1

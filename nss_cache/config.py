@@ -33,6 +33,7 @@ MAP_GROUP = 'group'
 MAP_SHADOW = 'shadow'
 MAP_NETGROUP = 'netgroup'
 MAP_AUTOMOUNT = 'automount'
+MAP_SSHKEY = 'sshkey'
 
 # accepted commands.
 CMD_HELP = 'help'
@@ -313,6 +314,8 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
   # Verify that at least one supported module is configured in nsswitch.conf.
   nsswitch = ParseNSSwitchConf(nsswitch_filename)
   for configured_map in conf.maps:
+    if configured_map == 'sshkey':
+      continue
     if conf.options[configured_map].cache['name'] == 'nssdb':
       nss_module_name = 'db'
     if conf.options[configured_map].cache['name'] == 'files':

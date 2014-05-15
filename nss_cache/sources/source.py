@@ -61,6 +61,8 @@ class Source(object):
     """
     if map_name == config.MAP_PASSWORD:
       return self.GetPasswdMap(since)
+    elif map_name == config.MAP_SSHKEY:
+      return self.GetSshkeyMap(since)
     elif map_name == config.MAP_GROUP:
       return self.GetGroupMap(since)
     elif map_name == config.MAP_SHADOW:

@@ -31,6 +31,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 from nss_cache.sources import source
 
 def RegisterImplementation(registration_callback):
@@ -254,6 +255,21 @@ class LdapSource(source.Source):
         else:
           yield record[1]
 
+  def GetSshkeyMap(self, since=None):
+    """Return the sshkey map from this source.
+
+    Args:
+      since: Get data only changed since this timestamp (inclusive) or None
+      for all data.
+
+    Returns:
+      instance of maps.SshkeyMap
+    """
+    return SshkeyUpdateGetter().GetUpdates(source=self,
+                                           search_base=self.conf['base'],
+                                           search_filter=self.conf['filter'],
+                                           search_scope=self.conf['scope'],
+                                           since=since)
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
 
@@ -494,6 +510,33 @@ class UpdateGetter(object):
 
     return data_map
 
+
+class SshkeyUpdateGetter(UpdateGetter):
+  """Get sshkey updates."""
+
+  def __init__(self):
+    super(SshkeyUpdateGetter, self).__init__()
+    self.attrs = ['uid', 'sshPublicKey']
+    self.essential_fields = ['uid']
+        
+
+  def CreateMap(self):
+    """Returns a new SshkeyMap instance to have SshkeyMapEntries added to it."""
+    return sshkey.SshkeyMap()
+
+  def Transform(self, obj):
+    """Transforms a LDAP posixAccount data structure into a SshkeyMapEntry."""
+
+    skey = sshkey.SshkeyMapEntry()
+
+    skey.name = obj['uid'][0]
+
+    if 'sshPublicKey' in obj:
+      skey.sshkey = obj['sshPublicKey']
+    else:
+      skey.sshkey = ''
+
+    return skey
 
 class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""

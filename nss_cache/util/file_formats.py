@@ -26,6 +26,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 
 try:
   SetType = set
@@ -63,6 +64,17 @@ class FilesMapParser(object):
                       entry, line)
     return data
 
+class FilesSshkeyMapParser(FilesMapParser):
+  """Class for parsing nss_files module sshkey cache."""
+
+  def _ReadEntry(self, entry):
+    """Return a SshkeyMapEntry from a record in the target cache."""
+    entry = entry.split(':')
+    map_entry = sshkey.SshkeyMapEntry()
+    # maps expect strict typing, so convert to int as appropriate.
+    map_entry.name = entry[0]
+    map_entry.sshkey = entry[1]
+    return map_entry
 
 class FilesPasswdMapParser(FilesMapParser):
   """Class for parsing nss_files module passwd cache."""

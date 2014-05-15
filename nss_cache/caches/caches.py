@@ -32,6 +32,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 
 class Cache(object):
   """Abstract base class for Caches.
@@ -76,6 +77,8 @@ class Cache(object):
     # Setup the map we may be asked to load our cache into.
     if map_name == config.MAP_PASSWORD:
       self.data = passwd.PasswdMap()
+    elif map_name == config.MAP_SSHKEY:
+      self.data =sshkey.SshkeyMap()
     elif map_name == config.MAP_GROUP:
       self.data = group.GroupMap()
     elif map_name == config.MAP_SHADOW:
@@ -140,7 +143,10 @@ class Cache(object):
       shutil.copymode(self.GetCompatFilename(), self.temp_cache_filename)
     except OSError, e:
       if e.errno == errno.ENOENT:
-        os.chmod(self.temp_cache_filename,
+        if self.map_name == "sshkey":
+                os.chmod(self.temp_cache_filename,stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH)
+        else:
+                os.chmod(self.temp_cache_filename,
                  stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
                    self.temp_cache_filename, self.GetCacheFilename())
