@@ -1,3 +1,9 @@
+nsscache (0.26-1) precise; urgency=low
+
+  * New upstream version. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 17 May 2014 17:02:47 +1000
+
 nsscache (0.24-1) unstable; urgency=medium
 
   * New upstream release. 
