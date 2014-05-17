@@ -6,3 +6,4 @@ include nsscache.spec
 include COPYING
 include THANKS
 include runtests.py
+include examples/*
