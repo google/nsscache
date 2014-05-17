@@ -2,8 +2,9 @@ nsscache (0.26-1) unstable; urgency=low
 
   * New upstream version. 
   * Add authorized-keys-command.sh to examples. 
+  * Add a dh_auto_test target to debian/rules. 
 
- -- Jamie Wilkinson <jaq@debian.org>  Sat, 17 May 2014 17:03:20 +1000
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 17 May 2014 17:09:05 +1000
 
 nsscache (0.25-1) unstable; urgency=medium
 
