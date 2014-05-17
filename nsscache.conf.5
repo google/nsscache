@@ -1,14 +1,14 @@
-.TH NSSCACHE.CONF 5 2008-11-19 "nsscache 0.8.5" "File formats"
+.TH NSSCACHE.CONF 5 2008-11-19 "nsscache 0.26" "File formats"
 .SH NAME
 nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
 .B /etc/nsscache.conf
 .SH DESCRIPTION
 .B nsscache
-synchronises a local NSS cache against a remote data source.
-This approach allows the administrator to separate the network from
-the NSS lookup codepath, improving speed and reliability of name
-services.
+synchronises a local NSS cache, and other databases, against a remote
+data source. This approach allows the administrator to separate the
+network from the NSS lookup codepath, improving speed and reliability
+of name services.
 
 The nsscache configuration file comprises of one DEFAULT section,
 followed by zero or more map-specific configuration sections.  The
@@ -60,14 +60,20 @@ Specifies the cache method to use to store the data, which will be
 queried by the NSS itself.
 
 Valid options:
-.I nssdb
-Store in a Berkeley DB file, for use with the
-.I nss_db
-NSS module
-
 .I files
 Store in a plain text file, similar in format to
 .I /etc/passwd
+
+.I cache
+Store in a plain text cache file, with a \fB.cache\fP suffix, and an index, for use with the
+.I nss-cache
+NSS module.
+
+.I nssdb
+Store in a Berkeley DB file, for use with the
+.I nss_db
+NSS module.  Please note that this option is deprecated in favour of
+.I cache
 
 .TP
 .B maps
@@ -80,6 +86,7 @@ Valid options:
 .I shadow
 .I netgroup
 .I automount
+.I sshkey
 
 .TP
 .B timestamp_dir
