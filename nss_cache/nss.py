@@ -46,6 +46,7 @@ def GetMap(map_name):
 
   raise error.UnsupportedMap
 
+
 def GetPasswdMap():
   """Returns a PasswdMap built from nss calls."""
   passwd_map = passwd.PasswdMap()

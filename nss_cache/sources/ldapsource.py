@@ -36,8 +36,8 @@ from nss_cache.sources import source
 
 def RegisterImplementation(registration_callback):
   registration_callback(LdapSource)
-  
-  
+
+
 class LdapSource(source.Source):
   """Source for data in LDAP.
 
@@ -132,7 +132,7 @@ class LdapSource(source.Source):
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_ALLOW
     elif configuration['tls_require_cert'] == 'try':
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_TRY
-    
+
     if not 'sasl_authzid' in configuration:
       configuration['sasl_authzid'] = ''
 
@@ -511,33 +511,6 @@ class UpdateGetter(object):
     return data_map
 
 
-class SshkeyUpdateGetter(UpdateGetter):
-  """Get sshkey updates."""
-
-  def __init__(self):
-    super(SshkeyUpdateGetter, self).__init__()
-    self.attrs = ['uid', 'sshPublicKey']
-    self.essential_fields = ['uid']
-        
-
-  def CreateMap(self):
-    """Returns a new SshkeyMap instance to have SshkeyMapEntries added to it."""
-    return sshkey.SshkeyMap()
-
-  def Transform(self, obj):
-    """Transforms a LDAP posixAccount data structure into a SshkeyMapEntry."""
-
-    skey = sshkey.SshkeyMapEntry()
-
-    skey.name = obj['uid'][0]
-
-    if 'sshPublicKey' in obj:
-      skey.sshkey = obj['sshPublicKey']
-    else:
-      skey.sshkey = ''
-
-    return skey
-
 class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""
 
@@ -716,3 +689,29 @@ class AutomountUpdateGetter(UpdateGetter):
 
     return automount_ent
 
+
+class SshkeyUpdateGetter(UpdateGetter):
+  """Fetches SSH keys."""
+
+  def __init__(self):
+    super(SshkeyUpdateGetter, self).__init__()
+    self.attrs = ['uid', 'sshPublicKey']
+    self.essential_fields = ['uid']
+
+  def CreateMap(self):
+    """Returns a new SshkeyMap instance to have SshkeyMapEntries added to it."""
+    return sshkey.SshkeyMap()
+
+  def Transform(self, obj):
+    """Transforms a LDAP posixAccount data structure into a SshkeyMapEntry."""
+
+    skey = sshkey.SshkeyMapEntry()
+
+    skey.name = obj['uid'][0]
+
+    if 'sshPublicKey' in obj:
+      skey.sshkey = obj['sshPublicKey']
+    else:
+      skey.sshkey = ''
+
+    return skey
