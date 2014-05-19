@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [[ -n ${ADTTMP-} ]]; then
+    WORKDIR=$(mktemp -d)
+    trap "rm -rf $WORKDIR" 0 INT QUIT ABRT PIPE TERM
+else
+    WORKDIR=${ADTTMP}
+fi
+
+# simulate a bootstrap and one update cycle
+actions=("update --full" "status" "repair" "update")
+
+run_nsscache() {
+    source=$1
+    config="debian/tests/nsscache.conf.$source"
+
+    for a in "${actions[@]}"; do
+        output="$WORKDIR/${source}-${a// /_}.log"
+        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a} > "${output}"
+        r=$?
+        if [[ $r -ne 0 ]]; then
+            echo FAILED
+            cat "$output"
+            exit $r
+        fi
+    done
+}
+
+run_nsscache ldap
