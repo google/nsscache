@@ -7,6 +7,7 @@ Standards-Version: 3.9.5
 Homepage: http://code.google.com/p/nsscache
 Vcs-Browser: https://code.google.com/p/nsscache/source/browse/?name=debian#git%2Fnsscache
 Vcs-Git: https://code.google.com/p/nsscache/ -b debian
+XS-Testsuite: autopkgtest
 
 Package: nsscache
 Architecture: all
