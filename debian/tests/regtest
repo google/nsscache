@@ -1,29 +1,41 @@
 #!/bin/bash
 
-if [[ -n ${ADTTMP-} ]]; then
+set -x
+
+if [[ -z ${ADTTMP-} ]]; then
     WORKDIR=$(mktemp -d)
+    ARTIFACTS=${WORKDIR}
     trap "rm -rf $WORKDIR" 0 INT QUIT ABRT PIPE TERM
 else
     WORKDIR=${ADTTMP}
+    ARTIFACTS=${ADT_ARTIFACTS}
 fi
 
 # simulate a bootstrap and one update cycle
 actions=("update --full" "status" "repair" "update")
 
+
 run_nsscache() {
     source=$1
-    config="debian/tests/nsscache.conf.$source"
+    cache=$2
+    config_orig="debian/tests/nsscache.conf.tmpl"
+    config=$(mktemp -p ${ARTIFACTS} nsscache.${source}.conf.XXXXXX)
+    sed -e "s!@cache@!$cache!" \
+	-e "s!@source@!$source!" \
+	-e "s!@workdir@!$WORKDIR!" \
+	< $config_orig > $config
+    mkdir $WORKDIR/$cache
 
     for a in "${actions[@]}"; do
-        output="$WORKDIR/${source}-${a// /_}.log"
-        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a} > "${output}"
+        output="$ARTIFACTS/${source}-${a// /_}.log"
+        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a} > "${output}" 2>&1
         r=$?
         if [[ $r -ne 0 ]]; then
-            echo FAILED
+            echo FAILED - output follows
             cat "$output"
             exit $r
         fi
     done
 }
 
-run_nsscache ldap
+run_nsscache ldap nssdb
