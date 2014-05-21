@@ -1,0 +1,37 @@
+dn: dc=example,dc=com
+dc: example
+objectClass: dcObject
+objectClass: organization
+o: Example, Inc.
+
+dn: ou=people,dc=example,dc=com
+objectclass: top
+objectclass: organizationalUnit
+ou: people
+
+dn: ou=group,dc=example,dc=com
+objectclass: top
+objectclass: organizationalUnit
+ou: groups
+
+dn: uid=jaq,ou=people,dc=example,dc=com
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Jamie Wilkinson
+uid: jaq
+userPassword: {CRYPT}e1y7ep455\//0rD
+homeDirectory: /home/jaq
+uidNumber: 37
+gidNumber: 31337
+loginShell: /bin/zsh
+shadowLastChange: 0
+shadowMax: 0
+shadowWarning: 0
+
+dn: cn=hax0rs,ou=group,dc=example,dc=com
+objectClass: posixGroup
+cn: hax0rs
+gidNumber: 31337
+memberUid: jaq
