@@ -29,9 +29,15 @@ setup_slapd() {
     slapadd -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
     slapd -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
     slappid=$!
-    until 
-    ldapsearch -x -H ldapi://${WORKDIR//\//%2F}%2Fldapi -b "dc=example,dc=com" '(objectclass=*)';
-	do sleep 0.01; done
+    attempts=0
+    until ldapsearch -x -H ldapi://${WORKDIR//\//%2F}%2Fldapi -b "dc=example,dc=com" '(objectclass=*)'; do
+	attempts=$(($attempts + 1))
+	if [[ $attempts -gt 60 ]]; then
+	  echo "failed to connect to slapd in 60 attempts"
+	  exit 1
+        fi
+	sleep 0.01
+    done
     set +e
 }
 
