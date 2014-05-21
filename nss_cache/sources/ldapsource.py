@@ -24,6 +24,7 @@ import logging
 import time
 import ldap
 import ldap.sasl
+import urllib
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -96,6 +97,10 @@ class LdapSource(source.Source):
 
   def _SetDefaults(self, configuration):
     """Set defaults if necessary."""
+    # LDAPI URLs must be url escaped socket filenames; rewrite if necessary.
+    if 'uri' in configuration:
+      if configuration['uri'].startswith('ldapi://'):
+        configuration['uri'] = 'ldapi://' + urllib.quote(configuration['uri'][8:], '')
     if not 'bind_dn' in configuration:
       configuration['bind_dn'] = self.BIND_DN
     if not 'bind_password' in configuration:
