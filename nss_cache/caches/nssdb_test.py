@@ -636,13 +636,6 @@ class TestNssDbCache(unittest.TestCase):
     cache.CACHE_FILENAME = bad_file
     self.assertRaises(error.CacheNotFound, cache.GetMap)
 
-  def testBeginRaisesPermissionDenied(self):
-    os.chmod(self.workdir, 0)
-    config = {'dir': self.workdir}
-    cache = nssdb.NssDbPasswdHandler(config)
-    self.assertRaises(error.PermissionDenied, cache._Begin)
-    os.chmod(self.workdir, 0700)
-
   def testGetMapIsSizedObject(self):
     timestamp = int(time.time())
     update_ts_filename = os.path.join(self.workdir,
