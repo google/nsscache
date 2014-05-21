@@ -68,6 +68,18 @@ run_nsscache() {
     done
 }
 
+test_nssdb() {
+	:
+}
+
+test_files() {
+	ls -alR $WORKDIR/files
+	set -e
+	grep jaq $WORKDIR/files/passwd
+}
+
 setup_slapd
 run_nsscache ldap nssdb
+test_nssdb
 run_nsscache ldap files
+test_files
