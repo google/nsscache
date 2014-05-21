@@ -11,7 +11,7 @@ cache = @cache@
 maps = passwd, group, shadow
 lockfile = @workdir@/lock
 
-ldap_uri = ldap://localhost
+ldap_uri = ldapi://@workdir@/ldapi
 
 ldap_base = ou=people,dc=example,dc=com
 ldap_filter = (objectclass=posixAccount)

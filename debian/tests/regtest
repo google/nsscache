@@ -5,15 +5,38 @@ set -x
 if [[ -z ${ADTTMP-} ]]; then
     WORKDIR=$(mktemp -d)
     ARTIFACTS=${WORKDIR}
-    trap "rm -rf $WORKDIR" 0 INT QUIT ABRT PIPE TERM
 else
     WORKDIR=${ADTTMP}
     ARTIFACTS=${ADT_ARTIFACTS}
 fi
 
-# simulate a bootstrap and one update cycle
-actions=("update --full" "status" "repair" "update")
+cleanup() {
+  if [[ -e "$WORKDIR/slapd.pid" ]]; then
+     kill -TERM $(cat $WORKDIR/slapd.pid)
+  fi
+  if [[ -z ${ADTTMP-}  ]]; then
+	rm -rf WORKDIR
+  fi
+}
 
+trap cleanup 0 INT QUIT ABRT PIPE TERM
+
+setup_slapd() {
+    set -e
+    mkdir -p $WORKDIR/ldap
+    sed -e "s!@workdir@!$WORKDIR!" \
+	< debian/tests/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
+    slapadd -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
+    slapd -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
+    slappid=$!
+    until 
+    ldapsearch -x -H ldapi://${WORKDIR//\//%2F}%2Fldapi -b "dc=example,dc=com" '(objectclass=*)';
+	do sleep 0.01; done
+    set +e
+}
+
+# simulate a bootstrap and one update cycle
+actions=("update --full" "status" "update")
 
 run_nsscache() {
     source=$1
@@ -25,10 +48,11 @@ run_nsscache() {
 	-e "s!@workdir@!$WORKDIR!" \
 	< $config_orig > $config
     mkdir $WORKDIR/$cache
+    mkdir $WORKDIR/ldap-timestamps
 
     for a in "${actions[@]}"; do
         output="$ARTIFACTS/${source}-${a// /_}.log"
-        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a} > "${output}" 2>&1
+        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a}
         r=$?
         if [[ $r -ne 0 ]]; then
             echo FAILED - output follows
@@ -38,4 +62,6 @@ run_nsscache() {
     done
 }
 
+setup_slapd
 run_nsscache ldap nssdb
+run_nsscache ldap files
