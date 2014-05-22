@@ -41,9 +41,6 @@ setup_slapd() {
     set +e
 }
 
-# simulate a bootstrap and one update cycle
-actions=("update --full" "status" "update")
-
 run_nsscache() {
     source=$1
     cache=$2
@@ -56,30 +53,33 @@ run_nsscache() {
     mkdir $WORKDIR/$cache
     mkdir $WORKDIR/ldap-timestamps
 
-    for a in "${actions[@]}"; do
-        output="$ARTIFACTS/${source}-${a// /_}.log"
-        PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" ${a}
-        r=$?
-        if [[ $r -ne 0 ]]; then
-            echo FAILED - output follows
-            cat "$output"
-            exit $r
-        fi
-    done
+    PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" update --full
+    r=$?
+    if [[ $r -ne 0 ]]; then
+       echo FAILED: $r
+    fi
+    test_${cache}
 }
 
 test_nssdb() {
-	:
+	ls -alR $WORKDIR/files
 }
 
 test_files() {
-	ls -alR $WORKDIR/files
+	ls -alR $WORKDIR
 	set -e
-	grep jaq $WORKDIR/files/passwd
+	grep jaq $WORKDIR/files/passwd.cache
+	grep jaq $WORKDIR/files/passwd.cache.ixname
+	grep 37 $WORKDIR/files/passwd.cache.ixuid
+	grep hax0rs $WORKDIR/files/group.cache
+	grep hax0rs $WORKDIR/files/group.cache.ixname
+	grep 31337 $WORKDIR/files/group.cache.ixgid
+	grep jaq $WORKDIR/files/shadow.cache
+	grep jaq $WORKDIR/files/shadow.cache.ixname
 }
 
 setup_slapd
-run_nsscache ldap nssdb
-test_nssdb
+#run_nsscache ldap nssdb
 run_nsscache ldap files
-test_files
+
+echo OK
