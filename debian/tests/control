@@ -2,4 +2,5 @@ Tests: regtest
 Depends: @,
 	slapd,
 	ldap-utils,
-	libnss-db
+	libnss-db,
+	db-util

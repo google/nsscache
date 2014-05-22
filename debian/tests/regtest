@@ -3,7 +3,7 @@
 set -x
 
 if [[ -z ${ADTTMP-} ]]; then
-    WORKDIR=$(mktemp -d)
+    WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
     ARTIFACTS=${WORKDIR}
 else
     WORKDIR=${ADTTMP}
@@ -15,7 +15,7 @@ cleanup() {
      kill -TERM $(cat $WORKDIR/slapd.pid)
   fi
   if [[ -z ${ADTTMP-}  ]]; then
-	rm -rf WORKDIR
+	rm -rf $WORKDIR
   fi
 }
 
@@ -51,7 +51,7 @@ run_nsscache() {
 	-e "s!@workdir@!$WORKDIR!" \
 	< $config_orig > $config
     mkdir $WORKDIR/$cache
-    mkdir $WORKDIR/ldap-timestamps
+    mkdir $WORKDIR/ldap-timestamps-$cache
 
     PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" update --full
     r=$?
@@ -62,7 +62,15 @@ run_nsscache() {
 }
 
 test_nssdb() {
-	ls -alR $WORKDIR/files
+	ls -alR $WORKDIR/nssdb
+	
+	grep jaq $WORKDIR/nssdb/passwd.db
+
+	db_dump -da $WORKDIR/nssdb/passwd.db | grep jaq
+	db_dump -da $WORKDIR/nssdb/shadow.db | grep jaq
+	db_dump -da $WORKDIR/nssdb/group.db | grep jaq
+
+	[[ $(stat -c%A $WORKDIR/nssdb/shadow.db) == "-rw-r-----" ]] || exit 1
 }
 
 test_files() {
@@ -76,10 +84,13 @@ test_files() {
 	grep 31337 $WORKDIR/files/group.cache.ixgid
 	grep jaq $WORKDIR/files/shadow.cache
 	grep jaq $WORKDIR/files/shadow.cache.ixname
+	[[ $(stat -c%A $WORKDIR/files/shadow.cache) == "-rw-r-----" ]] || exit 1
+	[[ $(stat -c%A $WORKDIR/files/shadow.cache.ixname) == "-rw-r-----" ]] || exit 1
 }
 
 setup_slapd
-#run_nsscache ldap nssdb
+run_nsscache ldap nssdb
 run_nsscache ldap files
+
 
 echo OK
