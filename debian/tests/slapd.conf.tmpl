@@ -1,0 +1,13 @@
+include /etc/ldap/schema/core.schema
+include /etc/ldap/schema/cosine.schema
+include /etc/ldap/schema/nis.schema
+
+loglevel -1
+pidfile @workdir@/slapd.pid
+
+
+moduleload back_bdb.la
+
+database bdb
+suffix "dc=example,dc=com"
+directory @workdir@/ldap

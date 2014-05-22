@@ -1,0 +1,31 @@
+# $Id: //depot/ops/src/nsscache/nsscache.conf.ldap#4 $
+#
+# See /usr/share/doc/nsscache/examples/nsscache.conf for
+# detailed information about configuration file formats, defaults,
+# and options.
+
+[DEFAULT]
+
+source = @source@
+cache = @cache@
+maps = passwd, group, shadow
+lockfile = @workdir@/lock
+
+ldap_uri = ldapi://@workdir@/ldapi
+
+ldap_base = ou=people,dc=example,dc=com
+ldap_filter = (objectclass=posixAccount)
+
+files_cache_filename_suffix = cache
+
+nssdb_dir = @workdir@/nssdb
+files_dir = @workdir@/files
+
+timestamp_dir = @workdir@/ldap-timestamps-@cache@
+
+[group]
+ldap_base = ou=group,dc=example,dc=com
+ldap_filter = (objectclass=posixGroup)
+
+[shadow]
+ldap_filter = (objectclass=shadowAccount)

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -x
+
+if [[ -z ${ADTTMP-} ]]; then
+    WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
+    ARTIFACTS=${WORKDIR}
+else
+    WORKDIR=${ADTTMP}
+    ARTIFACTS=${ADT_ARTIFACTS}
+fi
+
+cleanup() {
+  if [[ -e "$WORKDIR/slapd.pid" ]]; then
+     kill -TERM $(cat $WORKDIR/slapd.pid)
+  fi
+  if [[ -z ${ADTTMP-}  ]]; then
+	rm -rf $WORKDIR
+  fi
+}
+
+trap cleanup 0 INT QUIT ABRT PIPE TERM
+
+setup_slapd() {
+    set -e
+    mkdir -p $WORKDIR/ldap
+    sed -e "s!@workdir@!$WORKDIR!" \
+	< debian/tests/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
+    slapadd -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
+    slapd -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
+    slappid=$!
+    attempts=0
+    until ldapsearch -x -H ldapi://${WORKDIR//\//%2F}%2Fldapi -b "dc=example,dc=com" '(objectclass=*)'; do
+	attempts=$(($attempts + 1))
+	if [[ $attempts -gt 60 ]]; then
+	  echo "failed to connect to slapd in 60 attempts"
+	  exit 1
+        fi
+	sleep 0.01
+    done
+    set +e
+}
+
+run_nsscache() {
+    source=$1
+    cache=$2
+    config_orig="debian/tests/nsscache.conf.tmpl"
+    config=$(mktemp -p ${ARTIFACTS} nsscache.${source}.conf.XXXXXX)
+    sed -e "s!@cache@!$cache!" \
+	-e "s!@source@!$source!" \
+	-e "s!@workdir@!$WORKDIR!" \
+	< $config_orig > $config
+    mkdir $WORKDIR/$cache
+    mkdir $WORKDIR/ldap-timestamps-$cache
+
+    PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" update --full
+    r=$?
+    if [[ $r -ne 0 ]]; then
+       echo FAILED: $r
+    fi
+    test_${cache}
+}
+
+test_nssdb() {
+	ls -alR $WORKDIR/nssdb
+	
+	grep jaq $WORKDIR/nssdb/passwd.db
+
+	db_dump -da $WORKDIR/nssdb/passwd.db | grep jaq
+	db_dump -da $WORKDIR/nssdb/shadow.db | grep jaq
+	db_dump -da $WORKDIR/nssdb/group.db | grep jaq
+
+	[[ $(stat -c%A $WORKDIR/nssdb/shadow.db) == "-rw-r-----" ]] || exit 1
+}
+
+test_files() {
+	ls -alR $WORKDIR
+	set -e
+	grep jaq $WORKDIR/files/passwd.cache
+	grep jaq $WORKDIR/files/passwd.cache.ixname
+	grep 37 $WORKDIR/files/passwd.cache.ixuid
+	grep hax0rs $WORKDIR/files/group.cache
+	grep hax0rs $WORKDIR/files/group.cache.ixname
+	grep 31337 $WORKDIR/files/group.cache.ixgid
+	grep jaq $WORKDIR/files/shadow.cache
+	grep jaq $WORKDIR/files/shadow.cache.ixname
+	[[ $(stat -c%A $WORKDIR/files/shadow.cache) == "-rw-r-----" ]] || exit 1
+	[[ $(stat -c%A $WORKDIR/files/shadow.cache.ixname) == "-rw-r-----" ]] || exit 1
+}
+
+setup_slapd
+run_nsscache ldap nssdb
+run_nsscache ldap files
+
+
+echo OK
