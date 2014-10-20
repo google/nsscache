@@ -230,6 +230,10 @@ class FilesCache(caches.Cache):
       # setup permissions
       try:
         shutil.copymode(self.GetCompatFilename(), index_filename)
+        stat_info = os.stat(self.GetCompatFilename())
+        uid = stat_info.st_uid
+        gid = stat_info.st_gid
+        os.chown(index_filename, uid, gid)
       except OSError, e:
         if e.errno == errno.ENOENT:
           os.chmod(index_filename,

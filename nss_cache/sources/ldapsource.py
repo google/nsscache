@@ -301,7 +301,7 @@ class LdapSource(source.Source):
     Returns:
       instance of maps.GroupMap
     """
-    return GroupUpdateGetter().GetUpdates(source=self,
+    return GroupUpdateGetter(self.conf).GetUpdates(source=self,
                                           search_base=self.conf['base'],
                                           search_filter=self.conf['filter'],
                                           search_scope=self.conf['scope'],
@@ -554,7 +554,7 @@ class PasswdUpdateGetter(UpdateGetter):
     pw.dir = obj['homeDirectory'][0]
 
     # hack
-    pw.passwd = '*'
+    pw.passwd = 'x'
 
     return pw
 
@@ -562,9 +562,12 @@ class PasswdUpdateGetter(UpdateGetter):
 class GroupUpdateGetter(UpdateGetter):
   """Get group updates."""
 
-  def __init__(self):
+  def __init__(self,conf):
     super(GroupUpdateGetter, self).__init__()
-    self.attrs = ['cn', 'gidNumber', 'memberUid']
+    if conf.has_key('rfc2307bis') and conf['rfc2307bis']:
+      self.attrs = ['cn', 'gidNumber', 'member']
+    else:
+      self.attrs = ['cn', 'gidNumber', 'memberUid']
     self.essential_fields = ['cn']
 
   def CreateMap(self):
@@ -582,6 +585,10 @@ class GroupUpdateGetter(UpdateGetter):
     members = []
     if 'memberUid' in obj:
       members.extend(obj['memberUid'])
+    elif 'member' in obj:
+      for member_dn in obj['member']:
+        member_uid = member_dn.split(',')[0].split('=')[1]
+        members.append(member_uid)
     members.sort()
 
     gr.gid = int(obj['gidNumber'][0])
