@@ -13,7 +13,7 @@ Package: nsscache
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-pycurl, python-ldap
 Recommends: libnss-cache | libnss-db
-Suggests: python-zsync, python-pyme
+Suggests: python-pyme
 Description: asynchronously synchronise local NSS databases with remote directory services
  Synchronises local NSS caches, such as those served by the
  libnss-cache module, against remote directory services, such as
