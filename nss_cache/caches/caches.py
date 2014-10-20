@@ -141,6 +141,10 @@ class Cache(object):
     # chose a sensible default.
     try:
       shutil.copymode(self.GetCompatFilename(), self.temp_cache_filename)
+      stat_info = os.stat(self.GetCompatFilename())
+      uid = stat_info.st_uid
+      gid = stat_info.st_gid
+      os.chown(self.temp_cache_filename, uid, gid)
     except OSError, e:
       if e.errno == errno.ENOENT:
         if self.map_name == "sshkey":
