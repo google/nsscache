@@ -554,7 +554,7 @@ class PasswdUpdateGetter(UpdateGetter):
     pw.dir = obj['homeDirectory'][0]
 
     # hack
-    pw.passwd = '*'
+    pw.passwd = 'x'
 
     return pw
 
