@@ -88,7 +88,6 @@ class SingleMapUpdaterTest(mox.MoxTestBase):
     # Also check that timestamps were updated, as in testFullUpdate above.
 
     def compare_function(map_object):
-      print map_object
       return len(map_object) == 2
 
     original_modify_stamp = 1
