@@ -1,3 +1,10 @@
+nsscache (0.29-2) UNRELEASED; urgency=medium
+
+  * Add dependency on libnss-db back to build-depends, to fix a FTBFS on
+    amd64.  Closes: #750329.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Wed, 22 Oct 2014 10:09:19 +1100
+
 nsscache (0.29-1) unstable; urgency=medium
 
   * New upstream release.
