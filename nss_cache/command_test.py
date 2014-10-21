@@ -61,6 +61,8 @@ class TestCommand(mox.MoxTestBase):
     mock_lock = lock.PidFile(filename=None)
     mock_lock.Lock(force=False).AndReturn('LOCK')
     mock_lock.Lock(force=False).AndReturn('MORLOCK')
+    mock_lock.Locked().AndReturn(True)
+    mock_lock.Unlock()
 
     self.mox.ReplayAll()
 
@@ -76,6 +78,8 @@ class TestCommand(mox.MoxTestBase):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     mock_lock = lock.PidFile(filename=None)
     mock_lock.Lock(force=True).AndReturn('LOCK')
+    mock_lock.Locked().AndReturn(True)
+    mock_lock.Unlock()
 
     self.mox.ReplayAll()
     c = command.Command()
@@ -656,6 +660,13 @@ class TestRepairCommand(unittest.TestCase):
 
 
 class TestHelpCommand(unittest.TestCase):
+
+  def setUp(self):
+    self.stdout = sys.stdout
+    sys.stdout = StringIO.StringIO()
+
+  def tearDown(self):
+    sys.stdout = self.stdout
 
   def testHelp(self):
     c = command.Help()

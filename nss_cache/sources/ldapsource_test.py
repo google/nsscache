@@ -680,7 +680,7 @@ class TestUpdateGetter(unittest.TestCase):
 
   def testGroupEmptySourceGetUpdates(self):
     """Test that getUpdates on the GroupUpdateGetter works."""
-    getter = ldapsource.GroupUpdateGetter()
+    getter = ldapsource.GroupUpdateGetter({})
 
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
