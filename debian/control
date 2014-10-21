@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Jamie Wilkinson <jaq@debian.org>
 Build-Depends: debhelper (>= 7.0.50), python (>= 2.4), python-support, python-pycurl, python-ldap, python-mox
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: http://code.google.com/p/nsscache
 Vcs-Browser: https://github.com/google/nsscache/tree/debian
 Vcs-Git: https://github.com/google/nsscache.git -b debian

@@ -1,6 +1,7 @@
 nsscache (0.29-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * Update standards version.
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 21 Oct 2014 21:33:21 +1100
 
