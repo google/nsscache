@@ -1,3 +1,9 @@
+nsscache (0.28-1) UNRELEASED; urgency=medium
+
+  * New upstream version.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 21 Oct 2014 20:03:03 +1100
+
 nsscache (0.27-3) unstable; urgency=medium
 
   * Updated watchfile for github.
