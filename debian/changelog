@@ -1,7 +1,12 @@
+nsscache (0.27-3) unstable; urgency=medium
+
+  * Updated watchfile for github.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 21 Oct 2014 19:30:07 +1100
+
 nsscache (0.27-2) unstable; urgency=medium
 
   * Remove suggests: on python-zsync, which doesn't exist. 
-  * Updated watchfile for github.
 
  -- Jamie Wilkinson <jaq@debian.org>  Sat, 24 May 2014 13:10:49 +1000
 
