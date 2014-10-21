@@ -657,6 +657,13 @@ class TestRepairCommand(unittest.TestCase):
 
 class TestHelpCommand(unittest.TestCase):
 
+  def setUp(self):
+    self.stdout = sys.stdout
+    sys.stdout = StringIO.StringIO()
+
+  def tearDown(self):
+    sys.stdout = self.stdout
+
   def testHelp(self):
     c = command.Help()
     self.failIfEqual(None, c.Help())
