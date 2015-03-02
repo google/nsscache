@@ -92,6 +92,10 @@ class Updater(object):
     self.modify_time = None
     self.update_time = None
 
+  def _GetCurrentTime(self):
+    """Helper method to get the current time, to assist test mocks."""
+    return int(time.time())
+
   def _ReadTimestamp(self, filename):
     """Return a timestamp from a file.
 
@@ -135,7 +139,7 @@ class Updater(object):
     else:
       timestamp = None
 
-    now = time.time()
+    now = self._GetCurrentTime()
     if timestamp > now:
       self.log.warn('timestamp %r from %r is in the future, now is %r',
                     timestamp_string, filename, now)
@@ -185,7 +189,8 @@ class Updater(object):
       An int with the number of seconds since epoch, or None if the timestamp
       file doesn't exist or has errors.
     """
-    self.update_time = self.update_time or self._ReadTimestamp(self.update_file)
+    if self.update_time is None:
+      self.update_time = self._ReadTimestamp(self.update_file)
     return self.update_time
 
   def GetModifyTimestamp(self):
@@ -197,7 +202,8 @@ class Updater(object):
       An int with the number of seconds since epoch, or None if the timestamp
       file doesn't exist or has errors.
     """
-    self.modify_time = self.modify_time or self._ReadTimestamp(self.modify_file)
+    if self.modify_time is None:
+      self.modify_time = self._ReadTimestamp(self.modify_file)
     return self.modify_time
 
   def WriteUpdateTimestamp(self, update_timestamp=None):
@@ -213,7 +219,8 @@ class Updater(object):
     # blow away our cached value
     self.update_time = None
     # default to now
-    update_timestamp = int(update_timestamp or time.time())
+    if update_timestamp is None:
+      update_timestamp = self._GetCurrentTime()
     return self._WriteTimestamp(update_timestamp, self.update_file)
 
   def WriteModifyTimestamp(self, timestamp):

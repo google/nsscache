@@ -1,2 +1,3 @@
 version=3
-http://code.google.com/p/nsscache/downloads/list .*/nsscache-(.*)\.tar\.gz debian
+opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/nsscache-$1\.tar\.gz/ \
+  https://github.com/google/nsscache/tags .*/version\/(\d\S*)\.tar\.gz

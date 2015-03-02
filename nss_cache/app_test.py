@@ -30,6 +30,14 @@ from nss_cache import app
 class TestNssCacheApp(unittest.TestCase):
   """Unit tests for NssCacheApp class."""
 
+  def setUp(self):
+    dev_null = StringIO.StringIO()
+    self.stdout = sys.stdout
+    sys.stdout = dev_null
+
+  def tearDown(self):
+    sys.stdout = self.stdout
+
   def testRun(self):
     return_code = app.NssCacheApp().Run([], {})
     self.assertEquals(os.EX_USAGE, return_code)

@@ -1,8 +1,37 @@
-nsscache (0.26-2) UNRELEASED; urgency=medium
+nsscache (0.29-2) unstable; urgency=medium
 
+  * Add dependency on libnss-db back to build-depends, to fix a FTBFS on
+    amd64.  Closes: #750329.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Wed, 22 Oct 2014 10:09:50 +1100
+
+nsscache (0.29-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Update standards version.
+  * Disable autopkgtest for now as the test script is broken.  Closes:
+    #757019.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 21 Oct 2014 22:32:27 +1100
+
+nsscache (0.27-3) unstable; urgency=medium
+
+  * Updated watchfile for github.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 21 Oct 2014 19:30:07 +1100
+
+nsscache (0.27-2) unstable; urgency=medium
+
+  * Remove suggests: on python-zsync, which doesn't exist. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 24 May 2014 13:10:49 +1000
+
+nsscache (0.27-1) unstable; urgency=medium
+
+  * New upstream release. 
   * Add autopkgtest regression test to the package. 
 
- -- Jamie Wilkinson <jaq@debian.org>  Thu, 22 May 2014 17:42:01 +1000
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 22 May 2014 17:49:09 +1000
 
 nsscache (0.26-1) unstable; urgency=low
 

@@ -543,6 +543,8 @@ class PasswdUpdateGetter(UpdateGetter):
     else:
       raise ValueError('Neither gecos nor cn found')
 
+    pw.gecos = pw.gecos.replace('\n','')
+
     pw.name = obj['uid'][0]
     if 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
