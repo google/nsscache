@@ -166,7 +166,7 @@ class LdapSource(source.Source):
       try:
         if 'use_sasl' in configuration and configuration['use_sasl']:
           if ('sasl_mech' in configuration and
-	      configuration['sasl_mech'] and
+              configuration['sasl_mech'] and
               configuration['sasl_mech'].lower() == 'gssapi'):
             sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
           # TODO: Add other sasl mechs
@@ -226,7 +226,7 @@ class LdapSource(source.Source):
         try:
           result_type, data = self.conn.result(self.message_id, all=0,
                                                timeout=self.conf['timelimit'])
-	  break
+          break
         except ldap.NO_SUCH_OBJECT:
           self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
           return
@@ -564,9 +564,10 @@ class PasswdUpdateGetter(UpdateGetter):
 class GroupUpdateGetter(UpdateGetter):
   """Get group updates."""
 
-  def __init__(self,conf):
+  def __init__(self, conf):
+    self.conf = conf
     super(GroupUpdateGetter, self).__init__()
-    if conf.has_key('rfc2307bis') and conf['rfc2307bis']:
+    if 'rfc2307bis' in self.conf and self.conf['rfc2307bis'] in (1, '1', 'on', 'yes', 'true'):
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
