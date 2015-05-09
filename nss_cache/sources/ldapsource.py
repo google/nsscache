@@ -166,7 +166,7 @@ class LdapSource(source.Source):
       try:
         if 'use_sasl' in configuration and configuration['use_sasl']:
           if ('sasl_mech' in configuration and
-	      configuration['sasl_mech'] and
+              configuration['sasl_mech'] and
               configuration['sasl_mech'].lower() == 'gssapi'):
             sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
           # TODO: Add other sasl mechs
@@ -226,7 +226,7 @@ class LdapSource(source.Source):
         try:
           result_type, data = self.conn.result(self.message_id, all=0,
                                                timeout=self.conf['timelimit'])
-	  break
+          break
         except ldap.NO_SUCH_OBJECT:
           self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
           return
@@ -285,7 +285,7 @@ class LdapSource(source.Source):
     Returns:
       instance of maps.PasswdMap
     """
-    return PasswdUpdateGetter().GetUpdates(source=self,
+    return PasswdUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
@@ -519,10 +519,13 @@ class UpdateGetter(object):
 class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""
 
-  def __init__(self):
+  def __init__(self, conf):
+    self.conf = conf
     super(PasswdUpdateGetter, self).__init__()
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
+    if 'uidattr' in self.conf:
+            self.attrs.append(self.conf[uidattr])
     self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
 
   def CreateMap(self):
@@ -545,7 +548,10 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.gecos = pw.gecos.replace('\n','')
 
-    pw.name = obj['uid'][0]
+    if 'uidattr' in self.conf:
+        pw.name = obj[self.conf[uidattr]][0]
+    else:
+        pw.name = obj['uid'][0]
     if 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
     else:
