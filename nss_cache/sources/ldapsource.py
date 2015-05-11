@@ -521,12 +521,12 @@ class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""
 
   def __init__(self, conf):
-    self.conf = conf
     super(PasswdUpdateGetter, self).__init__()
+    self.conf = conf
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
     if 'uidattr' in self.conf:
-      self.attrs.append(self.conf[uidattr])
+      self.attrs.append(self.conf['uidattr'])
     if 'uidregex' in self.conf:
       self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
@@ -552,7 +552,7 @@ class PasswdUpdateGetter(UpdateGetter):
     pw.gecos = pw.gecos.replace('\n','')
 
     if 'uidattr' in self.conf:
-      pw.name = obj[self.conf[uidattr]][0]
+      pw.name = obj[self.conf['uidattr']][0]
     else:
       pw.name = obj['uid'][0]
 
@@ -579,6 +579,7 @@ class GroupUpdateGetter(UpdateGetter):
 
   def __init__(self,conf):
     super(GroupUpdateGetter, self).__init__()
+    self.conf = conf
     if 'rfc2307bis' in conf and conf['rfc2307bis']:
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
