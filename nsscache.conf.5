@@ -159,6 +159,20 @@ Filename containing trusted CA certificates.  Defaults to
 The uid-like attribute in your directory.  Defaults to uid.
 
 .TP
+.B ldap_uidregex
+A Python regex to extract uid components from the uid-like attribute.
+All matching groups are concatenated without spaces.
+For example:  '(.*)@example.com' would return a uid to the left of
+the @example.com domain.  Default is no regex.
+
+.TP
+.B ldap_groupregex
+A Python regex to extract group member components from the member or
+memberOf attributes.  All matching groups are concatenated without spaces.
+For example:  '(.*)@example.com' would return a member without the
+the @example.com domain.  Default is no regex.
+
+.TP
 .B ldap_debug
 Sets the debug level for the underlying C library.  Defaults to no logging.
 

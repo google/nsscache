@@ -25,6 +25,7 @@ import time
 import ldap
 import ldap.sasl
 import urllib
+import re
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -525,7 +526,9 @@ class PasswdUpdateGetter(UpdateGetter):
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
     if 'uidattr' in self.conf:
-            self.attrs.append(self.conf[uidattr])
+      self.attrs.append(self.conf[uidattr])
+    if 'uidregex' in self.conf:
+      self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
 
   def CreateMap(self):
@@ -549,9 +552,13 @@ class PasswdUpdateGetter(UpdateGetter):
     pw.gecos = pw.gecos.replace('\n','')
 
     if 'uidattr' in self.conf:
-        pw.name = obj[self.conf[uidattr]][0]
+      pw.name = obj[self.conf[uidattr]][0]
     else:
-        pw.name = obj['uid'][0]
+      pw.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      pw.name = ''.join([x for x in self.uidregex.findall(pw.name)])
+
     if 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
     else:
@@ -572,10 +579,12 @@ class GroupUpdateGetter(UpdateGetter):
 
   def __init__(self,conf):
     super(GroupUpdateGetter, self).__init__()
-    if conf.has_key('rfc2307bis') and conf['rfc2307bis']:
+    if 'rfc2307bis' in conf and conf['rfc2307bis']:
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
+    if 'groupregex' in conf:
+      self.groupregex = re.compile(self.conf['groupregex'])
     self.essential_fields = ['cn']
 
   def CreateMap(self):
@@ -592,11 +601,17 @@ class GroupUpdateGetter(UpdateGetter):
     gr.passwd = '*'
     members = []
     if 'memberUid' in obj:
-      members.extend(obj['memberUid'])
+      if hasattr(self, 'groupregex'):
+        members.extend(''.join([x for x in self.groupregex.findall(obj['memberUid'])]))
+      else:
+        members.extend(obj['memberUid'])
     elif 'member' in obj:
       for member_dn in obj['member']:
         member_uid = member_dn.split(',')[0].split('=')[1]
-        members.append(member_uid)
+        if hasattr(self, 'groupregex'):
+          members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
+        else:
+          members.append(member_uid)
     members.sort()
 
     gr.gid = int(obj['gidNumber'][0])
