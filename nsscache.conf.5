@@ -173,6 +173,11 @@ For example:  '(.*)@example.com' would return a member without the
 the @example.com domain.  Default is no regex.
 
 .TP
+.B ldap_rfc2307bis
+Default uses rfc2307 schema. If rfc2307bis (groups stored as a list of DNs
+in 'member' attr), set this to 1.
+
+.TP
 .B ldap_debug
 Sets the debug level for the underlying C library.  Defaults to no logging.
 
