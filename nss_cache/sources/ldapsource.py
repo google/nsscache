@@ -422,6 +422,9 @@ class LdapSource(source.Source):
 
 class UpdateGetter(object):
   """Base class that gets updates from LDAP."""
+  def __init__(self, conf):
+    super(UpdateGetter, self).__init__()
+    self.conf = conf
 
   def FromLdapToTimestamp(self, ldap_ts_string):
     """Transforms a LDAP timestamp into the nss_cache internal timestamp.
@@ -521,8 +524,7 @@ class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""
 
   def __init__(self, conf):
-    super(PasswdUpdateGetter, self).__init__()
-    self.conf = conf
+    super(PasswdUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
     if 'uidattr' in self.conf:
@@ -578,8 +580,7 @@ class GroupUpdateGetter(UpdateGetter):
   """Get group updates."""
 
   def __init__(self,conf):
-    super(GroupUpdateGetter, self).__init__()
-    self.conf = conf
+    super(GroupUpdateGetter, self).__init__(conf)
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
@@ -625,7 +626,7 @@ class ShadowUpdateGetter(UpdateGetter):
   """Get Shadow updates from the LDAP Source."""
 
   def __init__(self):
-    super(ShadowUpdateGetter, self).__init__()
+    super(ShadowUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
