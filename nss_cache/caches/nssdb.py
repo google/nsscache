@@ -113,24 +113,26 @@ class NssDbCache(caches.Cache):
     # TODO(jaq): this should probably raise a better exception and be handled
     # gracefully
     if not os.path.exists(self.makedb):
-      self.log.warn('makedb binary %s does not exist, cannot generate '
-                    'bdb map', self.makedb)
-    self.log.debug('executing makedb: %s - %s',
-                   self.makedb, self.temp_cache_filename)
-    # This is a race condition on the tempfile now, but db-4.8 is braindead
-    # and refuses to open zero length files with:
-    # fop_read_meta: foo: unexpected file type or format
-    # foo: Invalid type 5 specified
-    # makedb: cannot open output file `foo': Invalid argument
-    os.unlink(self.temp_cache_filename)
-    makedb = subprocess.Popen([self.makedb, '-', self.temp_cache_filename],
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              close_fds=True)
-    fcntl.fcntl(makedb.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
-    makedb.allout = ""
-    return makedb
+      self.log.warn('makedb binary %s does not exist, cannot generate bdb map',
+                    self.makedb)
+      return None
+    else:
+      self.log.debug('executing makedb: %s - %s',
+                     self.makedb, self.temp_cache_filename)
+      # This is a race condition on the tempfile now, but db-4.8 is braindead
+      # and refuses to open zero length files with:
+      # fop_read_meta: foo: unexpected file type or format
+      # foo: Invalid type 5 specified
+      # makedb: cannot open output file `foo': Invalid argument
+      os.unlink(self.temp_cache_filename)
+      makedb = subprocess.Popen([self.makedb, '-', self.temp_cache_filename],
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                close_fds=True)
+      fcntl.fcntl(makedb.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
+      makedb.allout = ""
+      return makedb
 
   def _Read(self, proc):
     while len(select.select([proc.stdout],(),(),0)[0]) > 0:
@@ -159,46 +161,53 @@ class NssDbCache(caches.Cache):
     enumeration_index = 0
     makedb = self._SpawnMakeDb()
     self.makedbproc = makedb
+
     try:
 
       try:
         while True:
           entry = map_data.PopItem()
-          self._Read(makedb)
-          if makedb.poll() is not None:
-            self.log.error('early exit from makedb! child output: %s',
-                           makedb.allout)
-            # in this case, no matter how the child exited, we complain
-            return None
-          self.WriteData(makedb.stdin, entry, enumeration_index)
+          if makedb:
+            self._Read(makedb)
+            if makedb.poll() is not None:
+              self.log.error('early exit from makedb! child output: %s',
+                             makedb.allout)
+              # in this case, no matter how the child exited, we complain
+              return None
+            self.WriteData(makedb.stdin, entry, enumeration_index)
+          else:
+            self.WriteData(None, entry, enumeration_index)
           written_keys.update(self.ExpectedKeysForEntry(entry))
           enumeration_index += 1
       except KeyError:
         # expected when PopItem() is done, and breaks our loop for us.
         pass
 
-      makedb.stdin.close()
+      if makedb: makedb.stdin.close()
       self.log.debug('%d entries written, %d keys', enumeration_index,
                      len(written_keys))
 
       # wait for subprocess to commit data before we move live.
-      makedb.wait()
-      self._Read(makedb)
-      makedb.stdout.close()
-      map_data = makedb.allout
-      if map_data:
-        self.log.debug('makedb output: %r', map_data)
+      if makedb:
+        makedb.wait()
+        self._Read(makedb)
+        makedb.stdout.close()
+        map_data = makedb.allout
+        if map_data:
+          self.log.debug('makedb output: %r', map_data)
 
-      if self._DecodeExitCode(makedb.wait()):
-        return written_keys
+        if self._DecodeExitCode(makedb.wait()):
+          return written_keys
+        return None
+      else:
+          return written_keys
 
-      return None
-
-    except:
-      self.log.debug('Wrote %d entries before exception', enumeration_index)
-      self.log.debug('makedb output: %s', makedb.allout)
-      # wait for subprocess to commit data before we roll back.
-      makedb.wait()
+    except Exception as e:
+      self.log.debug('Wrote %d entries before exception %s', enumeration_index, e)
+      if makedb:
+        self.log.debug('makedb output: %s', makedb.allout)
+        # wait for subprocess to commit data before we roll back.
+        makedb.wait()
       self._Rollback()
       raise
 
@@ -223,7 +232,7 @@ class NssDbCache(caches.Cache):
     Raises:
       EmptyMap: The cache being verified is empty.
     """
-    self.log.debug('verification started')
+    self.log.debug('verification started %s', self.temp_cache_filename)
     db = bsddb.btopen(self.temp_cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
@@ -286,9 +295,10 @@ class NssDbPasswdHandler(NssDbCache):
                                                entry.gecos, entry.dir,
                                                entry.shell)
     # Write to makedb with each key
-    target.write('.%s %s\n' % (entry.name, password_entry))
-    target.write('=%d %s\n' % (entry.uid, password_entry))
-    target.write('0%d %s\n' % (enumeration_index, password_entry))
+    if target:
+      target.write('.%s %s\n' % (entry.name, password_entry))
+      target.write('=%d %s\n' % (entry.uid, password_entry))
+      target.write('0%d %s\n' % (enumeration_index, password_entry))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for this map.
@@ -373,9 +383,10 @@ class NssDbGroupHandler(NssDbCache):
     grent = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                              ','.join(entry.members))
     # Write to makedb with each key
-    target.write('.%s %s\n' % (entry.name, grent))
-    target.write('=%d %s\n' % (entry.gid, grent))
-    target.write('0%d %s\n' % (enumeration_index, grent))
+    if target:
+      target.write('.%s %s\n' % (entry.name, grent))
+      target.write('=%d %s\n' % (entry.gid, grent))
+      target.write('0%d %s\n' % (enumeration_index, grent))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db group.db map.
@@ -463,8 +474,9 @@ class NssDbShadowHandler(NssDbCache):
                                                    entry.expire or '',
                                                    entry.flag or 0)
     # Write to makedb with each key
-    target.write('.%s %s\n' % (entry.name, shadow_entry))
-    target.write('0%d %s\n' % (enumeration_index, shadow_entry))
+    if target:
+      target.write('.%s %s\n' % (entry.name, shadow_entry))
+      target.write('0%d %s\n' % (enumeration_index, shadow_entry))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db shadow.db map.
