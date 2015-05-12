@@ -580,7 +580,7 @@ class GroupUpdateGetter(UpdateGetter):
   def __init__(self,conf):
     super(GroupUpdateGetter, self).__init__()
     self.conf = conf
-    if 'rfc2307bis' in conf and conf['rfc2307bis']:
+    if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
