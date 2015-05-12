@@ -579,7 +579,7 @@ class PasswdUpdateGetter(UpdateGetter):
 class GroupUpdateGetter(UpdateGetter):
   """Get group updates."""
 
-  def __init__(self,conf):
+  def __init__(self, conf):
     super(GroupUpdateGetter, self).__init__(conf)
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
@@ -625,11 +625,15 @@ class GroupUpdateGetter(UpdateGetter):
 class ShadowUpdateGetter(UpdateGetter):
   """Get Shadow updates from the LDAP Source."""
 
-  def __init__(self):
+  def __init__(self, conf):
     super(ShadowUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
+    if 'uidattr' in self.conf:
+      self.attrs.append(self.conf['uidattr'])
+    if 'uidregex' in self.conf:
+      self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid']
 
   def CreateMap(self):
@@ -639,7 +643,14 @@ class ShadowUpdateGetter(UpdateGetter):
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
     shadow_ent = shadow.ShadowMapEntry()
-    shadow_ent.name = obj['uid'][0]
+    if 'uidattr' in self.conf:
+      shadow_ent.name = obj[uidattr][0]
+    else:
+      shadow_ent.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      shadow_ent.name = ''.join([x for x in self.uidregex.findall(shadow_end.name)])
+
     # TODO(jaq): does nss_ldap check the contents of the userPassword
     # attribute?
     shadow_ent.passwd = '*'
@@ -730,9 +741,13 @@ class AutomountUpdateGetter(UpdateGetter):
 class SshkeyUpdateGetter(UpdateGetter):
   """Fetches SSH keys."""
 
-  def __init__(self):
-    super(SshkeyUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(SshkeyUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'sshPublicKey']
+    if 'uidattr' in self.conf:
+      self.attrs.append(self.conf['uidattr'])
+    if 'uidregex' in self.conf:
+       self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid']
 
   def CreateMap(self):
@@ -744,7 +759,13 @@ class SshkeyUpdateGetter(UpdateGetter):
 
     skey = sshkey.SshkeyMapEntry()
 
-    skey.name = obj['uid'][0]
+    if 'uidattr' in self.conf:
+      skey.name = obj[uidattr][0]
+    else:
+      skey.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      skey.name = ''.join([x for x in self.uidregex.findall(pw.name)])
 
     if 'sshPublicKey' in obj:
       skey.sshkey = obj['sshPublicKey']
