@@ -129,9 +129,9 @@ class TestClassMethods(unittest.TestCase):
     self.assertEquals(shadow.source['name'], 'ldap')
     self.assertEquals(automount.source['name'], 'ldap')
 
-    self.assertEquals(passwd.cache['name'], 'nssdb')
-    self.assertEquals(group.cache['name'], 'nssdb')
-    self.assertEquals(shadow.cache['name'], 'nssdb')
+    self.assertEquals(passwd.cache['name'], 'cache')
+    self.assertEquals(group.cache['name'], 'cache')
+    self.assertEquals(shadow.cache['name'], 'cache')
     self.assertEquals(automount.cache['name'], 'files')
 
     self.assertEquals(passwd.source['base'],
@@ -143,8 +143,6 @@ class TestClassMethods(unittest.TestCase):
                       'ou=group,dc=example,dc=com')
     self.assertEquals(group.source['filter'],
                       '(objectclass=posixGroup)')
-
-    self.assertEquals(passwd.cache['dir'], '/var/lib/misc')
 
   def testLoadConfigOptionalDefaults(self):
     conf_file = open(self.conf_filename, 'w')
