@@ -661,17 +661,17 @@ class TestUpdateGetter(unittest.TestCase):
     ts = 1259641025
     expected_ldap_ts = '20091201041705Z'
     self.assertEquals(expected_ldap_ts,
-                      ldapsource.UpdateGetter().FromTimestampToLdap(ts))
+                      ldapsource.UpdateGetter({}).FromTimestampToLdap(ts))
 
   def testFromLdapToTimestamp(self):
     expected_ts = 1259641025
     ldap_ts = '20091201041705Z'
     self.assertEquals(expected_ts,
-                      ldapsource.UpdateGetter().FromLdapToTimestamp(ldap_ts))
+                      ldapsource.UpdateGetter({}).FromLdapToTimestamp(ldap_ts))
 
   def testPasswdEmptySourceGetUpdates(self):
     """Test that getUpdates on the PasswdUpdateGetter works."""
-    getter = ldapsource.PasswdUpdateGetter()
+    getter = ldapsource.PasswdUpdateGetter({})
 
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
@@ -689,7 +689,7 @@ class TestUpdateGetter(unittest.TestCase):
 
   def testShadowEmptySourceGetUpdates(self):
     """Test that getUpdates on the ShadowUpdateGetter works."""
-    getter = ldapsource.ShadowUpdateGetter()
+    getter = ldapsource.ShadowUpdateGetter({})
 
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
@@ -698,7 +698,7 @@ class TestUpdateGetter(unittest.TestCase):
 
   def testAutomountEmptySourceGetsUpdates(self):
     """Test that getUpdates on the AutomountUpdateGetter works."""
-    getter = ldapsource.AutomountUpdateGetter()
+    getter = ldapsource.AutomountUpdateGetter({})
 
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
@@ -709,7 +709,7 @@ class TestUpdateGetter(unittest.TestCase):
     """Test that a bad scope raises a config.ConfigurationError."""
     # One of the getters is sufficient, they all inherit the
     # exception-raising code.
-    getter = ldapsource.PasswdUpdateGetter()
+    getter = ldapsource.PasswdUpdateGetter({})
 
     self.assertRaises(error.ConfigurationError, getter.GetUpdates,
                       self.source, 'TEST_BASE', 'TEST_FILTER',
