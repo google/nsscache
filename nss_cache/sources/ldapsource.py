@@ -25,6 +25,7 @@ import time
 import ldap
 import ldap.sasl
 import urllib
+import re
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -166,7 +167,7 @@ class LdapSource(source.Source):
       try:
         if 'use_sasl' in configuration and configuration['use_sasl']:
           if ('sasl_mech' in configuration and
-	      configuration['sasl_mech'] and
+              configuration['sasl_mech'] and
               configuration['sasl_mech'].lower() == 'gssapi'):
             sasl = ldap.sasl.gssapi(configuration['sasl_authzid'])
           # TODO: Add other sasl mechs
@@ -226,7 +227,7 @@ class LdapSource(source.Source):
         try:
           result_type, data = self.conn.result(self.message_id, all=0,
                                                timeout=self.conf['timelimit'])
-	  break
+          break
         except ldap.NO_SUCH_OBJECT:
           self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
           return
@@ -285,7 +286,7 @@ class LdapSource(source.Source):
     Returns:
       instance of maps.PasswdMap
     """
-    return PasswdUpdateGetter().GetUpdates(source=self,
+    return PasswdUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
@@ -317,7 +318,7 @@ class LdapSource(source.Source):
     Returns:
       instance of ShadowMap
     """
-    return ShadowUpdateGetter().GetUpdates(source=self,
+    return ShadowUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
@@ -333,7 +334,7 @@ class LdapSource(source.Source):
     Returns:
       instance of NetgroupMap
     """
-    return NetgroupUpdateGetter().GetUpdates(source=self,
+    return NetgroupUpdateGetter(self.conf).GetUpdates(source=self,
                                              search_base=self.conf['base'],
                                              search_filter=self.conf['filter'],
                                              search_scope=self.conf['scope'],
@@ -360,7 +361,7 @@ class LdapSource(source.Source):
       raise error.EmptyMap
 
     autofs_filter = '(objectclass=automount)'
-    return AutomountUpdateGetter().GetUpdates(source=self,
+    return AutomountUpdateGetter(self.conf).GetUpdates(source=self,
                                               search_base=location,
                                               search_filter=autofs_filter,
                                               search_scope='one',
@@ -421,6 +422,9 @@ class LdapSource(source.Source):
 
 class UpdateGetter(object):
   """Base class that gets updates from LDAP."""
+  def __init__(self, conf):
+    super(UpdateGetter, self).__init__()
+    self.conf = conf
 
   def FromLdapToTimestamp(self, ldap_ts_string):
     """Transforms a LDAP timestamp into the nss_cache internal timestamp.
@@ -519,10 +523,14 @@ class UpdateGetter(object):
 class PasswdUpdateGetter(UpdateGetter):
   """Get passwd updates."""
 
-  def __init__(self):
-    super(PasswdUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(PasswdUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
+    if 'uidattr' in self.conf:
+      self.attrs.append(self.conf['uidattr'])
+    if 'uidregex' in self.conf:
+      self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
 
   def CreateMap(self):
@@ -543,7 +551,16 @@ class PasswdUpdateGetter(UpdateGetter):
     else:
       raise ValueError('Neither gecos nor cn found')
 
-    pw.name = obj['uid'][0]
+    pw.gecos = pw.gecos.replace('\n','')
+
+    if 'uidattr' in self.conf:
+      pw.name = obj[self.conf['uidattr']][0]
+    else:
+      pw.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      pw.name = ''.join([x for x in self.uidregex.findall(pw.name)])
+
     if 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
     else:
@@ -562,12 +579,14 @@ class PasswdUpdateGetter(UpdateGetter):
 class GroupUpdateGetter(UpdateGetter):
   """Get group updates."""
 
-  def __init__(self,conf):
-    super(GroupUpdateGetter, self).__init__()
-    if conf.has_key('rfc2307bis') and conf['rfc2307bis']:
+  def __init__(self, conf):
+    super(GroupUpdateGetter, self).__init__(conf)
+    if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
+    if 'groupregex' in conf:
+      self.groupregex = re.compile(self.conf['groupregex'])
     self.essential_fields = ['cn']
 
   def CreateMap(self):
@@ -584,11 +603,17 @@ class GroupUpdateGetter(UpdateGetter):
     gr.passwd = '*'
     members = []
     if 'memberUid' in obj:
-      members.extend(obj['memberUid'])
+      if hasattr(self, 'groupregex'):
+        members.extend(''.join([x for x in self.groupregex.findall(obj['memberUid'])]))
+      else:
+        members.extend(obj['memberUid'])
     elif 'member' in obj:
       for member_dn in obj['member']:
         member_uid = member_dn.split(',')[0].split('=')[1]
-        members.append(member_uid)
+        if hasattr(self, 'groupregex'):
+          members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
+        else:
+          members.append(member_uid)
     members.sort()
 
     gr.gid = int(obj['gidNumber'][0])
@@ -600,11 +625,15 @@ class GroupUpdateGetter(UpdateGetter):
 class ShadowUpdateGetter(UpdateGetter):
   """Get Shadow updates from the LDAP Source."""
 
-  def __init__(self):
-    super(ShadowUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(ShadowUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
+    if 'uidattr' in self.conf:
+      self.attrs.append(self.conf['uidattr'])
+    if 'uidregex' in self.conf:
+      self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid']
 
   def CreateMap(self):
@@ -614,7 +643,14 @@ class ShadowUpdateGetter(UpdateGetter):
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
     shadow_ent = shadow.ShadowMapEntry()
-    shadow_ent.name = obj['uid'][0]
+    if 'uidattr' in self.conf:
+      shadow_ent.name = obj[uidattr][0]
+    else:
+      shadow_ent.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      shadow_ent.name = ''.join([x for x in self.uidregex.findall(shadow_end.name)])
+
     # TODO(jaq): does nss_ldap check the contents of the userPassword
     # attribute?
     shadow_ent.passwd = '*'
@@ -646,8 +682,8 @@ class ShadowUpdateGetter(UpdateGetter):
 class NetgroupUpdateGetter(UpdateGetter):
   """Get netgroup updates."""
 
-  def __init__(self):
-    super(NetgroupUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(NetgroupUpdateGetter, self).__init__(conf)
     self.attrs = ['cn', 'memberNisNetgroup', 'nisNetgroupTriple']
     self.essential_fields = ['cn']
 
@@ -675,8 +711,8 @@ class NetgroupUpdateGetter(UpdateGetter):
 class AutomountUpdateGetter(UpdateGetter):
   """Get specific automount maps."""
 
-  def __init__(self):
-    super(AutomountUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(AutomountUpdateGetter, self).__init__(conf)
     self.attrs = ['cn', 'automountInformation']
     self.essential_fields = ['cn']
 
@@ -705,9 +741,13 @@ class AutomountUpdateGetter(UpdateGetter):
 class SshkeyUpdateGetter(UpdateGetter):
   """Fetches SSH keys."""
 
-  def __init__(self):
-    super(SshkeyUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(SshkeyUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'sshPublicKey']
+    if 'uidattr' in self.conf:
+      self.attrs.append(self.conf['uidattr'])
+    if 'uidregex' in self.conf:
+       self.uidregex = re.compile(self.conf['uidregex'])
     self.essential_fields = ['uid']
 
   def CreateMap(self):
@@ -719,7 +759,13 @@ class SshkeyUpdateGetter(UpdateGetter):
 
     skey = sshkey.SshkeyMapEntry()
 
-    skey.name = obj['uid'][0]
+    if 'uidattr' in self.conf:
+      skey.name = obj[uidattr][0]
+    else:
+      skey.name = obj['uid'][0]
+
+    if hasattr(self, 'uidregex'):
+      skey.name = ''.join([x for x in self.uidregex.findall(pw.name)])
 
     if 'sshPublicKey' in obj:
       skey.sshkey = obj['sshPublicKey']

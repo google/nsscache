@@ -1,0 +1,7 @@
+language: python
+
+install:
+ - travis_retry sudo apt-get update -qq
+ - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
+
+script: ./runtests.py
