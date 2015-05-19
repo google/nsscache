@@ -2,6 +2,8 @@
 
 set -x
 
+SLAPADD=/usr/sbin/slapadd
+
 if [[ -z ${ADTTMP-} ]]; then
     WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
     ARTIFACTS=${WORKDIR}
@@ -26,7 +28,7 @@ setup_slapd() {
     mkdir -p $WORKDIR/ldap
     sed -e "s!@workdir@!$WORKDIR!" \
 	< debian/tests/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
-    slapadd -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
+    $SLAPADD -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
     slapd -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
     slappid=$!
     attempts=0
