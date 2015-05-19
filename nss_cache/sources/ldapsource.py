@@ -318,7 +318,7 @@ class LdapSource(source.Source):
     Returns:
       instance of ShadowMap
     """
-    return ShadowUpdateGetter().GetUpdates(source=self,
+    return ShadowUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
@@ -334,7 +334,7 @@ class LdapSource(source.Source):
     Returns:
       instance of NetgroupMap
     """
-    return NetgroupUpdateGetter().GetUpdates(source=self,
+    return NetgroupUpdateGetter(self.conf).GetUpdates(source=self,
                                              search_base=self.conf['base'],
                                              search_filter=self.conf['filter'],
                                              search_scope=self.conf['scope'],
@@ -361,7 +361,7 @@ class LdapSource(source.Source):
       raise error.EmptyMap
 
     autofs_filter = '(objectclass=automount)'
-    return AutomountUpdateGetter().GetUpdates(source=self,
+    return AutomountUpdateGetter(self.conf).GetUpdates(source=self,
                                               search_base=location,
                                               search_filter=autofs_filter,
                                               search_scope='one',
@@ -682,8 +682,8 @@ class ShadowUpdateGetter(UpdateGetter):
 class NetgroupUpdateGetter(UpdateGetter):
   """Get netgroup updates."""
 
-  def __init__(self):
-    super(NetgroupUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(NetgroupUpdateGetter, self).__init__(conf)
     self.attrs = ['cn', 'memberNisNetgroup', 'nisNetgroupTriple']
     self.essential_fields = ['cn']
 
@@ -711,8 +711,8 @@ class NetgroupUpdateGetter(UpdateGetter):
 class AutomountUpdateGetter(UpdateGetter):
   """Get specific automount maps."""
 
-  def __init__(self):
-    super(AutomountUpdateGetter, self).__init__()
+  def __init__(self, conf):
+    super(AutomountUpdateGetter, self).__init__(conf)
     self.attrs = ['cn', 'automountInformation']
     self.essential_fields = ['cn']
 
