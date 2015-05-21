@@ -3,6 +3,7 @@
 set -x
 
 SLAPADD=/usr/sbin/slapadd
+SLAPD=/usr/sbin/slapd
 
 if [[ -z ${ADTTMP-} ]]; then
     WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
@@ -29,16 +30,16 @@ setup_slapd() {
     sed -e "s!@workdir@!$WORKDIR!" \
 	< debian/tests/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
     $SLAPADD -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
-    slapd -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
+    $SLAPD -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
     slappid=$!
     attempts=0
     until ldapsearch -x -H ldapi://${WORKDIR//\//%2F}%2Fldapi -b "dc=example,dc=com" '(objectclass=*)'; do
 	attempts=$(($attempts + 1))
-	if [[ $attempts -gt 60 ]]; then
+	if [[ $attempts -gt 10 ]]; then
 	  echo "failed to connect to slapd in 60 attempts"
 	  exit 1
         fi
-	sleep 0.01
+	sleep 0.1
     done
     set +e
 }
