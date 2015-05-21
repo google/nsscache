@@ -1,8 +1,9 @@
-nsscache (0.30-2) UNRELEASED; urgency=medium
+nsscache (0.30-3) UNRELEASED; urgency=medium
 
   * Add the autopkgtest testsuite back to the control file. 
+  * Fix some path errors in the regression test. 
 
- -- Jamie Wilkinson <jaq@debian.org>  Wed, 20 May 2015 09:06:07 +1000
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 21 May 2015 20:00:59 +1000
 
 nsscache (0.30-1) unstable; urgency=medium
 
