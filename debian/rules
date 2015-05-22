@@ -7,11 +7,6 @@ export PYBUILD_NAME=nsscache
 %:
 	dh  $@ --with-python2 --buildsystem=pybuild
 
-#override_dh_auto_install:
-#	dh_auto_install -- --install-scripts=/usr/share/nsscache --root=debian/nsscache --install-layout=deb --install-lib=/usr/share/nsscache
-
-override_dh_auto_build:
-
 override_dh_auto_test:
 	./runtests.py
 
