@@ -2,9 +2,8 @@ Source: nsscache
 Section: admin
 Priority: optional
 Maintainer: Jamie Wilkinson <jaq@debian.org>
-Build-Depends: debhelper (>= 7.0.50), dh-python, python (>= 2.4), python-pycurl, python-ldap, python-mox, libnss-db
+Build-Depends: debhelper (>= 9~), dh-python, python (>= 2.6.6-3~), python-pycurl, python-ldap, python-mox, libnss-db
 Standards-Version: 3.9.6
-X-Python-Version: >= 2.6
 Homepage: http://code.google.com/p/nsscache
 Vcs-Browser: https://github.com/google/nsscache/tree/debian
 Vcs-Git: https://github.com/google/nsscache.git -b debian
@@ -13,8 +12,8 @@ Testsuite: autopkgtest
 Package: nsscache
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-pycurl, python-ldap
+Provides: ${python:Provides}
 Recommends: libnss-cache | libnss-db
-Suggests: python-pyme
 Description: asynchronously synchronise local NSS databases with remote directory services
  Synchronises local NSS caches, such as those served by the
  libnss-cache module, against remote directory services, such as
