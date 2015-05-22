@@ -19,3 +19,4 @@ dist
 *.build
 a.out
 *.debian.tar.xz
+.pybuild
