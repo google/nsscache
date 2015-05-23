@@ -1,3 +1,9 @@
+nsscache (0.30-3) UNRELEASED; urgency=medium
+
+  * Convert to dh-python2 from python-support. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 23 May 2015 14:16:59 +1000
+
 nsscache (0.30-2) unstable; urgency=medium
 
   * Add the autopkgtest testsuite back to the control file. 
