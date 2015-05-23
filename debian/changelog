@@ -1,4 +1,4 @@
-nsscache (0.30-3) unstable; urgency=medium
+nsscache (0.30-2) unstable; urgency=medium
 
   * Add the autopkgtest testsuite back to the control file. 
   * Fix some path errors in the regression test. 
