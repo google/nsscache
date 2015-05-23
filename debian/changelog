@@ -1,8 +1,8 @@
-nsscache (0.30-3) UNRELEASED; urgency=medium
+nsscache (0.30-3) unstable; urgency=medium
 
   * Convert to dh-python2 from python-support. 
 
- -- Jamie Wilkinson <jaq@debian.org>  Sat, 23 May 2015 14:16:59 +1000
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 23 May 2015 17:25:55 +1000
 
 nsscache (0.30-2) unstable; urgency=medium
 
