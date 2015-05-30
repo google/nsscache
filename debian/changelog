@@ -1,3 +1,9 @@
+nsscache (0.30-4) unstable; urgency=medium
+
+  * Allow stderr output in the autopkgtest test.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 30 May 2015 16:33:23 +1000
+
 nsscache (0.30-3) unstable; urgency=medium
 
   * Convert to dh-python2 from python-support. 
