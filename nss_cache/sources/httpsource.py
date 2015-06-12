@@ -70,6 +70,8 @@ class HttpFilesSource(source.Source):
       conn = pycurl.Curl()
       conn.setopt(pycurl.NOPROGRESS, 1)
       conn.setopt(pycurl.NOSIGNAL, 1)
+      # Don't hang on to connections from broken servers indefinitely.
+      conn.setopt(pycurl.TIMEOUT, 60)
       conn.setopt(pycurl.USERAGENT, 'nsscache')
       if self.conf['http_proxy']:
         conn.setopt(pycurl.PROXY, self.conf['http_proxy'])
