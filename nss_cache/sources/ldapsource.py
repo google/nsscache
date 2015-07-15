@@ -514,10 +514,16 @@ class UpdateGetter(object):
       except AttributeError, e:
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
+    # Perform some post processing on the data_map.
+    self.PostProcess(data_map, source, search_filter, search_scope)
 
     data_map.SetModifyTimestamp(max_ts)
 
     return data_map
+ 
+  def PostProcess(self, data_map, source, search_filter, search_scope):
+    """Perform some post-process of the data."""
+    pass
 
 
 class PasswdUpdateGetter(UpdateGetter):
@@ -583,6 +589,8 @@ class GroupUpdateGetter(UpdateGetter):
     super(GroupUpdateGetter, self).__init__(conf)
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
+    elif conf.get('rfc2307bis-alt'):
+      self.attrs = ['cn', 'gidNumber', 'uniqueMember']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
     if 'groupregex' in conf:
@@ -614,12 +622,31 @@ class GroupUpdateGetter(UpdateGetter):
           members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
         else:
           members.append(member_uid)
+    elif 'uniqueMember' in obj:
+      """ This contains a DN and is processed in PostProcess in GetUpdates."""
+      members.extend(obj['uniqueMember'])
     members.sort()
 
     gr.gid = int(obj['gidNumber'][0])
     gr.members = members
 
     return gr
+ 
+  def PostProcess(self, data_map, source, search_filter, search_scope):
+    """Perform some post-process of the data."""
+
+    for gr in data_map:
+      uidmembers=[]
+      for member in gr.members:
+        source.Search(search_base=member,
+                      search_filter='(objectClass=*)',
+                      search_scope=ldap.SCOPE_BASE,
+                      attrs=['uid'])
+        for obj in source:
+          if 'uid' in obj:
+            uidmembers.extend(obj['uid'])
+      del gr.members[:]
+      gr.members.extend(uidmembers)
 
 
 class ShadowUpdateGetter(UpdateGetter):
