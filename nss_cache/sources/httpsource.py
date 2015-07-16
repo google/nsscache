@@ -277,6 +277,9 @@ class UpdateGetter(object):
           self.log.debug('%s', header)
           http_ts_string = header[header.find(':')+1:].strip()
           last_modified = self.FromHttpToTimestamp(http_ts_string)
+          break
+      else:
+        http_ts_string = ''
     else:
       http_ts_string = self.FromTimestampToHttp(last_modified)
 
