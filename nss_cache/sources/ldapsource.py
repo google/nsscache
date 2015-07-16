@@ -589,7 +589,7 @@ class GroupUpdateGetter(UpdateGetter):
     super(GroupUpdateGetter, self).__init__(conf)
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
-    elif conf.get('rfc2307bis-alt'):
+    elif conf.get('rfc2307bis_alt'):
       self.attrs = ['cn', 'gidNumber', 'uniqueMember']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
@@ -634,19 +634,19 @@ class GroupUpdateGetter(UpdateGetter):
  
   def PostProcess(self, data_map, source, search_filter, search_scope):
     """Perform some post-process of the data."""
-
-    for gr in data_map:
-      uidmembers=[]
-      for member in gr.members:
-        source.Search(search_base=member,
-                      search_filter='(objectClass=*)',
-                      search_scope=ldap.SCOPE_BASE,
-                      attrs=['uid'])
-        for obj in source:
-          if 'uid' in obj:
-            uidmembers.extend(obj['uid'])
-      del gr.members[:]
-      gr.members.extend(uidmembers)
+    if 'uniqueMember' in self.attrs:
+      for gr in data_map:
+        uidmembers=[]
+        for member in gr.members:
+          source.Search(search_base=member,
+                        search_filter='(objectClass=*)',
+                        search_scope=ldap.SCOPE_BASE,
+                        attrs=['uid'])
+          for obj in source:
+            if 'uid' in obj:
+              uidmembers.extend(obj['uid'])
+        del gr.members[:]
+        gr.members.extend(uidmembers)
 
 
 class ShadowUpdateGetter(UpdateGetter):
