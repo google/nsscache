@@ -48,12 +48,14 @@ def RegisterImplementation(source):
   _source_implementations[source.name] = source
 
 
-# Discover all the known implementations of sources. 
+# Discover all the known implementations of sources.
 from nss_cache.sources import httpsource
 from nss_cache.sources import ldapsource
+from nss_cache.sources import consulsource
 
 httpsource.RegisterImplementation(RegisterImplementation)
 ldapsource.RegisterImplementation(RegisterImplementation)
+consulsource.RegisterImplementation(RegisterImplementation)
 
 # Don't load the zsync source if zsync python module isn't there.
 try:
@@ -61,7 +63,7 @@ try:
   zsyncsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
   pass
-  
+
 
 def Create(conf):
   """Source creation factory method.
