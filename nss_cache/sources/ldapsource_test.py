@@ -285,7 +285,7 @@ class TestLdapSource(mox.MoxTestBase):
     first = data.PopItem()
 
     self.assertEqual('Testguy McTest', first.name)
- 
+
   def testGetGroupMap(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],

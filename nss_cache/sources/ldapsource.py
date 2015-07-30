@@ -587,6 +587,7 @@ class GroupUpdateGetter(UpdateGetter):
 
   def __init__(self, conf):
     super(GroupUpdateGetter, self).__init__(conf)
+    # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
     elif conf.get('rfc2307bis_alt'):
