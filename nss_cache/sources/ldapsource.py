@@ -271,7 +271,7 @@ class LdapSource(source.Source):
     Returns:
       instance of maps.SshkeyMap
     """
-    return SshkeyUpdateGetter().GetUpdates(source=self,
+    return SshkeyUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
