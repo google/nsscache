@@ -503,7 +503,10 @@ class UpdateGetter(object):
           logging.warn('invalid object passed: %r not in %r', field, obj)
           raise ValueError('Invalid object passed: %r', obj)
 
-      obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+      try:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+      except KeyError:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
       if max_ts is None or obj_ts > max_ts:
         max_ts = obj_ts
