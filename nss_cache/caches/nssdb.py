@@ -38,6 +38,25 @@ def RegisterAllImplementations(register_callback):
   register_callback('nssdb', 'shadow', NssDbShadowHandler)
 
 
+def is_valid_unix_name(name):
+  """
+  Return False if name has characters that are not OK for Unix usernames,
+  True otherwise.
+
+  Unix has certain naming restrictions for user names in passwd, shadow, etc.
+  Here we take a conservative approach and only blacklist a few characters.
+
+  Args:
+   name: name to test
+
+  Returns: True if the name is OK, False if it contains bad characters.
+  """
+  if any(c in name for c in [" ", ":", "\n"]):
+    return False
+  else:
+    return True
+
+
 class NssDbCache(caches.Cache):
   """An implementation of a Cache specific to nss_db.
 
@@ -290,8 +309,7 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       Nothing
     """
-    # Unix does not allow spaces in usernames; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return
     password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
                                                entry.uid, entry.gid,
@@ -354,8 +372,7 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       a list of strings
     """
-    # Unix does not allow spaces in usernames; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return []
     return ['.%s' % entry.name,
             '=%d' % entry.uid]
@@ -386,8 +403,7 @@ class NssDbGroupHandler(NssDbCache):
     Returns:
       Nothing
     """
-    # Unix does not allow spaces in group names; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return
     grent = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                              ','.join(entry.members))
@@ -442,8 +458,7 @@ class NssDbGroupHandler(NssDbCache):
     Returns:
       a list of strings
     """
-    # Unix does not allow spaces in group names; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return []
     return ['.%s' % entry.name,
             '=%d' % entry.gid]
@@ -475,8 +490,7 @@ class NssDbShadowHandler(NssDbCache):
     Returns:
       Nothing
     """
-    # Unix does not allow spaces in usernames; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return
     # If the field is None, then set to empty string
     shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
@@ -549,7 +563,6 @@ class NssDbShadowHandler(NssDbCache):
     Returns:
       a list of strings
     """
-    # Unix does not allow spaces in usernames; just skip.
-    if " " in entry.name:
+    if not is_valid_unix_name(entry.name):
       return []
     return ['.%s' % entry.name]
