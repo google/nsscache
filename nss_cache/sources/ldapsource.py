@@ -537,7 +537,7 @@ class PasswdUpdateGetter(UpdateGetter):
       self.attrs.append(self.conf['uidattr'])
     if 'uidregex' in self.conf:
       self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
+    self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
@@ -574,7 +574,10 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.uid = int(obj['uidNumber'][0])
     pw.gid = int(obj['gidNumber'][0])
-    pw.dir = obj['homeDirectory'][0]
+    try:
+      pw.dir = obj['homeDirectory'][0]
+    except KeyError:
+      pw.dir = ''
 
     # hack
     pw.passwd = 'x'
