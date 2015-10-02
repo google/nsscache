@@ -290,6 +290,9 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       Nothing
     """
+    # Unix does not allow spaces in usernames; just skip.
+    if " " in entry.name:
+      return
     password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
                                                entry.uid, entry.gid,
                                                entry.gecos, entry.dir,
@@ -351,6 +354,9 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       a list of strings
     """
+    # Unix does not allow spaces in usernames; just skip.
+    if " " in entry.name:
+      return []
     return ['.%s' % entry.name,
             '=%d' % entry.uid]
 
@@ -380,6 +386,9 @@ class NssDbGroupHandler(NssDbCache):
     Returns:
       Nothing
     """
+    # Unix does not allow spaces in group names; just skip.
+    if " " in entry.name:
+      return
     grent = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                              ','.join(entry.members))
     # Write to makedb with each key
@@ -433,6 +442,9 @@ class NssDbGroupHandler(NssDbCache):
     Returns:
       a list of strings
     """
+    # Unix does not allow spaces in group names; just skip.
+    if " " in entry.name:
+      return []
     return ['.%s' % entry.name,
             '=%d' % entry.gid]
 
@@ -463,6 +475,9 @@ class NssDbShadowHandler(NssDbCache):
     Returns:
       Nothing
     """
+    # Unix does not allow spaces in usernames; just skip.
+    if " " in entry.name:
+      return
     # If the field is None, then set to empty string
     shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
                                                    entry.passwd,
@@ -534,4 +549,7 @@ class NssDbShadowHandler(NssDbCache):
     Returns:
       a list of strings
     """
+    # Unix does not allow spaces in usernames; just skip.
+    if " " in entry.name:
+      return []
     return ['.%s' % entry.name]
