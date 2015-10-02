@@ -65,6 +65,13 @@ class LdapSource(source.Source):
   # for registration
   name = 'ldap'
 
+  # ldap.LDAP_CONTROL_PAGE_OID is unavailable on some systems, so we define it here
+  LDAP_CONTROL_PAGE_OID = '1.2.840.113556.1.4.319'
+
+  # Page size for paged LDAP requests
+  # Valuee chosen based on default Active Directory MaxPageSize
+  PAGE_SIZE = 1000
+
   def __init__(self, conf, conn=None):
     """Initialise the LDAP Data Source.
 
@@ -77,6 +84,11 @@ class LdapSource(source.Source):
 
     self._SetDefaults(conf)
     self._conf = conf
+
+    self.ldap_controls = ldap.controls.SimplePagedResultsControl(True, size=self.PAGE_SIZE, cookie='')
+
+    # Used by _ReSearch:
+    self._last_search_params = None
 
     if conn is None:
       # ReconnectLDAPObject should handle interrupted ldap transactions.
@@ -189,6 +201,15 @@ class LdapSource(source.Source):
         self.log.debug('sleeping %d seconds', configuration['retry_delay'])
         time.sleep(configuration['retry_delay'])
 
+  def _ReSearch(self):
+    """
+    Performs self.Search again with the previously used parameters.
+
+    Returns:
+     self.Search result.
+    """
+    self.Search(*self._last_search_params)
+
   def Search(self, search_base, search_filter, search_scope, attrs):
     """Search the data source.
 
@@ -204,12 +225,16 @@ class LdapSource(source.Source):
     Returns:
      nothing.
     """
+    self._last_search_params = (search_base, search_filter, search_scope, attrs)
+
     self.log.debug('searching for base=%r, filter=%r, scope=%r, attrs=%r',
                    search_base, search_filter, search_scope, attrs)
     if 'dn' in attrs: self._dn_requested = True  # special cased attribute
-    self.message_id = self.conn.search(base=search_base,
-                                       filterstr=search_filter,
-                                       scope=search_scope, attrlist=attrs)
+    self.message_id = self.conn.search_ext(base=search_base,
+                                           filterstr=search_filter,
+                                           scope=search_scope,
+                                           attrlist=attrs,
+                                           serverctrls=[self.ldap_controls])
 
   def __iter__(self):
     """Iterate over the data from the last search.
@@ -219,15 +244,42 @@ class LdapSource(source.Source):
     Yields:
       Search results from the prior call to self.Search()
     """
+    # Acquire data to yield:
     while True:
       result_type, data = None, None
 
       timeout_retries = 0
       while timeout_retries < self._conf['retry_max']:
         try:
-          result_type, data = self.conn.result(self.message_id, all=0,
-                                               timeout=self.conf['timelimit'])
+          result_type, data, _, serverctrls = self.conn.result3(
+            self.message_id, all=0, timeout=self.conf['timelimit'])
+
+          # Paged requests return a new cookie in serverctrls at the end of a page,
+          # so we search for the cookie and perform another search if needed.
+          if len(serverctrls) > 0:
+            # Search for appropriate control
+            simple_paged_results_controls = [
+              control
+              for control in serverctrls
+              if control.controlType == self.LDAP_CONTROL_PAGE_OID
+            ]
+            if simple_paged_results_controls:
+              # We only expect one control; just take the first in the list:
+              cookie = simple_paged_results_controls[0].cookie
+
+              if len(cookie) > 0:
+                # If cookie is non-empty, call search_ext and result3 again
+                self.ldap_controls.cookie = cookie
+                self._ReSearch()
+                result_type, data, _, serverctrls = self.conn.result3(
+                  self.message_id, all=0, timeout=self.conf['timelimit'])
+              # else: An empty cookie means we are done.
+
+          # break loop once result3 doesn't time out
           break
+        except ldap.SIZELIMIT_EXCEEDED:
+          self.log.warning('LDAP server size limit exceeded; using page size {0}.'.format(self.PAGE_SIZE))
+          return
         except ldap.NO_SUCH_OBJECT:
           self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
           return
@@ -530,7 +582,7 @@ class UpdateGetter(object):
     data_map.SetModifyTimestamp(max_ts)
 
     return data_map
- 
+
   def PostProcess(self, data_map, source, search_filter, search_scope):
     """Perform some post-process of the data."""
     pass
@@ -645,7 +697,7 @@ class GroupUpdateGetter(UpdateGetter):
     gr.members = members
 
     return gr
- 
+
   def PostProcess(self, data_map, source, search_filter, search_scope):
     """Perform some post-process of the data."""
     if 'uniqueMember' in self.attrs:
