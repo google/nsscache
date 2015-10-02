@@ -113,7 +113,11 @@ class Cache(object):
     self.log.debug('rolling back, deleting temp cache file %r',
                    self.temp_cache_filename)
     self.temp_cache_file.close()
-    os.unlink(self.temp_cache_filename)
+    try:
+      os.remove(self.temp_cache_filename)
+    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
+      if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+        raise  # re-raise exception if a different error occured
 
   def _Commit(self):
     """Ensure the cache is now the active data source for NSS.
