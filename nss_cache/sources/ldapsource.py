@@ -487,9 +487,9 @@ class UpdateGetter(object):
 
     if search_scope == 'base':
       search_scope = ldap.SCOPE_BASE
-    elif search_scope == 'one':
+    elif search_scope in ['one', 'onelevel']:
       search_scope = ldap.SCOPE_ONELEVEL
-    elif search_scope == 'sub':
+    elif search_scope in ['sub', 'subtree']:
       search_scope = ldap.SCOPE_SUBTREE
     else:
       raise error.ConfigurationError('Invalid scope: %s' % search_scope)

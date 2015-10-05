@@ -19,7 +19,7 @@ The DEFAULT section must provide at least one
 keyword, specifying the data source to use, one
 \fBcache\fP
 keyword, specifying the means in which the cache data will be stored
-locally, and one
+locally, one
 \fBmaps\fP
 keyword, specifying which NSS maps should be cached, and one
 \fBtimestamp_dir\fP
@@ -115,6 +115,11 @@ The search filter to use when querying.
 The search scope to use.  Defaults to
 .I one
 
+Valid options:
+.I sub[tree]
+.I one[level]
+.I base
+
 .TP
 .B ldap_bind_dn
 The bind DN to use when connecting to LDAP.  Emtpy string is an
@@ -153,6 +158,10 @@ Directory for trusted CA certificates.  Defaults to
 .B ldap_tls_cacertfile
 Filename containing trusted CA certificates.  Defaults to
 .I /usr/share/ssl/cert.pem
+
+.TP
+.B ldap_tls_starttls
+Set to 1 to enable STARTTLS. Leave absent to disable.
 
 .TP
 .B ldap_uidattr
