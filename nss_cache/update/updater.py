@@ -23,6 +23,7 @@ Updater:  Base class with setup and timestamp code.
 FileMapUpdater:  Class used for all single map caches.
 AutomountMapUpdater:  Class used for updating automount map caches.
 """
+import errno
 
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
@@ -163,6 +164,15 @@ class Updater(object):
     Returns:
        A boolean indicating success of write.
     """
+    # Make sure self.timestamp_dir exists before calling tempfile.mkstemp
+    try:
+        os.makedirs(self.timestamp_dir)
+    except OSError, e:
+        if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
+            pass  # Directory already exists; squelch error
+        else:
+          raise
+
     (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
                                                  dir=self.timestamp_dir)
     time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp))
