@@ -129,9 +129,9 @@ class TestClassMethods(unittest.TestCase):
     self.assertEquals(shadow.source['name'], 'ldap')
     self.assertEquals(automount.source['name'], 'ldap')
 
-    self.assertEquals(passwd.cache['name'], 'cache')
-    self.assertEquals(group.cache['name'], 'cache')
-    self.assertEquals(shadow.cache['name'], 'cache')
+    self.assertEquals(passwd.cache['name'], 'files')
+    self.assertEquals(group.cache['name'], 'files')
+    self.assertEquals(shadow.cache['name'], 'files')
     self.assertEquals(automount.cache['name'], 'files')
 
     self.assertEquals(passwd.source['base'],
