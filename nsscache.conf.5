@@ -62,12 +62,14 @@ queried by the NSS itself.
 Valid options:
 .I files
 Store in a plain text file, similar in format to
-.I /etc/passwd
-
-.I cache
-Store in a plain text cache file, with a \fB.cache\fP suffix, and an index, for use with the
+.I /etc/passwd.
+If the files-module option
+.I files_cache_filename_suffix
+is also set to
+.B cache
+then not only will the files be created with a \fB.cache\fP suffix, but also an index file will be written alongside, for use with the 
 .I nss-cache
-NSS module.
+NSS module.  (See https://github.com/google/libnss-cache.)
 
 .I nssdb
 Store in a Berkeley DB file, for use with the
