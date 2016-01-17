@@ -76,7 +76,7 @@ class FilesCache(caches.Cache):
     super(FilesCache, self).__init__(conf, map_name,
                                      automount_mountpoint=automount_mountpoint)
 
-    # TODO(jaq): this 'cache' constant default is not obvious, needs documenting
+    # Documented in nsscache.conf example.
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
     # Store a dict of indexes, each containing a dict of keys to line, position
     # tuples.
