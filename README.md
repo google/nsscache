@@ -13,7 +13,7 @@ Here, we present to you this glorified script, which is just a little more exten
 
     ldapsearch | awk > /etc/passwd
     
-Read the [Google Code blog announcement](http://www.anchor.com.au/blog/2009/02/nsscache-and-ldap-reliability/) for nsscache, or more about the [motivation behind this tool](https://code.google.com/p/nsscache/wiki/MotivationBehindNssCache).
+Read the [Google Code blog announcement](http://www.anchor.com.au/blog/2009/02/nsscache-and-ldap-reliability/) for nsscache, or more about the [motivation behind this tool](https://github.com/google/nsscache/wiki/MotivationBehindNssCache).
 
 Here's a [testimonial from Anchor Systems](http://www.anchor.com.au/blog/2009/02/nsscache-and-ldap-reliability/) on their deployment of nsscache.
 

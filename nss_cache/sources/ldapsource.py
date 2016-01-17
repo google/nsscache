@@ -271,7 +271,7 @@ class LdapSource(source.Source):
     Returns:
       instance of maps.SshkeyMap
     """
-    return SshkeyUpdateGetter().GetUpdates(source=self,
+    return SshkeyUpdateGetter(self.conf).GetUpdates(source=self,
                                            search_base=self.conf['base'],
                                            search_filter=self.conf['filter'],
                                            search_scope=self.conf['scope'],
@@ -435,7 +435,14 @@ class UpdateGetter(object):
     Returns:
       number of seconds since epoch.
     """
-    t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+    try:
+      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+    except ValueError:
+      # Some systems add a decimal component; try to filter it:
+      m = re.match('([0-9]*)(\.[0-9]*)?(Z)', ldap_ts_string)
+      if m:
+        ldap_ts_string = m.group(1) + m.group(3)
+      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
     return int(calendar.timegm(t))
 
   def FromTimestampToLdap(self, ts):
@@ -503,7 +510,10 @@ class UpdateGetter(object):
           logging.warn('invalid object passed: %r not in %r', field, obj)
           raise ValueError('Invalid object passed: %r', obj)
 
-      obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+      try:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+      except KeyError:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
       if max_ts is None or obj_ts > max_ts:
         max_ts = obj_ts
@@ -514,10 +524,16 @@ class UpdateGetter(object):
       except AttributeError, e:
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
+    # Perform some post processing on the data_map.
+    self.PostProcess(data_map, source, search_filter, search_scope)
 
     data_map.SetModifyTimestamp(max_ts)
 
     return data_map
+ 
+  def PostProcess(self, data_map, source, search_filter, search_scope):
+    """Perform some post-process of the data."""
+    pass
 
 
 class PasswdUpdateGetter(UpdateGetter):
@@ -531,7 +547,7 @@ class PasswdUpdateGetter(UpdateGetter):
       self.attrs.append(self.conf['uidattr'])
     if 'uidregex' in self.conf:
       self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'homeDirectory']
+    self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
@@ -568,7 +584,10 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.uid = int(obj['uidNumber'][0])
     pw.gid = int(obj['gidNumber'][0])
-    pw.dir = obj['homeDirectory'][0]
+    try:
+      pw.dir = obj['homeDirectory'][0]
+    except KeyError:
+      pw.dir = ''
 
     # hack
     pw.passwd = 'x'
@@ -581,8 +600,11 @@ class GroupUpdateGetter(UpdateGetter):
 
   def __init__(self, conf):
     super(GroupUpdateGetter, self).__init__(conf)
+    # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
     if conf.get('rfc2307bis'):
       self.attrs = ['cn', 'gidNumber', 'member']
+    elif conf.get('rfc2307bis_alt'):
+      self.attrs = ['cn', 'gidNumber', 'uniqueMember']
     else:
       self.attrs = ['cn', 'gidNumber', 'memberUid']
     if 'groupregex' in conf:
@@ -614,12 +636,31 @@ class GroupUpdateGetter(UpdateGetter):
           members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
         else:
           members.append(member_uid)
+    elif 'uniqueMember' in obj:
+      """ This contains a DN and is processed in PostProcess in GetUpdates."""
+      members.extend(obj['uniqueMember'])
     members.sort()
 
     gr.gid = int(obj['gidNumber'][0])
     gr.members = members
 
     return gr
+ 
+  def PostProcess(self, data_map, source, search_filter, search_scope):
+    """Perform some post-process of the data."""
+    if 'uniqueMember' in self.attrs:
+      for gr in data_map:
+        uidmembers=[]
+        for member in gr.members:
+          source.Search(search_base=member,
+                        search_filter='(objectClass=*)',
+                        search_scope=ldap.SCOPE_BASE,
+                        attrs=['uid'])
+          for obj in source:
+            if 'uid' in obj:
+              uidmembers.extend(obj['uid'])
+        del gr.members[:]
+        gr.members.extend(uidmembers)
 
 
 class ShadowUpdateGetter(UpdateGetter):

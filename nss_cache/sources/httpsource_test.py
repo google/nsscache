@@ -180,6 +180,28 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     result = getter.GetUpdates(source, 'https://TEST_URL', 1)
     self.assertEqual(mock_map, result)
 
+  def testGetUpdatesWithoutTimestamp(self):
+    mock_conn = self.mox.CreateMockAnything()
+    mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+    mock_conn.perform()
+    mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(200)
+    mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
+
+    self.mox.StubOutWithMock(pycurl, 'Curl')
+    pycurl.Curl().AndReturn(mock_conn)
+
+    mock_map = self.mox.CreateMockAnything()
+
+    getter = httpsource.UpdateGetter()
+    self.mox.StubOutWithMock(getter, 'GetMap')
+    getter.GetMap(cache_info=mox.IgnoreArg()).AndReturn(mock_map)
+
+    self.mox.ReplayAll()
+    config = {}
+    source = httpsource.HttpFilesSource(config)
+    result = getter.GetUpdates(source, 'https://TEST_URL', 1)
+    self.assertEqual(mock_map, result)
+
   def testRetryOnErrorCodeResponse(self):
     config = {'retry_delay': 5,
               'retry_max': 3}
