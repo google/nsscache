@@ -231,6 +231,8 @@ class LdapSource(source.Source):
         except ldap.NO_SUCH_OBJECT:
           self.log.debug('Returning due to ldap.NO_SUCH_OBJECT')
           return
+        except ldap.SIZELIMIT_EXCEEDED:
+          self.log.warning('Partial results returned, adjust LDAP settings')
         except ldap.TIMELIMIT_EXCEEDED:
           timeout_retries += 1
           self.log.warning('Timeout on LDAP results, attempt #%s.', timeout_retries)
