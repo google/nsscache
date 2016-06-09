@@ -57,7 +57,8 @@ class TestPasswdMapParser(unittest.TestCase):
                                    {"Key": "org/users/foo/gid", "Value": "MTA="},
                                    {"Key": "org/users/foo/home", "Value": "L2hvbWUvZm9v"},
                                    {"Key": "org/users/foo/shell", "Value": "L2Jpbi9iYXNo"},
-                                   {"Key": "org/users/foo/comment", "Value": "SG93IE5vdyBCcm93biBDb3c="}
+                                   {"Key": "org/users/foo/comment", "Value": "SG93IE5vdyBCcm93biBDb3c="},
+                                   {"Key": "org/users/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
                                    ]''')
     self.parser.GetMap(cache_info, passwd_map)
     self.assertEquals(self.good_entry, passwd_map.PopItem())
@@ -75,6 +76,11 @@ class TestPasswdMapParser(unittest.TestCase):
     self.assertEquals(entry.gecos, '')
     self.assertEquals(entry.passwd, 'x')
 
+  def testInvalidEntry(self):
+    data = {'irrelevant_key': 'bacon'}
+    entry = self.parser._ReadEntry('foo', data)
+    self.assertEquals(entry, None)
+
 
 class TestConsulGroupMapParser(unittest.TestCase):
 
@@ -90,7 +96,8 @@ class TestConsulGroupMapParser(unittest.TestCase):
     group_map = group.GroupMap()
     cache_info = StringIO.StringIO('''[
                                    {"Key": "org/groups/foo/gid", "Value": "MTA="},
-                                   {"Key": "org/groups/foo/members", "Value": "Zm9vCmJhcg=="}
+                                   {"Key": "org/groups/foo/members", "Value": "Zm9vCmJhcg=="},
+                                   {"Key": "org/groups/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
                                    ]''')
     self.parser.GetMap(cache_info, group_map)
     self.assertEquals(self.good_entry, group_map.PopItem())
@@ -109,6 +116,11 @@ class TestConsulGroupMapParser(unittest.TestCase):
     data = {'gid': '10', 'members': ''}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEquals(entry.members, [''])
+
+  def testInvalidEntry(self):
+    data = {'irrelevant_key': 'bacon'}
+    entry = self.parser._ReadEntry('foo', data)
+    self.assertEquals(entry, None)
 
 
 if __name__ == '__main__':
