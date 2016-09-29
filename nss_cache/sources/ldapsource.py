@@ -39,9 +39,33 @@ from nss_cache.sources import source
 
 IS_LDAP24_OR_NEWER = StrictVersion(ldap.__version__) >= StrictVersion('2.4')
 
+# ldap.LDAP_CONTROL_PAGE_OID is unavailable on some systems, so we define it here
+LDAP_CONTROL_PAGE_OID = '1.2.840.113556.1.4.319'
+
 def RegisterImplementation(registration_callback):
   registration_callback(LdapSource)
 
+def makeSimplePagedResultsControl(page_size):
+  # The API for this is different on older versions of python-ldap, so we need
+  # to handle this case.
+  if IS_LDAP24_OR_NEWER:
+    return ldap.controls.SimplePagedResultsControl(True, size=page_size, cookie='')
+  else:
+    return ldap.controls.SimplePagedResultsControl(LDAP_CONTROL_PAGE_OID, True, (page_size, ''))
+
+def getCookieFromControl(pctrl):
+  if IS_LDAP24_OR_NEWER:
+    return pctrl.cookie
+  else:
+    return pctrl.controlValue[1]
+
+def setCookieOnControl(control, cookie, page_size):
+  if IS_LDAP24_OR_NEWER:
+    control.cookie = cookie
+  else:
+    control.controlValue = (page_size, cookie)
+
+  return cookie
 
 class LdapSource(source.Source):
   """Source for data in LDAP.
@@ -68,11 +92,8 @@ class LdapSource(source.Source):
   # for registration
   name = 'ldap'
 
-  # ldap.LDAP_CONTROL_PAGE_OID is unavailable on some systems, so we define it here
-  LDAP_CONTROL_PAGE_OID = '1.2.840.113556.1.4.319'
-
   # Page size for paged LDAP requests
-  # Valuee chosen based on default Active Directory MaxPageSize
+  # Value chosen based on default Active Directory MaxPageSize
   PAGE_SIZE = 1000
 
   def __init__(self, conf, conn=None):
@@ -87,13 +108,7 @@ class LdapSource(source.Source):
 
     self._SetDefaults(conf)
     self._conf = conf
-
-    # The API for this is different on older versions of python-ldap, so we
-    # need to handle this case.
-    if IS_LDAP24_OR_NEWER:
-      self.ldap_controls = ldap.controls.SimplePagedResultsControl(True, size=self.PAGE_SIZE, cookie='')
-    else:
-      self.ldap_controls = ldap.controls.SimplePagedResultsControl(self.LDAP_CONTROL_PAGE_OID, True, (self.PAGE_SIZE, ''))
+    self.ldap_controls = makeSimplePagedResultsControl(self.PAGE_SIZE)
 
     # Used by _ReSearch:
     self._last_search_params = None
@@ -176,6 +191,9 @@ class LdapSource(source.Source):
     ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, configuration['tls_cacertfile'])
     ldap.version = ldap.VERSION3  # this is hard-coded, we only support V3
 
+  def _SetCookie(self, cookie):
+    return setCookieOnControl(self.ldap_controls, cookie, self.PAGE_SIZE)
+
   def Bind(self, configuration):
     """Bind to LDAP, retrying if necessary."""
     # If the server is unavailable, we are going to find out now, as this
@@ -244,28 +262,6 @@ class LdapSource(source.Source):
                                            attrlist=attrs,
                                            serverctrls=[self.ldap_controls])
 
-  def _get_cookie_from_controls(self, pctrl):
-    """Get the cookie value from the control object.
-
-    This is necessary since the API is different before version 2.4.
-    """
-    if IS_LDAP24_OR_NEWER:
-      return pctrl.cookie
-    else:
-      return pctrl.controlValue
-
-  def _set_cookie(self, cookie):
-    """Sets the cookie stored on our SimplePagedResultsControl object.
-
-    This is necessary since the API is different before version 2.4.
-    """
-    if IS_LDAP24_OR_NEWER:
-      self.ldap_controls.cookie = cookie
-    else:
-      self.ldap_controls.controlValue = (self.PAGE_SIZE, cookie)
-
-    return cookie
-
   def __iter__(self):
     """Iterate over the data from the last search.
 
@@ -291,15 +287,15 @@ class LdapSource(source.Source):
             simple_paged_results_controls = [
               control
               for control in serverctrls
-              if control.controlType == self.LDAP_CONTROL_PAGE_OID
+              if control.controlType == LDAP_CONTROL_PAGE_OID
             ]
             if simple_paged_results_controls:
-              # We only expect one control; just take the first in the list:
-              cookie = self._get_cookie_from_controls(simple_paged_results_controls[0])
+              # We only expect one control; just take the first in the list.
+              cookie = getCookieFromControl(simple_paged_results_controls[0])
 
               if len(cookie) > 0:
                 # If cookie is non-empty, call search_ext and result3 again
-                self._set_cookie(cookie)
+                self._SetCookie(cookie)
                 self._ReSearch()
                 result_type, data, _, serverctrls = self.conn.result3(
                   self.message_id, all=0, timeout=self.conf['timelimit'])
