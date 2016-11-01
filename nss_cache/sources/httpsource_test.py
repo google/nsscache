@@ -31,6 +31,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 
 from nss_cache.sources import httpsource
 from nss_cache.util import file_formats
@@ -44,6 +45,7 @@ class TestHttpSource(unittest.TestCase):
     self.config = {'passwd_url': 'PASSWD_URL',
                    'shadow_url': 'SHADOW_URL',
                    'group_url': 'GROUP_URL',
+                   'sshkey_url': 'SSHKEY_URL',
                    'retry_delay': 'TEST_RETRY_DELAY',
                    'retry_max': 'TEST_RETRY_MAX',
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
@@ -58,6 +60,8 @@ class TestHttpSource(unittest.TestCase):
                       httpsource.HttpFilesSource.SHADOW_URL)
     self.assertEquals(source.conf['group_url'],
                       httpsource.HttpFilesSource.GROUP_URL)
+    self.assertEquals(source.conf['sshkey_url'],
+                      httpsource.HttpFilesSource.SSHKEY_URL)
     self.assertEquals(source.conf['retry_max'],
                       httpsource.HttpFilesSource.RETRY_MAX)
     self.assertEquals(source.conf['retry_delay'],
@@ -71,6 +75,7 @@ class TestHttpSource(unittest.TestCase):
     self.assertEquals(source.conf['passwd_url'], 'PASSWD_URL')
     self.assertEquals(source.conf['group_url'], 'GROUP_URL')
     self.assertEquals(source.conf['shadow_url'], 'SHADOW_URL')
+    self.assertEquals(source.conf['sshkey_url'], 'SSHKEY_URL')
     self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
     self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
     self.assertEquals(source.conf['tls_cacertfile'], 'TEST_TLS_CACERTFILE')
@@ -303,6 +308,22 @@ class TestAutomountUpdateGetter(unittest.TestCase):
   def testCreateMap(self):
     self.assertTrue(isinstance(self.updater.CreateMap(),
                                automount.AutomountMap))
+
+
+class TestSshkeyUpdateGetter(unittest.TestCase):
+
+  def setUp(self):
+    super(TestSshkeyUpdateGetter, self).setUp()
+    self.updater = httpsource.SshkeyUpdateGetter()
+
+  def testGetParser(self):
+    parser = self.updater.GetParser()
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesSshkeyMapParser))
+
+  def testCreateMap(self):
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               sshkey.SshkeyMap))
 
 
 if __name__ == '__main__':

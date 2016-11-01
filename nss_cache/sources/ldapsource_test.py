@@ -51,6 +51,20 @@ class TestLdapSource(mox.MoxTestBase):
                    'tls_cacertfile': 'TEST_TLS_CACERTFILE',
                   }
 
+  def compareSPRC(self, expected_value=''):
+    def comparator(param):
+      if not isinstance(param, list):
+        return False
+
+      sprc = param[0]
+      if not isinstance(sprc, ldap.controls.SimplePagedResultsControl):
+        return False
+
+      cookie = ldapsource.getCookieFromControl(sprc)
+      return cookie == expected_value
+
+    return comparator
+
   def testDefaultConfiguration(self):
     config = {'uri': 'ldap://foo'}
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -154,20 +168,21 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base=config['base'],
-                    filterstr='TEST_FILTER',
-                    scope='TEST_SCOPE',
-                    attrlist='TEST_ATTRLIST').AndReturn('TEST_RES')
+    mock_rlo.search_ext(base=config['base'],
+                        filterstr='TEST_FILTER',
+                        scope='TEST_SCOPE',
+                        attrlist='TEST_ATTRLIST',
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
     dataset = [('dn', 'payload')]
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, dataset))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, dataset, None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -200,15 +215,16 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base=config['base'],
-                    filterstr='TEST_FILTER',
-                    scope='TEST_SCOPE',
-                    attrlist='TEST_ATTRLIST').AndReturn('TEST_RES')
+    mock_rlo.search_ext(base=config['base'],
+                        filterstr='TEST_FILTER',
+                        scope='TEST_SCOPE',
+                        attrlist='TEST_ATTRLIST',
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
     dataset = [('dn', 'payload')]
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').MultipleTimes().AndRaise(ldap.TIMELIMIT_EXCEEDED)
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').MultipleTimes().AndRaise(ldap.TIMELIMIT_EXCEEDED)
 
     self.mox.StubOutWithMock(time, 'sleep')
     time.sleep(5)
@@ -254,20 +270,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_account]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -301,20 +317,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_group]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -351,20 +367,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_group]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -414,33 +430,33 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_group]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
-    mock_rlo.search(base=dn_user,
-                    filterstr='(objectClass=*)',
-                    scope=ldap.SCOPE_BASE,
-                    attrlist=mox.SameElementsAs(uidattr)).AndReturn(
-                        'TEST_RES')
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_account]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+    mock_rlo.search_ext(base=dn_user,
+                        filterstr='(objectClass=*)',
+                        scope=ldap.SCOPE_BASE,
+                        attrlist=mox.SameElementsAs(uidattr),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -482,20 +498,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_shadow]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_shadow], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -531,20 +547,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -580,20 +596,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr='TEST_FILTER',
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_netgroup], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -628,20 +644,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr=filterstr,
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr=filterstr,
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_automount]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_automount], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -681,20 +697,20 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr=filterstr,
-                    scope=scope,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr=filterstr,
+                        scope=scope,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_master_ou]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_master_ou], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
     # then search for the entries under ou=auto.master
     attrlist = ['cn', 'automountInformation',
                 'modifyTimestamp']
@@ -702,20 +718,20 @@ class TestLdapSource(mox.MoxTestBase):
     scope = ldap.SCOPE_ONELEVEL
     base = 'ou=auto.master,ou=automounts,dc=example,dc=com'
 
-    mock_rlo.search(base=base,
-                    filterstr=filterstr,
-                    scope=scope,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base=base,
+                        filterstr=filterstr,
+                        scope=scope,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_ENTRY, [test_automount]))
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_automount], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
 
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
@@ -746,16 +762,16 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(
         cred='TEST_BIND_PASSWORD',
         who='TEST_BIND_DN')
-    mock_rlo.search(base='TEST_BASE',
-                    filterstr=filterstr,
-                    scope=ldap.SCOPE_ONELEVEL,
-                    attrlist=mox.SameElementsAs(attrlist)).AndReturn(
-                        'TEST_RES')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr=filterstr,
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    mock_rlo.result('TEST_RES',
-                    all=0,
-                    timeout='TEST_TIMELIMIT').AndReturn(
-                        (ldap.RES_SEARCH_RESULT, None))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',

@@ -33,6 +33,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 from nss_cache.sources import source
 from nss_cache.util import file_formats
 from nss_cache.util import curl
@@ -50,6 +51,7 @@ class HttpFilesSource(source.Source):
   GROUP_URL = ''
   AUTOMOUNT_BASE_URL = ''
   NETGROUP_URL = ''
+  SSHKEY_URL = ''
   RETRY_DELAY = 5
   RETRY_MAX = 3
   TLS_CACERTFILE = '/etc/ssl/certs/ca-certificates.crt'
@@ -90,6 +92,8 @@ class HttpFilesSource(source.Source):
       configuration['group_url'] = self.GROUP_URL
     if not 'netgroup_url' in configuration:
       configuration['netgroup_url'] = self.GROUP_URL
+    if not 'sshkey_url' in configuration:
+      configuration['sshkey_url'] = self.SSHKEY_URL
     if not 'retry_delay' in configuration:
       configuration['retry_delay'] = self.RETRY_DELAY
     if not 'retry_max' in configuration:
@@ -189,6 +193,19 @@ class HttpFilesSource(source.Source):
       map_entry.location = os.path.split(map_entry.location)[1]
       self.log.debug('master map has: %s' % map_entry.location)
     return master_map
+
+
+  def GetSshkeyMap(self, since=None):
+    """Return the sshkey map from this source.
+
+    Args:
+      since: Get data only changed since this timestamp (inclusive) or None
+      for all data.
+
+    Returns:
+      instance of sshkey.SshkeyMap
+    """
+    return SshkeyUpdateGetter().GetUpdates(self, self.conf['sshkey_url'], since)
 
 
 class UpdateGetter(object):
@@ -373,3 +390,14 @@ class NetgroupUpdateGetter(UpdateGetter):
   def CreateMap(self):
     """Returns a new NetgroupMap instance to have GroupMapEntries added to it."""
     return netgroup.NetgroupMap()
+
+class SshkeyUpdateGetter(UpdateGetter):
+  """Get sshkey updates."""
+
+  def GetParser(self):
+    """Returns a MapParser to parse FilesSshkey cache."""
+    return file_formats.FilesSshkeyMapParser()
+
+  def CreateMap(self):
+    """Returns a new SshkeyMap instance to have SshkeyMapEntries added to it."""
+    return sshkey.SshkeyMap()

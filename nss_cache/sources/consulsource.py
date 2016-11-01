@@ -138,11 +138,17 @@ class ConsulPasswdMapParser(ConsulMapParser):
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = name
     map_entry.passwd = entry.get('passwd', 'x')
-    map_entry.uid = int(entry['uid'])
-    map_entry.gid = int(entry['gid'])
+
+    try:
+      map_entry.uid = int(entry['uid'])
+      map_entry.gid = int(entry['gid'])
+    except (ValueError, KeyError):
+      return None
+
     map_entry.gecos = entry.get('comment', '')
     map_entry.dir = entry.get('home', '/home/{}'.format(name))
     map_entry.shell = entry.get('shell', '/bin/bash')
+
     return map_entry
 
 
@@ -156,7 +162,12 @@ class ConsulGroupMapParser(ConsulMapParser):
     # map entries expect strict typing, so convert as appropriate
     map_entry.name = name
     map_entry.passwd = entry.get('passwd', 'x')
-    map_entry.gid = int(entry['gid'])
+
+    try:
+      map_entry.gid = int(entry['gid'])
+    except (ValueError, KeyError):
+      return None
+
     try:
       members = entry.get('members', '').split('\n')
     except (ValueError, TypeError):
