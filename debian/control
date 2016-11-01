@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Jamie Wilkinson <jaq@debian.org>
 Build-Depends: debhelper (>= 9~), python (>= 2.6.6-3~), dh-python, python-pycurl, python-ldap, python-mox, libnss-db, tzdata
 Standards-Version: 3.9.8
-Homepage: http://code.google.com/p/nsscache
+Homepage: https://github.com/google/nsscache
 Vcs-Browser: https://github.com/google/nsscache/tree/debian
 Vcs-Git: https://github.com/google/nsscache.git -b debian
 Testsuite: autopkgtest

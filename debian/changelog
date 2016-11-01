@@ -2,6 +2,7 @@ nsscache (0.32-2) unstable; urgency=medium
 
   * Build-depend on tzdata.  Closes: #839435. 
   * Bump standards version.
+  * Update project homepage to GitHub.
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 01 Nov 2016 14:51:20 +1100
 
