@@ -1,3 +1,9 @@
+nsscache (0.33-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 01 Nov 2016 15:32:19 +1100
+
 nsscache (0.32-2) unstable; urgency=medium
 
   * Build-depend on tzdata.  Closes: #839435. 
