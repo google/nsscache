@@ -1,4 +1,5 @@
 Tests: regtest
+Restrictions: allow-stderr
 Depends: @,
 	slapd,
 	ldap-utils,

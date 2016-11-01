@@ -1,3 +1,23 @@
+nsscache (0.32-2) unstable; urgency=medium
+
+  * Build-depend on tzdata.  Closes: #839435. 
+  * Bump standards version.
+  * Update project homepage to GitHub.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 01 Nov 2016 14:51:20 +1100
+
+nsscache (0.32-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sun, 17 Jan 2016 13:08:15 +1100
+
+nsscache (0.30-4) unstable; urgency=medium
+
+  * Allow stderr output in the autopkgtest test.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sat, 30 May 2015 16:33:23 +1000
+
 nsscache (0.30-3) unstable; urgency=medium
 
   * Convert to dh-python2 from python-support. 
