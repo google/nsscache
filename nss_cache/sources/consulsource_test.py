@@ -7,6 +7,7 @@ import unittest
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 from nss_cache.sources import consulsource
 
 
@@ -121,6 +122,41 @@ class TestConsulGroupMapParser(unittest.TestCase):
     data = {'irrelevant_key': 'bacon'}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEquals(entry, None)
+
+
+class TestConsulShadowMapParser(unittest.TestCase):
+
+  def setUp(self):
+    self.good_entry = shadow.ShadowMapEntry()
+    self.good_entry.name = 'foo'
+    self.good_entry.passwd = '*'
+    self.good_entry.lstchg = 17246
+    self.good_entry.min = 0
+    self.good_entry.max = 99999
+    self.good_entry.warn = 7
+    self.parser = consulsource.ConsulShadowMapParser()
+
+  def testGetMap(self):
+    shadow_map = shadow.ShadowMap()
+    cache_info = StringIO.StringIO('''[
+                                   {"Key": "org/groups/foo/passwd", "Value": "Kg=="},
+                                   {"Key": "org/groups/foo/lstchg", "Value": "MTcyNDY="},
+                                   {"Key": "org/groups/foo/min", "Value": "MA=="},
+                                   {"Key": "org/groups/foo/max", "Value": "OTk5OTk="},
+                                   {"Key": "org/groups/foo/warn", "Value": "Nw=="}
+                                   ]''')
+    self.parser.GetMap(cache_info, shadow_map)
+    self.assertEquals(self.good_entry, shadow_map.PopItem())
+
+  def testReadEntry(self):
+    data = {'passwd': '*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
+    entry = self.parser._ReadEntry('foo', data)
+    self.assertEquals(self.good_entry, entry)
+
+  def testDefaultPasswd(self):
+    data = {'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
+    entry = self.parser._ReadEntry('foo', data)
+    self.assertEquals(self.good_entry, entry)
 
 
 if __name__ == '__main__':

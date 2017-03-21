@@ -22,6 +22,7 @@ __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import logging
 import os
+import sys
 import unittest
 
 
@@ -48,6 +49,7 @@ from nss_cache.maps.shadow_test import *
 
 from nss_cache.sources.source_test import *
 from nss_cache.sources.source_factory_test import *
+from nss_cache.sources.consulsource_test import *
 from nss_cache.sources.httpsource_test import *
 from nss_cache.sources.ldapsource_test import *
 # Unsupported and deprecated.

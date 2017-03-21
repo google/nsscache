@@ -9,6 +9,7 @@ import json
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd
+from nss_cache.maps import shadow
 from nss_cache.sources import httpsource
 
 
@@ -36,7 +37,7 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
     if 'datacenter' not in configuration:
       configuration['datacenter'] = self.DATACENTER
 
-    for url in ['passwd_url', 'group_url']:
+    for url in ['passwd_url', 'group_url', 'shadow_url']:
       configuration[url] = '{}?recurse&token={}&dc={}'.format(
           configuration[url], configuration['token'], configuration['datacenter'])
 
@@ -64,6 +65,18 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
     """
     return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'], since)
 
+  def GetShadowMap(self, since=None):
+    """Return the shadow map from this source.
+
+    Args:
+      since: Get data only changed since this timestamp (inclusive) or None
+      for all data.
+
+    Returns:
+      instance of shadow.ShadowMap
+    """
+    return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'], since)
+
 
 class PasswdUpdateGetter(httpsource.UpdateGetter):
   """Get passwd updates."""
@@ -88,6 +101,17 @@ class GroupUpdateGetter(httpsource.UpdateGetter):
     """Returns a new GroupMap instance to have GroupMapEntries added to it."""
     return group.GroupMap()
 
+
+class ShadowUpdateGetter(httpsource.UpdateGetter):
+  """Get shadow updates."""
+
+  def GetParser(self):
+    """Returns a MapParser to parse FilesShadow cache."""
+    return ConsulShadowMapParser()
+
+  def CreateMap(self):
+    """Returns a new ShadowMap instance to have ShadowMapEntries added to it."""
+    return shadow.ShadowMap()
 
 class ConsulMapParser(object):
   """A base class for parsing nss_files module cache."""
@@ -173,4 +197,23 @@ class ConsulGroupMapParser(ConsulMapParser):
     except (ValueError, TypeError):
       members = ['']
     map_entry.members = members
+    return map_entry
+
+class ConsulShadowMapParser(ConsulMapParser):
+  """Class for parsing nss_files module shadow cache."""
+
+  def _ReadEntry(self, name, entry):
+    """Return a ShadowMapEntry from a record in the target cache."""
+
+    map_entry = shadow.ShadowMapEntry()
+    # maps expect strict typing, so convert to int as appropriate.
+    map_entry.name = name
+    map_entry.passwd = entry.get('passwd', '*')
+
+    for attr in ['lstchg', 'min', 'max', 'warn', 'inact', 'expire']:
+      try:
+        setattr(map_entry, attr, int(entry[attr]))
+      except (ValueError, KeyError):
+        continue
+
     return map_entry
