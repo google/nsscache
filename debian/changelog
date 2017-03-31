@@ -1,6 +1,7 @@
 nsscache (0.33-2) unstable; urgency=critical (fix RC bug)
 
   * Add missing install dir /usr/share/nsscache to the installation.  Closes: #857087.
+  * Urgency=critical to fix RC-bug before autoremoval.
 
  -- Jamie Wilkinson <jaq@debian.org>  Sat, 01 Apr 2017 10:01:41 +1100
  
