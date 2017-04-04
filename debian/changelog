@@ -1,3 +1,11 @@
+nsscache (0.33-3) unstable; urgency=medium
+
+  * Remove the PYTHONPATH and path environment overrides in the debci regtest,
+    as this was running the not-installed version of the package, which defeats
+    the purpose of testing it! 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 04 Apr 2017 20:35:37 +1000
+
 nsscache (0.33-2) unstable; urgency=high (fix RC bug)
 
   * Update debian/links which is causing the binary to be removed.
