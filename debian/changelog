@@ -1,7 +1,9 @@
 nsscache (0.33-2) unstable; urgency=high (fix RC bug)
 
-  * Remove debian/links which is causing the binary to be removed.  Closes: #857087.
+  * Update debian/links which is causing the binary to be removed.
+    Closes: #857087.
   * Urgency=critical to fix RC-bug before autoremoval.
+  * Update debian/compat to a supported version. 
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 04 Apr 2017 19:58:41 +1000
 
