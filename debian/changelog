@@ -1,3 +1,18 @@
+nsscache (0.33-2) unstable; urgency=high (fix RC bug)
+
+  * Update debian/links which is causing the binary to be removed.
+    Closes: #857087.
+  * Urgency=critical to fix RC-bug before autoremoval.
+  * Update debian/compat to a supported version. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 04 Apr 2017 19:58:41 +1000
+
+nsscache (0.33-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 01 Nov 2016 15:32:19 +1100
+
 nsscache (0.32-2) unstable; urgency=medium
 
   * Build-depend on tzdata.  Closes: #839435. 
