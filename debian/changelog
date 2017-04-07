@@ -1,8 +1,6 @@
 nsscache (0.33-3) unstable; urgency=medium
 
-  * Remove the PYTHONPATH and path environment overrides in the debci regtest,
-    as this was running the not-installed version of the package, which defeats
-    the purpose of testing it! 
+  * Revert change to debian/compat for the RC bugfix.
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 04 Apr 2017 20:35:37 +1000
 
