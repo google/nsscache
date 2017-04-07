@@ -56,7 +56,7 @@ run_nsscache() {
     mkdir $WORKDIR/$cache
     mkdir $WORKDIR/ldap-timestamps-$cache
 
-    nsscache -d -c "${config}" update --full
+    PYTHONPATH=.:$PYTHONPATH ./nsscache -d -c "${config}" update --full
     r=$?
     if [[ $r -ne 0 ]]; then
        echo FAILED: $r
