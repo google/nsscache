@@ -1,3 +1,9 @@
+nsscache (0.34-1) UNRELEASED; urgency=medium
+
+  * new upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Sun, 09 Apr 2017 10:04:11 +1000
+
 nsscache (0.33-3) unstable; urgency=high
 
   * Revert change to debian/compat for the RC bugfix.
