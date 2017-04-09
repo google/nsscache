@@ -1,6 +1,8 @@
 nsscache (0.34-1) UNRELEASED; urgency=medium
 
   * new upstream release. 
+  * Fix the path to nsscache in debci regtest, so it tests the installed
+    version, not from the source directory.
 
  -- Jamie Wilkinson <jaq@debian.org>  Sun, 09 Apr 2017 10:04:11 +1000
 
