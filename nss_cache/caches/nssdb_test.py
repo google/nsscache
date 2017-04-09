@@ -38,8 +38,8 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 
 
-class TestSkipped(Exception):
-  """Exception to raise if a test cannot be run."""
+def NoMakeDB():
+  return not os.path.exists('/usr/bin/makedb')
 
 
 class MakeDbDummy(object):
@@ -159,10 +159,8 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     # just clean it up, Write() doesn't Commit()
     writer._Rollback()
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerify(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     # create a map
     m = passwd.PasswdMap()
     e = passwd.PasswdMapEntry()
@@ -184,10 +182,8 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
     os.unlink(updater.temp_cache_filename)
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     # Hide the warning that we expect to get
 
     class TestFilter(logging.Filter):
@@ -337,10 +333,8 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     # just clean it up, Write() doesn't Commit()
     writer._Rollback()
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerify(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     # create a map
     m = group.GroupMap()
     e = group.GroupMapEntry()
@@ -360,10 +354,8 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     self.failUnlessEqual(True, retval)
     os.unlink(updater.temp_cache_filename)
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     # Hide the warning that we expect to get
 
     class TestFilter(logging.Filter):
@@ -490,10 +482,8 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     # just clean it up, Write() doesn't Commit()
     writer._Rollback()
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerify(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
     s.name = 'foo'
@@ -511,14 +501,9 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     self.failUnlessEqual(True, retval)
     os.unlink(updater.temp_cache_filename)
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
-
     # Hide the warning that we expect to get
-
     class TestFilter(logging.Filter):
       def filter(self, record):
         return not record.msg.startswith('verify failed: %d keys missing')
@@ -563,10 +548,8 @@ class TestNssDbCache(unittest.TestCase):
     super(TestNssDbCache, self).tearDown()
     shutil.rmtree(self.workdir)
 
+  @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testWriteTestBdb(self):
-    # Can't test if no makedb
-    if not os.path.exists('/usr/bin/makedb'):
-      raise TestSkipped('no /usr/bin/makedb')
     data = passwd.PasswdMap()
     pw = passwd.PasswdMapEntry()
     pw.name = 'foo'

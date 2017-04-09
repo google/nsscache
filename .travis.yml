@@ -6,7 +6,7 @@ install:
 
 script:
  - ./runtests.py
- - python setup.py install --user
+ - python setup.py install --root=/tmp/nsscache
 
 python:
  - "2.6"
