@@ -1,3 +1,18 @@
+nsscache (0.34-1) unstable; urgency=medium
+
+  * New upstream release. 
+  * Fix the path to nsscache in debci regtest, so it tests the installed
+    version, not from the source directory.
+  * Bump debian/compat to a supported version, take 2. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 13 Apr 2017 21:11:06 +1000
+
+nsscache (0.33-3) unstable; urgency=high
+
+  * Revert change to debian/compat for the RC bugfix.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Fri, 07 Apr 2017 19:19:11 +1000
+
 nsscache (0.33-2) unstable; urgency=high (fix RC bug)
 
   * Update debian/links which is causing the binary to be removed.
