@@ -62,6 +62,8 @@ run_nsscache() {
        echo FAILED: $r
     fi
     test_${cache}
+
+    nsscache -d -c "${config}" status
 }
 
 test_nssdb() {
@@ -91,6 +93,13 @@ test_files() {
 	[[ $(stat -c%A $WORKDIR/files/shadow.cache.ixname) == "-rw-r-----" ]] || exit 1
 }
 
+check () {
+  which nsscache
+  nsscache --version
+  nsscache status
+}
+
+check
 setup_slapd
 run_nsscache ldap nssdb
 run_nsscache ldap files
