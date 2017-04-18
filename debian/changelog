@@ -1,6 +1,7 @@
 nsscache (0.34-2) UNRELEASED; urgency=medium
 
   * Add more diagnostics to the regtest. 
+  * Fix version numbers in manpages. 
 
  -- Jamie Wilkinson <jaq@debian.org>  Tue, 18 Apr 2017 09:26:45 +1000
 
