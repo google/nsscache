@@ -1,9 +1,9 @@
-nsscache (0.34-2) UNRELEASED; urgency=medium
+nsscache (0.34-2) unstable; urgency=medium
 
   * Add more diagnostics to the regtest. 
   * Fix version numbers in manpages. 
 
- -- Jamie Wilkinson <jaq@debian.org>  Tue, 18 Apr 2017 09:26:45 +1000
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 18 Apr 2017 10:04:30 +1000
 
 nsscache (0.34-1) unstable; urgency=medium
 
