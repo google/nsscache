@@ -89,10 +89,6 @@ class TestLdapSource(mox.MoxTestBase):
                       ldapsource.LdapSource.TIMELIMIT)
     self.assertEquals(source.conf['tls_require_cert'],
                       ldap.OPT_X_TLS_DEMAND)
-    self.assertEquals(source.conf['tls_cacertdir'],
-                      ldapsource.LdapSource.TLS_CACERTDIR)
-    self.assertEquals(source.conf['tls_cacertfile'],
-                      ldapsource.LdapSource.TLS_CACERTFILE)
 
   def testOverrideDefaultConfiguration(self):
     config = dict(self.config)
@@ -129,7 +125,7 @@ class TestLdapSource(mox.MoxTestBase):
         retry_max='TEST_RETRY_MAX',
         retry_delay='TEST_RETRY_DELAY',
         uri='TEST_URI').AndReturn(mock_rlo)
-    
+
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
 
@@ -348,12 +344,12 @@ class TestLdapSource(mox.MoxTestBase):
     ent = data.PopItem()
 
     self.assertEqual('testgroup', ent.name)
- 
+
   def testGetGroupMapBis(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
                          'cn': ['testgroup'],
-                         'member': ['cn=testguy,ou=People,dc=example,dc=com', 
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
                                     'cn=fooguy,ou=People,dc=example,dc=com',
                                     'cn=barguy,ou=People,dc=example,dc=com'],
                          'modifyTimestamp': ['20070227012807Z']})
@@ -406,8 +402,8 @@ class TestLdapSource(mox.MoxTestBase):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
                          'cn': ['testgroup'],
-                         'uniqueMember': 
-                         ['cn=testguy,ou=People,dc=example,dc=com'], 
+                         'uniqueMember':
+                         ['cn=testguy,ou=People,dc=example,dc=com'],
                          'modifyTimestamp': ['20070227012807Z']})
     dn_user = 'cn=testguy,ou=People,dc=example,dc=com'
     test_posix_account = (dn_user,

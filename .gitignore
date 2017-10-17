@@ -21,3 +21,4 @@ a.out
 *.debian.tar.xz
 .pybuild
 debian/debhelper-build-stamp
+*~

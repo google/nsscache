@@ -85,9 +85,6 @@ class LdapSource(source.Source):
   SCOPE = 'one'
   TIMELIMIT = -1
   TLS_REQUIRE_CERT = 'demand'  # one of never, hard, demand, allow, try
-  TLS_CACERTDIR = '/usr/share/ssl'
-  # the ldap client library requires TLS_CACERTDIR to be an absolute path
-  TLS_CACERTFILE = TLS_CACERTDIR + '/cert.pem'
 
   # for registration
   name = 'ldap'
@@ -155,10 +152,6 @@ class LdapSource(source.Source):
       configuration['timelimit'] = -1
     if not 'tls_require_cert' in configuration:
       configuration['tls_require_cert'] = self.TLS_REQUIRE_CERT
-    if not 'tls_cacertdir' in configuration:
-      configuration['tls_cacertdir'] = self.TLS_CACERTDIR
-    if not 'tls_cacertfile' in configuration:
-      configuration['tls_cacertfile'] = self.TLS_CACERTFILE
     if not 'tls_starttls' in configuration:
       configuration['tls_starttls'] = 0
 
@@ -187,8 +180,14 @@ class LdapSource(source.Source):
     # Setting global ldap defaults.
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
                     configuration['tls_require_cert'])
-    ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
-    ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, configuration['tls_cacertfile'])
+    if 'tls_cacertdir' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
+    if 'tls_cacertfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, configuration['tls_cacertfile'])
+    if 'tls_certfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CERTFILE, configuration['tls_certfile'])
+    if 'tls_keyfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_KEYFILE, configuration['tls_keyfile'])
     ldap.version = ldap.VERSION3  # this is hard-coded, we only support V3
 
   def _SetCookie(self, cookie):
