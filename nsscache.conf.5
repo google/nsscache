@@ -194,6 +194,11 @@ For example:  '(.*)@example.com' would return a member without the
 the @example.com domain.  Default is no regex.
 
 .TP
+.B ldap_override_shell
+If specified, set every user's login shell to the given one.  May be
+useful on bastion hosts or to ensure uniformity.
+
+.TP
 .B ldap_rfc2307bis
 Default uses rfc2307 schema. If rfc2307bis (groups stored as a list of DNs
 in 'member' attr), set this to 1.

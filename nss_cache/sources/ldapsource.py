@@ -654,7 +654,9 @@ class PasswdUpdateGetter(UpdateGetter):
     if hasattr(self, 'uidregex'):
       pw.name = ''.join([x for x in self.uidregex.findall(pw.name)])
 
-    if 'loginShell' in obj:
+    if 'override_shell' in self.conf:
+      pw.shell = self.conf['override_shell']
+    elif 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
     else:
       pw.shell = ''
