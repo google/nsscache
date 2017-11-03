@@ -85,9 +85,6 @@ class LdapSource(source.Source):
   SCOPE = 'one'
   TIMELIMIT = -1
   TLS_REQUIRE_CERT = 'demand'  # one of never, hard, demand, allow, try
-  TLS_CACERTDIR = '/usr/share/ssl'
-  # the ldap client library requires TLS_CACERTDIR to be an absolute path
-  TLS_CACERTFILE = TLS_CACERTDIR + '/cert.pem'
 
   # for registration
   name = 'ldap'
@@ -155,10 +152,6 @@ class LdapSource(source.Source):
       configuration['timelimit'] = -1
     if not 'tls_require_cert' in configuration:
       configuration['tls_require_cert'] = self.TLS_REQUIRE_CERT
-    if not 'tls_cacertdir' in configuration:
-      configuration['tls_cacertdir'] = self.TLS_CACERTDIR
-    if not 'tls_cacertfile' in configuration:
-      configuration['tls_cacertfile'] = self.TLS_CACERTFILE
     if not 'tls_starttls' in configuration:
       configuration['tls_starttls'] = 0
 
@@ -187,8 +180,14 @@ class LdapSource(source.Source):
     # Setting global ldap defaults.
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
                     configuration['tls_require_cert'])
-    ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
-    ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, configuration['tls_cacertfile'])
+    if 'tls_cacertdir' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
+    if 'tls_cacertfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, configuration['tls_cacertfile'])
+    if 'tls_certfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_CERTFILE, configuration['tls_certfile'])
+    if 'tls_keyfile' in configuration:
+        ldap.set_option(ldap.OPT_X_TLS_KEYFILE, configuration['tls_keyfile'])
     ldap.version = ldap.VERSION3  # this is hard-coded, we only support V3
 
   def _SetCookie(self, cookie):
@@ -301,7 +300,8 @@ class LdapSource(source.Source):
                   self.message_id, all=0, timeout=self.conf['timelimit'])
               # else: An empty cookie means we are done.
 
-          # break loop once result3 doesn't time out
+          # break loop once result3 doesn't time out and reset cookie
+          setCookieOnControl(self.ldap_controls, '', self.PAGE_SIZE)
           break
         except ldap.SIZELIMIT_EXCEEDED:
           self.log.warning('LDAP server size limit exceeded; using page size {0}.'.format(self.PAGE_SIZE))
@@ -655,7 +655,9 @@ class PasswdUpdateGetter(UpdateGetter):
     if hasattr(self, 'uidregex'):
       pw.name = ''.join([x for x in self.uidregex.findall(pw.name)])
 
-    if 'loginShell' in obj:
+    if 'override_shell' in self.conf:
+      pw.shell = self.conf['override_shell']
+    elif 'loginShell' in obj:
       pw.shell = obj['loginShell'][0]
     else:
       pw.shell = ''

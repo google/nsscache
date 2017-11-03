@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2017-04-07 "nsscache 0.34" "File formats"
+.TH NSSCACHE.CONF 5 2017-11-03 "nsscache 0.35" "File formats"
 .SH NAME
 nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -67,7 +67,7 @@ If the files-module option
 .I files_cache_filename_suffix
 is also set to
 .B cache
-then not only will the files be created with a \fB.cache\fP suffix, but also an index file will be written alongside, for use with the 
+then not only will the files be created with a \fB.cache\fP suffix, but also an index file will be written alongside, for use with the
 .I nss-cache
 NSS module.  (See https://github.com/google/libnss-cache.)
 
@@ -148,18 +148,28 @@ Delay in seconds between retries.  Defaults to 5.
 .TP
 .B ldap_tls_require_cert
 Sets expectations for SSL certificates, using TLS.  One
-of 'never', 'hard', 'demand', 'allow', or 'try'.  See
-\fBldap.conf\fP(5) for more information.
+of 'never', 'hard', 'demand', 'allow', or 'try' ('demand'
+is the default).  See \fBldap.conf\fP(5) for more information.
 
 .TP
 .B ldap_tls_cacertdir
-Directory for trusted CA certificates.  Defaults to
-.I /usr/share/ssl
+Directory for trusted CA certificates.  By default, the system's
+default CA certificate directory will be used.
 
 .TP
 .B ldap_tls_cacertfile
-Filename containing trusted CA certificates.  Defaults to
-.I /usr/share/ssl/cert.pem
+Filename containing trusted CA certificates.
+
+.TP
+.B ldap_tls_certfile
+Filename of an optional LDAP client certificate. If specified,
+\fBldap_tls_keyfile\fP must also be specified.
+
+.TP
+.B ldap_tls_keyfile
+Filename of an optional LDAP client key.  Only plaintext (unencrypted) keys are
+currently supported.  If specified, \fBldap_tls_certfile\fP must also be
+specified.
 
 .TP
 .B ldap_tls_starttls
@@ -182,6 +192,11 @@ A Python regex to extract group member components from the member or
 memberOf attributes.  All matching groups are concatenated without spaces.
 For example:  '(.*)@example.com' would return a member without the
 the @example.com domain.  Default is no regex.
+
+.TP
+.B ldap_override_shell
+If specified, set every user's login shell to the given one.  May be
+useful on bastion hosts or to ensure uniformity.
 
 .TP
 .B ldap_rfc2307bis

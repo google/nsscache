@@ -89,10 +89,6 @@ class TestLdapSource(mox.MoxTestBase):
                       ldapsource.LdapSource.TIMELIMIT)
     self.assertEquals(source.conf['tls_require_cert'],
                       ldap.OPT_X_TLS_DEMAND)
-    self.assertEquals(source.conf['tls_cacertdir'],
-                      ldapsource.LdapSource.TLS_CACERTDIR)
-    self.assertEquals(source.conf['tls_cacertfile'],
-                      ldapsource.LdapSource.TLS_CACERTFILE)
 
   def testOverrideDefaultConfiguration(self):
     config = dict(self.config)
@@ -129,7 +125,7 @@ class TestLdapSource(mox.MoxTestBase):
         retry_max='TEST_RETRY_MAX',
         retry_delay='TEST_RETRY_DELAY',
         uri='TEST_URI').AndReturn(mock_rlo)
-    
+
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
 
@@ -302,6 +298,59 @@ class TestLdapSource(mox.MoxTestBase):
 
     self.assertEqual('Testguy McTest', first.name)
 
+  def testGetPasswdMapWithShellOverride(self):
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'uidNumber': [1000],
+                           'gidNumber': [1000],
+                           'uid': ['Testguy McTest'],
+                           'cn': ['test'],
+                           'homeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'userPassword': ['p4ssw0rd'],
+                           'modifyTimestamp': ['20070227012807Z']})
+    config = dict(self.config)
+    config['override_shell'] = '/bin/false'
+    attrlist = ['uid', 'uidNumber', 'gidNumber',
+                'gecos', 'cn', 'homeDirectory',
+                'fullName',
+                'loginShell', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetPasswdMap()
+
+    self.assertEqual(1, len(data))
+
+    first = data.PopItem()
+
+    self.assertEqual('/bin/false', first.shell)
+
   def testGetGroupMap(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
@@ -348,12 +397,12 @@ class TestLdapSource(mox.MoxTestBase):
     ent = data.PopItem()
 
     self.assertEqual('testgroup', ent.name)
- 
+
   def testGetGroupMapBis(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
                          'cn': ['testgroup'],
-                         'member': ['cn=testguy,ou=People,dc=example,dc=com', 
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
                                     'cn=fooguy,ou=People,dc=example,dc=com',
                                     'cn=barguy,ou=People,dc=example,dc=com'],
                          'modifyTimestamp': ['20070227012807Z']})
@@ -406,8 +455,8 @@ class TestLdapSource(mox.MoxTestBase):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'gidNumber': [1000],
                          'cn': ['testgroup'],
-                         'uniqueMember': 
-                         ['cn=testguy,ou=People,dc=example,dc=com'], 
+                         'uniqueMember':
+                         ['cn=testguy,ou=People,dc=example,dc=com'],
                          'modifyTimestamp': ['20070227012807Z']})
     dn_user = 'cn=testguy,ou=People,dc=example,dc=com'
     test_posix_account = (dn_user,
