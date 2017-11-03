@@ -1,3 +1,9 @@
+nsscache (0.35-1) UNRELEASED; urgency=medium
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Fri, 03 Nov 2017 15:29:14 +1100
+
 nsscache (0.34-2) unstable; urgency=medium
 
   * Add more diagnostics to the regtest. 
