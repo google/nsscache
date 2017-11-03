@@ -1,6 +1,7 @@
 nsscache (0.35-1) UNRELEASED; urgency=medium
 
   * New upstream release. 
+  * Fix lintian warning; bump standards version. 
 
  -- Jamie Wilkinson <jaq@debian.org>  Fri, 03 Nov 2017 15:29:14 +1100
 
