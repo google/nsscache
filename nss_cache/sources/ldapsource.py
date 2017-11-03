@@ -300,7 +300,8 @@ class LdapSource(source.Source):
                   self.message_id, all=0, timeout=self.conf['timelimit'])
               # else: An empty cookie means we are done.
 
-          # break loop once result3 doesn't time out
+          # break loop once result3 doesn't time out and reset cookie
+          setCookieOnControl(self.ldap_controls, '', self.PAGE_SIZE)
           break
         except ldap.SIZELIMIT_EXCEEDED:
           self.log.warning('LDAP server size limit exceeded; using page size {0}.'.format(self.PAGE_SIZE))
