@@ -22,3 +22,4 @@ a.out
 .pybuild
 debian/debhelper-build-stamp
 *~
+debian/.debhelper/
