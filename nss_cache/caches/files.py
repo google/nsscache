@@ -55,7 +55,7 @@ def RegisterAllImplementations(register_callback):
   register_callback('files', 'sshkey', FilesSshkeyMapHandler)
   register_callback('files', 'group', FilesGroupMapHandler)
   register_callback('files', 'shadow', FilesShadowMapHandler)
-  register_callback('files', 'netg`roup', FilesNetgroupMapHandler)
+  register_callback('files', 'netgroup', FilesNetgroupMapHandler)
   register_callback('files', 'automount', FilesAutomountMapHandler)
 
 
