@@ -44,10 +44,10 @@ else: # Python < 2.4, 50% slower
   def LongestLength(l): return max([len(x) for x in l])
 
 # Load suffix config variables
-config = ConfigParser.ConfigParser()
-config.read('nsscache.conf')
-prefix = config.get('suffix', 'prefix')
-suffix = config.get('suffix', 'suffix')
+parser = ConfigParser.ConfigParser()
+parser.read('nsscache.conf')
+prefix = parser.get('suffix', 'prefix')
+suffix = parser.get('suffix', 'suffix')
 
 def RegisterAllImplementations(register_callback):
   """Register our cache classes independently from the import scheme."""
