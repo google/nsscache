@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2017-11-03 "nsscache 0.35" "File formats"
+.TH NSSCACHE.CONF 5 2017-04-07 "nsscache 0.34" "File formats"
 .SH NAME
 nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -148,28 +148,18 @@ Delay in seconds between retries.  Defaults to 5.
 .TP
 .B ldap_tls_require_cert
 Sets expectations for SSL certificates, using TLS.  One
-of 'never', 'hard', 'demand', 'allow', or 'try' ('demand'
-is the default).  See \fBldap.conf\fP(5) for more information.
+of 'never', 'hard', 'demand', 'allow', or 'try'.  See
+\fBldap.conf\fP(5) for more information.
 
 .TP
 .B ldap_tls_cacertdir
-Directory for trusted CA certificates.  By default, the system's
-default CA certificate directory will be used.
+Directory for trusted CA certificates.  Defaults to
+.I /usr/share/ssl
 
 .TP
 .B ldap_tls_cacertfile
-Filename containing trusted CA certificates.
-
-.TP
-.B ldap_tls_certfile
-Filename of an optional LDAP client certificate. If specified,
-\fBldap_tls_keyfile\fP must also be specified.
-
-.TP
-.B ldap_tls_keyfile
-Filename of an optional LDAP client key.  Only plaintext (unencrypted) keys are
-currently supported.  If specified, \fBldap_tls_certfile\fP must also be
-specified.
+Filename containing trusted CA certificates.  Defaults to
+.I /usr/share/ssl/cert.pem
 
 .TP
 .B ldap_tls_starttls
@@ -192,11 +182,6 @@ A Python regex to extract group member components from the member or
 memberOf attributes.  All matching groups are concatenated without spaces.
 For example:  '(.*)@example.com' would return a member without the
 the @example.com domain.  Default is no regex.
-
-.TP
-.B ldap_override_shell
-If specified, set every user's login shell to the given one.  May be
-useful on bastion hosts or to ensure uniformity.
 
 .TP
 .B ldap_rfc2307bis
@@ -252,6 +237,15 @@ to update the auto.master file with the master map from the source.  A 'no'
 value will cause nsscache to leave auto.master alone, allowing the system to
 manage this file in other ways.  When set to 'no', nsscache will only update
 other automount maps defined both locally and in the source.  Defaults to 'yes'.
+
+.TP
+.B prefix
+A regular expression to capture a prefix, or mount point.
+
+.TP
+.B suffix
+A regular expression to modify the prefix.
+
 
 .SH EXAMPLE
 A typical example might look like this:
