@@ -253,6 +253,14 @@ value will cause nsscache to leave auto.master alone, allowing the system to
 manage this file in other ways.  When set to 'no', nsscache will only update
 other automount maps defined both locally and in the source.  Defaults to 'yes'.
 
+.TP
+.B prefix
+A regular expression to capture a prefix, or mount point.
+
+.TP
+.B suffix
+A regular expression to modify the prefix.
+
 .SH EXAMPLE
 A typical example might look like this:
 
