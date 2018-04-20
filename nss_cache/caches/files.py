@@ -53,7 +53,11 @@ for i in sys.argv:
     parser.read(i)
   else:
     # Config in nsscache folder
-    parser.read(config.Config.NSSCACHE_CONFIG)
+    try:
+      parser.read(config.Config.NSSCACHE_CONFIG)
+    except:
+      parser.read('nsscache.conf')
+      
 prefix = parser.get('suffix', 'prefix')
 suffix = parser.get('suffix', 'suffix')
 
