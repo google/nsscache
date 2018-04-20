@@ -46,12 +46,14 @@ else: # Python < 2.4, 50% slower
 # Load suffix config variables
 parser = ConfigParser.ConfigParser()
 for i in sys.argv:
-  # Get config path from command line argument
-  if ('conf') in i:
+  if ('nsscache.conf') in i:
+    # Remove '--config-file=' from the string
+    if ('--config-file') in i:
+      i = i[14:] 
     parser.read(i)
   else:
     # Config in nsscache folder
-    parser.read('nsscache.conf')
+    parser.read(config.Config.NSSCACHE_CONFIG)
 prefix = parser.get('suffix', 'prefix')
 suffix = parser.get('suffix', 'suffix')
 
