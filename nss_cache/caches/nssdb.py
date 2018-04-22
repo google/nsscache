@@ -38,6 +38,7 @@ def RegisterAllImplementations(register_callback):
   register_callback('nssdb', 'shadow', NssDbShadowHandler)
 
 
+# TODO: Move this function and the use below it can be used for all caches.
 def is_valid_unix_name(name):
   """
   Return False if name has characters that are not OK for Unix usernames,
