@@ -1,4 +1,4 @@
-nsscache (0.35-1) UNRELEASED; urgency=medium
+nsscache (0.35-1) unstable; urgency=medium
 
   * New upstream release. 
   * Fix lintian warning; bump standards version. 
