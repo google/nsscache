@@ -31,6 +31,7 @@ import re
 import shutil
 import stat
 import sys
+import ConfigParser
 
 from nss_cache import config
 from nss_cache import error
@@ -42,6 +43,19 @@ if sys.version >= (2, 5):
 else: # Python < 2.4, 50% slower
   def LongestLength(l): return max([len(x) for x in l])
 
+# Load suffix config variables
+parser = ConfigParser.ConfigParser()
+for i in sys.argv:
+  if ('nsscache.conf') in i:
+    # Remove '--config-file=' from the string
+    if ('--config-file') in i:
+      i = i[14:] 
+    parser.read(i)
+  else:
+    # Config in nsscache folder
+    parser.read('nsscache.conf')
+prefix = parser.get('suffix', 'prefix')
+suffix = parser.get('suffix', 'suffix')
 
 def RegisterAllImplementations(register_callback):
   """Register our cache classes independently from the import scheme."""
@@ -84,7 +98,6 @@ class FilesCache(caches.Cache):
     if hasattr(self, '_INDEX_ATTRIBUTES'):
       for index in self._INDEX_ATTRIBUTES:
         self._indices[index] = {}
-
   def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
@@ -257,7 +270,6 @@ class FilesSshkeyMapHandler(FilesCache):
     super(FilesSshkeyMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesSshkeyMapParser()
-
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
 
@@ -454,7 +466,12 @@ class FilesAutomountMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write an AutomountMapEntry to the target cache."""
+    # Modify suffix after mountpoint for autofs
+    pattern = re.compile(prefix)
     if entry.options is not None:
+      if prefix != '':
+        if (pattern.match(entry.location)): # Found string with regex
+          entry.location = re.sub(r'({0})'.format(prefix), r'{0}'.format(suffix), entry.location)
       automount_entry = '%s %s %s' % (entry.key, entry.options, entry.location)
     else:
       automount_entry = '%s %s' % (entry.key, entry.location)
