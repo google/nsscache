@@ -52,6 +52,7 @@ from nss_cache.sources.source_factory_test import *
 from nss_cache.sources.consulsource_test import *
 from nss_cache.sources.httpsource_test import *
 from nss_cache.sources.ldapsource_test import *
+from nss_cache.sources.s3source_test import *
 # Unsupported and deprecated.
 #from nss_cache.sources.zsyncsource_test import *
 
