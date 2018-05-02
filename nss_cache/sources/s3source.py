@@ -150,7 +150,7 @@ class S3UpdateGetter(object):
       body = response["Body"]
       last_modified_ts = self.FromDateTimeToTimestamp(response["LastModified"])
     except ClientError as e:
-      log.debug('error getting S3 object: {}'.format(e))
+      self.log.debug('error getting S3 object: {}'.format(e))
       raise error.SourceUnavailable('unable to download object from S3')
 
     data_map = self.GetMap(cache_info=body)
