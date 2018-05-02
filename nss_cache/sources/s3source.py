@@ -116,7 +116,8 @@ class S3UpdateGetter(object):
     Returns:
       number of seconds since epoch
     """
-    return int((datetime_obj - datetime.datetime(1970,1,1)).total_seconds())
+    dt = datetime_obj.replace(tzinfo=None)
+    return int((dt - datetime.datetime(1970,1,1)).total_seconds())
 
   def GetUpdates(self, s3_client, bucket, object, since):
     """Get updates from a source.
