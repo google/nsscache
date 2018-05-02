@@ -14,6 +14,7 @@ from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import source
+from nss_cache import error
 
 def RegisterImplementation(registration_callback):
   registration_callback(S3FilesSource)
