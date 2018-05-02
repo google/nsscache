@@ -52,10 +52,12 @@ def RegisterImplementation(source):
 from nss_cache.sources import httpsource
 from nss_cache.sources import ldapsource
 from nss_cache.sources import consulsource
+from nss_cache.sources import s3source
 
 httpsource.RegisterImplementation(RegisterImplementation)
 ldapsource.RegisterImplementation(RegisterImplementation)
 consulsource.RegisterImplementation(RegisterImplementation)
+s3source.RegisterImplementation(RegisterImplementation)
 
 # Don't load the zsync source if zsync python module isn't there.
 try:
