@@ -120,13 +120,13 @@ class S3UpdateGetter(object):
     dt = datetime_obj.replace(tzinfo=None)
     return int((dt - datetime.datetime(1970,1,1)).total_seconds())
 
-  def GetUpdates(self, s3_client, bucket, object, since):
+  def GetUpdates(self, s3_client, bucket, obj, since):
     """Get updates from a source.
 
     Args:
       s3_client: initialized s3 client
       bucket: s3 bucket
-      object: object with the data
+      obj: object with the data
       since: a timestamp representing the last change (None to force-get)
 
     Returns:
@@ -141,17 +141,17 @@ class S3UpdateGetter(object):
         response = s3_client.get_object(
           Bucket=bucket,
           IfModifiedSince=self.FromTimestampToDateTime(since),
-          Key=object
+          Key=obj
         )
-        # !!!
-        # if response["code"] == 304:
-        #   reutrn []
       else:
-        response = s3_client.get_object(Bucket=bucket, Key=object)
+        response = s3_client.get_object(Bucket=bucket, Key=obj)
       body = response["Body"]
       last_modified_ts = self.FromDateTimeToTimestamp(response["LastModified"])
     except ClientError as e:
-      self.log.debug('error getting S3 object: {}'.format(e))
+      error_code = int(e.response['Error']['Code'])
+      if error_code == 304:
+        return []
+      self.log.error('error getting S3 object ({}): {}'.format(obj, e))
       raise error.SourceUnavailable('unable to download object from S3')
 
     data_map = self.GetMap(cache_info=body)
