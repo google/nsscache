@@ -2,7 +2,8 @@ language: python
 
 install:
  - travis_retry sudo apt-get update -qq
- - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db python-boto3
+ - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
+ - travis_retry pip install boto3
 
 script:
  - ./runtests.py
