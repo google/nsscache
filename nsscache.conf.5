@@ -52,7 +52,7 @@ A complete list of configuration options follows.
 Specifies the source to use to retrieve NSS data from.
 
 Valid Options:
-.I ldap
+.I ldap, s3
 
 .TP
 .B cache
@@ -206,6 +206,50 @@ in 'member' attr), set this to 1.
 .TP
 .B ldap_debug
 Sets the debug level for the underlying C library.  Defaults to no logging.
+
+.SH s3 SOURCE OPTIONS
+
+These options configure the behaviour of the
+.I s3
+source.
+
+.TP
+.B s3_bucket
+AWS S3 bucket containing
+.I passwd, group, shadow
+objects. It is highly recommended to use s3 source only with AWS IAM role
+attached to the ec2 instance configured for read-only access to the bucket.
+So no extra configuration options like access_key and secret provided in config.
+Though they may be used via ~/.aws/config and ~/.aws/credentials because python
+boto3 library used in implementation is capable to read them by itself.
+
+.TP
+.B s3_passwd_object
+Object containing
+.B passwd
+array of records in json format. E.g.
+.I [{"Value": {"gid": 10000, "uid": 10000}, "Key": "user1"}].
+Valid attributes:
+.I "comment", "home", "shell", "passwd", "gid", "uid"
+
+.TP
+.B s3_group_object
+Object containing
+.B group
+array of records in json format. E.g.
+.I [{"Value": {"gid": 20000, "members": "user1\\nuser2\\nuser3"}, "Key": "group1"}].
+Valid attributes:
+.I "gid", "members"
+Members should be sequence of usernames split by \\n (see example above)
+
+.TP
+.B s3_shadow_object
+Object containing
+.B shadow
+array of records in json format. E.g.
+.I [{"Value": {"passwd": "*"}, "Key": "user1"}].
+Valid attributes:
+.I "passwd", "lstchg", "min", "max", "warn", "inact", "expire"
 
 .SH nssdb CACHE OPTIONS
 
