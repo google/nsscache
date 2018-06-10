@@ -1,6 +1,6 @@
 """An implementation of a S3 data source for nsscache."""
 
-__author__ = 'pikin@workato.com'
+__author__ = 'alexey.pikin@gmail.com'
 
 import base64
 import collections
@@ -18,7 +18,6 @@ from nss_cache import error
 
 def RegisterImplementation(registration_callback):
   registration_callback(S3FilesSource)
-
 
 class S3FilesSource(source.Source):
   """Source for data fetched from S3."""

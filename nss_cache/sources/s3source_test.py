@@ -1,6 +1,6 @@
 """An implementation of a mock S3 data source for nsscache."""
 
-__author__ = 'pikin@workato.com'
+__author__ = 'alexey.pikin@gmail.com'
 
 import StringIO
 import unittest
