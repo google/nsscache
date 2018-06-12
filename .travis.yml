@@ -2,12 +2,20 @@ language: python
 
 install:
  - travis_retry sudo apt-get update -qq
- - travis_retry sudo apt-get install -y libnss-db
+ - travis_retry sudo apt-get install -y libnss-db python-ldap python-mox
  - pip install .
- - pip install -r requirements.txt
+ - |-
+    if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
+      travis_retry pip install -r requirements.txt
+    fi
 
 script:
- - ./runtests.py
+ - |-
+    if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
+      # see discussion https://github.com/travis-ci/travis-ci/issues/4260
+      ln -s /usr/lib/python2.7/lib-dynload/_bsddb.x86_64-linux-gnu.so /opt/python/2.7/lib/python2.7/lib-dynload/_bsddb.so
+    fi
+ - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
  - python setup.py install --root=/tmp/nsscache
 
 python:

@@ -57,6 +57,13 @@ httpsource.RegisterImplementation(RegisterImplementation)
 ldapsource.RegisterImplementation(RegisterImplementation)
 consulsource.RegisterImplementation(RegisterImplementation)
 
+# Don't load the s3 source if boto3/botocore python modules aren't there.
+try:
+  from nss_cache.sources import s3source
+  s3source.RegisterImplementation(RegisterImplementation)
+except ImportError:
+  pass
+
 
 def Create(conf):
   """Source creation factory method.
