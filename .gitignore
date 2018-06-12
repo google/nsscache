@@ -23,3 +23,6 @@ a.out
 debian/debhelper-build-stamp
 *~
 debian/.debhelper/
+.cache
+.eggs
+nsscache.egg-info
