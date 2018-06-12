@@ -7,7 +7,7 @@ install:
     if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
       travis_retry pip install boto3
       travis_retry pip install pycurl
-      travis_retry pip install ldap
+      travis_retry pip install python-ldap
       travis_retry pip install mox
     fi
 
