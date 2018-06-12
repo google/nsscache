@@ -1,7 +1,7 @@
 language: python
 
 virtualenv:
- - system_site_packages: true
+  system_site_packages: true
 
 install:
  - travis_retry sudo apt-get update -qq
