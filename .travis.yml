@@ -3,10 +3,9 @@ language: python
 install:
  - travis_retry sudo apt-get update -qq
  - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
- - travis_retry easy_install distribute
- - travis_retry easy_install boto3
 
 script:
+ - pip install boto3
  - ./runtests.py
  - python setup.py install --root=/tmp/nsscache
 
