@@ -25,7 +25,10 @@ import tempfile
 import unittest
 import sys
 
-import mox
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 
 from nss_cache import config
 from nss_cache.maps import automount
@@ -49,7 +52,7 @@ class TestFilesCache(mox.MoxTestBase):
 
   def testInstantiation(self):
     cache = files.FilesCache(self.config, config.MAP_PASSWORD)
-    self.failIfEqual(None, cache)
+    self.assertNotEqual(None, cache)
 
   def testWrite(self):
     cache = files.FilesPasswdMapHandler(self.config)
@@ -76,7 +79,7 @@ class TestFilesCache(mox.MoxTestBase):
     cache._Commit()
     expected_cache_filename = os.path.join(self.workdir,
                                            'test.blarg')
-    self.failUnless(os.path.exists(expected_cache_filename))
+    self.assertTrue(os.path.exists(expected_cache_filename))
 
   def testWritePasswdEntry(self):
     """We correctly write a typical entry in /etc/passwd format."""
@@ -173,14 +176,14 @@ class TestFilesCache(mox.MoxTestBase):
     # also tests GetMapLocation() because it uses it :)
     conf = {'dir': self.workdir, 'cache_filename_suffix': ''}
     cache = files.FilesAutomountMapHandler(conf)
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
 
     cache = files.FilesAutomountMapHandler(conf, automount_mountpoint='/home')
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
 
     cache = files.FilesAutomountMapHandler(conf,
                                            automount_mountpoint='/usr/meh')
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
 
   def testCacheFileDoesNotExist(self):
     """Make sure we just get an empty map rather than exception."""
@@ -201,7 +204,7 @@ class TestFilesCache(mox.MoxTestBase):
     cache.WriteIndex()
 
     index_filename = cache.GetCacheFilename() + '.ixname'
-    self.failUnless(os.path.exists(index_filename),
+    self.assertTrue(os.path.exists(index_filename),
                     'Index not created %s' % index_filename)
     f = open(index_filename)
     self.assertEqual('bar\x0015\x00\x00\n', f.readline())
@@ -209,7 +212,7 @@ class TestFilesCache(mox.MoxTestBase):
     self.assertEqual('quux\x0030\x00\n', f.readline())
 
     index_filename = cache.GetCacheFilename() + '.ixuid'
-    self.failUnless(os.path.exists(index_filename),
+    self.assertTrue(os.path.exists(index_filename),
                     'Index not created %s' % index_filename)
     f = open(index_filename)
     self.assertEqual('10\x000\x00\x00\n', f.readline())

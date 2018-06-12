@@ -25,7 +25,10 @@ import shutil
 import tempfile
 import unittest
 
-import mox
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 
 from nss_cache.caches import caches
 from nss_cache.caches import files

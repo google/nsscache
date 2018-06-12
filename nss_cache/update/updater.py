@@ -119,7 +119,7 @@ class Updater(object):
     try:
       timestamp_file = open(filename, 'r')
       timestamp_string = timestamp_file.read().strip()
-    except IOError, e:
+    except IOError as e:
       self.log.warn('error opening timestamp file: %s', e)
       timestamp_string = None
     else:
@@ -133,7 +133,7 @@ class Updater(object):
         # Append UTC to force the timezone to parse the string in.
         timestamp = int(calendar.timegm(time.strptime(timestamp_string + ' UTC',
                                                       '%Y-%m-%dT%H:%M:%SZ %Z')))
-      except ValueError, e:
+      except ValueError as e:
         self.log.error('cannot parse timestamp file %r: %s',
                        filename, e)
         timestamp = None
@@ -167,7 +167,7 @@ class Updater(object):
     # Make sure self.timestamp_dir exists before calling tempfile.mkstemp
     try:
         os.makedirs(self.timestamp_dir)
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
             pass  # Directory already exists; squelch error
         else:

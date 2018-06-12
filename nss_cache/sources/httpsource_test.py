@@ -21,7 +21,10 @@ __author__ = 'blaedd@google.com (David MacKinnon)'
 import time
 import unittest
 
-import mox
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 import pycurl
 
 from nss_cache import error
@@ -54,32 +57,32 @@ class TestHttpSource(unittest.TestCase):
 
   def testDefaultConfiguration(self):
     source = httpsource.HttpFilesSource({})
-    self.assertEquals(source.conf['passwd_url'],
+    self.assertEqual(source.conf['passwd_url'],
                       httpsource.HttpFilesSource.PASSWD_URL)
-    self.assertEquals(source.conf['shadow_url'],
+    self.assertEqual(source.conf['shadow_url'],
                       httpsource.HttpFilesSource.SHADOW_URL)
-    self.assertEquals(source.conf['group_url'],
+    self.assertEqual(source.conf['group_url'],
                       httpsource.HttpFilesSource.GROUP_URL)
-    self.assertEquals(source.conf['sshkey_url'],
+    self.assertEqual(source.conf['sshkey_url'],
                       httpsource.HttpFilesSource.SSHKEY_URL)
-    self.assertEquals(source.conf['retry_max'],
+    self.assertEqual(source.conf['retry_max'],
                       httpsource.HttpFilesSource.RETRY_MAX)
-    self.assertEquals(source.conf['retry_delay'],
+    self.assertEqual(source.conf['retry_delay'],
                       httpsource.HttpFilesSource.RETRY_DELAY)
-    self.assertEquals(source.conf['tls_cacertfile'],
+    self.assertEqual(source.conf['tls_cacertfile'],
                       httpsource.HttpFilesSource.TLS_CACERTFILE)
-    self.assertEquals(source.conf['http_proxy'], None)
+    self.assertEqual(source.conf['http_proxy'], None)
 
   def testOverrideDefaultConfiguration(self):
     source = httpsource.HttpFilesSource(self.config)
-    self.assertEquals(source.conf['passwd_url'], 'PASSWD_URL')
-    self.assertEquals(source.conf['group_url'], 'GROUP_URL')
-    self.assertEquals(source.conf['shadow_url'], 'SHADOW_URL')
-    self.assertEquals(source.conf['sshkey_url'], 'SSHKEY_URL')
-    self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
-    self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
-    self.assertEquals(source.conf['tls_cacertfile'], 'TEST_TLS_CACERTFILE')
-    self.assertEquals(source.conf['http_proxy'], 'HTTP_PROXY')
+    self.assertEqual(source.conf['passwd_url'], 'PASSWD_URL')
+    self.assertEqual(source.conf['group_url'], 'GROUP_URL')
+    self.assertEqual(source.conf['shadow_url'], 'SHADOW_URL')
+    self.assertEqual(source.conf['sshkey_url'], 'SSHKEY_URL')
+    self.assertEqual(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
+    self.assertEqual(source.conf['retry_max'], 'TEST_RETRY_MAX')
+    self.assertEqual(source.conf['tls_cacertfile'], 'TEST_TLS_CACERTFILE')
+    self.assertEqual(source.conf['http_proxy'], 'HTTP_PROXY')
 
 
 class TestHttpUpdateGetter(mox.MoxTestBase):
@@ -87,13 +90,13 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
   def testFromTimestampToHttp(self):
     ts = 1259641025
     expected_http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
-    self.assertEquals(expected_http_ts,
+    self.assertEqual(expected_http_ts,
                       httpsource.UpdateGetter().FromTimestampToHttp(ts))
 
   def testFromHttpToTimestamp(self):
     expected_ts = 1259641025
     http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
-    self.assertEquals(expected_ts,
+    self.assertEqual(expected_ts,
                       httpsource.UpdateGetter().FromHttpToTimestamp(http_ts))
 
   def testAcceptHttpProtocol(self):
@@ -158,7 +161,7 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     source = httpsource.HttpFilesSource(config)
     result = httpsource.UpdateGetter().GetUpdates(
         source, 'https://TEST_URL', 37)
-    self.assertEquals(result, [])
+    self.assertEqual(result, [])
 
   def testGetUpdatesIfTimestampNotMatch(self):
     ts = 1259641025

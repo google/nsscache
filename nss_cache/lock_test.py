@@ -19,7 +19,7 @@
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 
-import __builtin__
+import builtins
 import errno
 import fcntl
 import os
@@ -31,7 +31,10 @@ import sys
 import tempfile
 import unittest
 
-import mox
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 
 from nss_cache import lock
 
@@ -65,10 +68,10 @@ class TestPidFile(mox.MoxTestBase):
     filename = '%s/%s' % (locker.STATE_DIR, filename)
 
     self.assertTrue(isinstance(locker, lock.PidFile))
-    self.assertEquals(locker.pid, pid)
-    self.assertEquals(locker.filename, filename)
-    self.assertEquals(locker._locked, False)
-    self.assertEquals(locker._file, None)
+    self.assertEqual(locker.pid, pid)
+    self.assertEqual(locker.filename, filename)
+    self.assertEqual(locker._locked, False)
+    self.assertEqual(locker._file, None)
 
     # also check the case where argv[0] is empty (interactively loaded)
     full_path = sys.argv[0]
@@ -80,8 +83,8 @@ class TestPidFile(mox.MoxTestBase):
     filename = 'TEST'
     pid = 10
     locker = lock.PidFile(filename=filename, pid=pid)
-    self.assertEquals(locker.filename, filename)
-    self.assertEquals(locker.pid, pid)
+    self.assertEqual(locker.filename, filename)
+    self.assertEqual(locker.pid, pid)
 
   def testDestructorUnlocks(self):
     yes = lock.PidFile()
@@ -111,7 +114,7 @@ class TestPidFile(mox.MoxTestBase):
     file_mode = os.stat(self.filename)[stat.ST_MODE]
     correct_mode = (stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
                     | stat.S_IROTH)
-    self.assertEquals(file_mode, correct_mode)
+    self.assertEqual(file_mode, correct_mode)
 
     os.remove(self.filename)
 
@@ -150,7 +153,7 @@ class TestPidFile(mox.MoxTestBase):
 
     pid_file = open(self.filename, 'r')
 
-    self.assertEquals(pid_file.read(), 'PID\n')
+    self.assertEqual(pid_file.read(), 'PID\n')
 
     os.remove(self.filename)
 
@@ -161,7 +164,7 @@ class TestPidFile(mox.MoxTestBase):
     locker._Open().AndRaise(IOError(errno.EIO, ''))
     self.mox.ReplayAll()
 
-    self.assertEquals(False, locker.Lock())
+    self.assertEqual(False, locker.Lock())
     self.assertRaises(IOError, locker.Lock)
 
   def testForceLockTerminatesAndClearsLock(self):
@@ -248,12 +251,12 @@ class TestPidFile(mox.MoxTestBase):
     locker.PROC = self.workdir
 
     self.mox.StubOutWithMock(__builtin__, 'open')
-    __builtin__.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
+    builtins.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
 
     self.mox.ReplayAll()
 
     # self.workdir/1234/cmdline should not exist :)
-    self.failIf(os.path.exists('%s/1234/cmdline' % self.workdir))
+    self.assertFalse(os.path.exists('%s/1234/cmdline' % self.workdir))
 
     locker.SendTerm()
 
@@ -270,7 +273,7 @@ class TestPidFile(mox.MoxTestBase):
 
     locker.ClearLock()
 
-    self.failIf(os.path.exists(self.filename))
+    self.assertFalse(os.path.exists(self.filename))
 
   def testLockedPredicate(self):
     locker = lock.PidFile()
@@ -279,7 +282,7 @@ class TestPidFile(mox.MoxTestBase):
     self.assertTrue(locker.Locked())
 
     locker._locked = False
-    self.failIf(locker.Locked())
+    self.assertFalse(locker.Locked())
 
   def testUnlockReleasesFcntlLock(self):
     locker = lock.PidFile()
@@ -290,7 +293,7 @@ class TestPidFile(mox.MoxTestBase):
     self.mox.ReplayAll()
     locker.Unlock()
 
-    self.failIf(locker._locked)
+    self.assertFalse(locker._locked)
 
 
 if __name__ == '__main__':

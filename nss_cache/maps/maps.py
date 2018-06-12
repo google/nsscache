@@ -133,7 +133,7 @@ class Map(object):
       return False
 
     # Add to index if not already there.
-    if not self._data.has_key(entry.Key()):
+    if entry.Key() not in self._data:
       self._index.append(entry.Key())
     else:
       self.log.warning('duplicate key detected when adding to map: %r, overwritten', entry.Key())
@@ -285,8 +285,8 @@ class MapEntry(object):
   # Using slots saves us over 2x memory on large maps.
   __slots__ = ('_KEY', '_ATTRS', 'log')
   # Overridden in the derived classes
-  _KEY = None
-  _ATTRS = None
+  #_KEY = None
+  #_ATTRS = None
 
   def __init__(self, data=None):
     """This is an abstract class.

@@ -42,10 +42,10 @@ class TestAutomountMap(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty or seeded AutomountMap."""
-    self.assertEquals(automount.AutomountMap, type(automount.AutomountMap()),
+    self.assertEqual(automount.AutomountMap, type(automount.AutomountMap()),
                       msg='failed to create an empty AutomountMap')
     amap = automount.AutomountMap([self._good_entry])
-    self.assertEquals(self._good_entry, amap.PopItem(),
+    self.assertEqual(self._good_entry, amap.PopItem(),
                       msg='failed to seed AutomountMap with list')
     self.assertRaises(TypeError, automount.AutomountMap, ['string'])
 
@@ -53,12 +53,12 @@ class TestAutomountMap(unittest.TestCase):
     """Add throws an error for objects it can't verify."""
     amap = automount.AutomountMap()
     entry = self._good_entry
-    self.assert_(amap.Add(entry), msg='failed to append new entry.')
+    self.assertTrue(amap.Add(entry), msg='failed to append new entry.')
 
-    self.assertEquals(1, len(amap), msg='unexpected size for Map.')
+    self.assertEqual(1, len(amap), msg='unexpected size for Map.')
         
     ret_entry = amap.PopItem()
-    self.assertEquals(ret_entry, entry, msg='failed to pop correct entry.')
+    self.assertEqual(ret_entry, entry, msg='failed to pop correct entry.')
 
     pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
@@ -72,30 +72,30 @@ class TestAutomountMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty and seeded AutomountMapEntry."""
-    self.assert_(automount.AutomountMapEntry(),
+    self.assertTrue(automount.AutomountMapEntry(),
                  msg='Could not create empty AutomountMapEntry')
     seed = {'key': 'foo', 'location': '/dev/sda1'}
     entry = automount.AutomountMapEntry(seed)
-    self.assert_(entry.Verify(),
+    self.assertTrue(entry.Verify(),
                  msg='Could not verify seeded AutomountMapEntry')
-    self.assertEquals(entry.key, 'foo',
+    self.assertEqual(entry.key, 'foo',
                       msg='Entry returned wrong value for name')
-    self.assertEquals(entry.options, None,
+    self.assertEqual(entry.options, None,
                       msg='Entry returned wrong value for options')
-    self.assertEquals(entry.location, '/dev/sda1',
+    self.assertEqual(entry.location, '/dev/sda1',
                       msg='Entry returned wrong value for location')
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
     entry = automount.AutomountMapEntry()
     entry.key = 'foo'
-    self.assertEquals(entry.key, 'foo',
+    self.assertEqual(entry.key, 'foo',
                       msg='Could not set attribute: key')
     entry.options = 'noatime'
-    self.assertEquals(entry.options, 'noatime',
+    self.assertEqual(entry.options, 'noatime',
                       msg='Could not set attribute: options')
     entry.location = '/dev/ipod'
-    self.assertEquals(entry.location, '/dev/ipod',
+    self.assertEqual(entry.location, '/dev/ipod',
                       msg='Could not set attribute: location')
 
   def testVerify(self):
@@ -103,13 +103,13 @@ class TestAutomountMapEntry(unittest.TestCase):
     entry = automount.AutomountMapEntry()
         
     # Empty object should bomb
-    self.failIf(entry.Verify())
+    self.assertFalse(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'key' attribute."""
     entry = automount.AutomountMapEntry()
     entry.key = 'foo'
-    self.assertEquals(entry.Key(), entry.key)
+    self.assertEqual(entry.Key(), entry.key)
 
 
 if __name__ == '__main__':

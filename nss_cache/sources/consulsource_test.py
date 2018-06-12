@@ -2,7 +2,7 @@
 
 __author__ = 'hexedpackets@gmail.com (William Huba)'
 
-import StringIO
+import io
 import unittest
 
 from nss_cache.maps import group
@@ -25,17 +25,17 @@ class TestConsulSource(unittest.TestCase):
 
   def testDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource({})
-    self.assertEquals(source.conf['datacenter'],
+    self.assertEqual(source.conf['datacenter'],
                       consulsource.ConsulFilesSource.DATACENTER)
-    self.assertEquals(source.conf['token'],
+    self.assertEqual(source.conf['token'],
                       consulsource.ConsulFilesSource.TOKEN)
 
   def testOverrideDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource(self.config)
-    self.assertEquals(source.conf['datacenter'], 'TEST_DATACENTER')
-    self.assertEquals(source.conf['token'], 'TEST_TOKEN')
-    self.assertEquals(source.conf['passwd_url'], 'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
-    self.assertEquals(source.conf['group_url'], 'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['datacenter'], 'TEST_DATACENTER')
+    self.assertEqual(source.conf['token'], 'TEST_TOKEN')
+    self.assertEqual(source.conf['passwd_url'], 'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['group_url'], 'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
 
 
 class TestPasswdMapParser(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestPasswdMapParser(unittest.TestCase):
 
   def testGetMap(self):
     passwd_map = passwd.PasswdMap()
-    cache_info = StringIO.StringIO('''[
+    cache_info = io.StringIO('''[
                                    {"Key": "org/users/foo/uid", "Value": "MTA="},
                                    {"Key": "org/users/foo/gid", "Value": "MTA="},
                                    {"Key": "org/users/foo/home", "Value": "L2hvbWUvZm9v"},
@@ -62,25 +62,25 @@ class TestPasswdMapParser(unittest.TestCase):
                                    {"Key": "org/users/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
                                    ]''')
     self.parser.GetMap(cache_info, passwd_map)
-    self.assertEquals(self.good_entry, passwd_map.PopItem())
+    self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
     data = {'uid': '10', 'gid': '10', 'comment': 'How Now Brown Cow', 'shell': '/bin/bash', 'home': '/home/foo', 'passwd': 'x'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(self.good_entry, entry)
+    self.assertEqual(self.good_entry, entry)
 
   def testDefaultEntryValues(self):
     data = {'uid': '10', 'gid': '10'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(entry.shell, '/bin/bash')
-    self.assertEquals(entry.dir, '/home/foo')
-    self.assertEquals(entry.gecos, '')
-    self.assertEquals(entry.passwd, 'x')
+    self.assertEqual(entry.shell, '/bin/bash')
+    self.assertEqual(entry.dir, '/home/foo')
+    self.assertEqual(entry.gecos, '')
+    self.assertEqual(entry.passwd, 'x')
 
   def testInvalidEntry(self):
     data = {'irrelevant_key': 'bacon'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(entry, None)
+    self.assertEqual(entry, None)
 
 
 class TestConsulGroupMapParser(unittest.TestCase):
@@ -95,33 +95,33 @@ class TestConsulGroupMapParser(unittest.TestCase):
 
   def testGetMap(self):
     group_map = group.GroupMap()
-    cache_info = StringIO.StringIO('''[
+    cache_info = io.StringIO('''[
                                    {"Key": "org/groups/foo/gid", "Value": "MTA="},
                                    {"Key": "org/groups/foo/members", "Value": "Zm9vCmJhcg=="},
                                    {"Key": "org/groups/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
                                    ]''')
     self.parser.GetMap(cache_info, group_map)
-    self.assertEquals(self.good_entry, group_map.PopItem())
+    self.assertEqual(self.good_entry, group_map.PopItem())
 
   def testReadEntry(self):
     data = {'passwd': 'x', 'gid': '10', 'members': 'foo\nbar'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(self.good_entry, entry)
+    self.assertEqual(self.good_entry, entry)
 
   def testDefaultPasswd(self):
     data = {'gid': '10', 'members': 'foo\nbar'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(self.good_entry, entry)
+    self.assertEqual(self.good_entry, entry)
 
   def testNoMembers(self):
     data = {'gid': '10', 'members': ''}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(entry.members, [''])
+    self.assertEqual(entry.members, [''])
 
   def testInvalidEntry(self):
     data = {'irrelevant_key': 'bacon'}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(entry, None)
+    self.assertEqual(entry, None)
 
 
 class TestConsulShadowMapParser(unittest.TestCase):
@@ -138,7 +138,7 @@ class TestConsulShadowMapParser(unittest.TestCase):
 
   def testGetMap(self):
     shadow_map = shadow.ShadowMap()
-    cache_info = StringIO.StringIO('''[
+    cache_info = io.StringIO('''[
                                    {"Key": "org/groups/foo/passwd", "Value": "Kg=="},
                                    {"Key": "org/groups/foo/lstchg", "Value": "MTcyNDY="},
                                    {"Key": "org/groups/foo/min", "Value": "MA=="},
@@ -146,17 +146,17 @@ class TestConsulShadowMapParser(unittest.TestCase):
                                    {"Key": "org/groups/foo/warn", "Value": "Nw=="}
                                    ]''')
     self.parser.GetMap(cache_info, shadow_map)
-    self.assertEquals(self.good_entry, shadow_map.PopItem())
+    self.assertEqual(self.good_entry, shadow_map.PopItem())
 
   def testReadEntry(self):
     data = {'passwd': '*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(self.good_entry, entry)
+    self.assertEqual(self.good_entry, entry)
 
   def testDefaultPasswd(self):
     data = {'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
     entry = self.parser._ReadEntry('foo', data)
-    self.assertEquals(self.good_entry, entry)
+    self.assertEqual(self.good_entry, entry)
 
 
 if __name__ == '__main__':

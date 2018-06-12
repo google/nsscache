@@ -43,10 +43,10 @@ class TestGroupMap(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty or seeded GroupMap."""
-    self.assertEquals(group.GroupMap, type(group.GroupMap()),
+    self.assertEqual(group.GroupMap, type(group.GroupMap()),
                       msg='failed to create an empty GroupMap')
     gmap = group.GroupMap([self._good_entry])
-    self.assertEquals(self._good_entry, gmap.PopItem(),
+    self.assertEqual(self._good_entry, gmap.PopItem(),
                       msg='failed to seed GroupMap with list')
     self.assertRaises(TypeError, group.GroupMap, ['string'])
 
@@ -54,12 +54,12 @@ class TestGroupMap(unittest.TestCase):
     """Add throws an error for objects it can't verify."""
     gmap = group.GroupMap()
     entry = self._good_entry
-    self.assert_(gmap.Add(entry), msg='failed to append new entry.')
+    self.assertTrue(gmap.Add(entry), msg='failed to append new entry.')
 
-    self.assertEquals(1, len(gmap), msg='unexpected size for Map.')
+    self.assertEqual(1, len(gmap), msg='unexpected size for Map.')
         
     ret_entry = gmap.PopItem()
-    self.assertEquals(ret_entry, entry, msg='failed to pop correct entry.')
+    self.assertEqual(ret_entry, entry, msg='failed to pop correct entry.')
 
     pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
@@ -73,36 +73,36 @@ class TestGroupMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty and seeded GroupMapEntry."""
-    self.assert_(group.GroupMapEntry(),
+    self.assertTrue(group.GroupMapEntry(),
                  msg='Could not create empty GroupMapEntry')
     seed = {'name': 'foo', 'gid': 10}
     entry = group.GroupMapEntry(seed)
-    self.assert_(entry.Verify(),
+    self.assertTrue(entry.Verify(),
                  msg='Could not verify seeded PasswdMapEntry')
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Entry returned wrong value for name')
-    self.assertEquals(entry.passwd, 'x',
+    self.assertEqual(entry.passwd, 'x',
                       msg='Entry returned wrong value for passwd')
-    self.assertEquals(entry.gid, 10,
+    self.assertEqual(entry.gid, 10,
                       msg='Entry returned wrong value for gid')
-    self.assertEquals(entry.members, [],
+    self.assertEqual(entry.members, [],
                       msg='Entry returned wrong value for members')
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
     entry = group.GroupMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Could not set attribute: name')
     entry.passwd = 'x'
-    self.assertEquals(entry.passwd, 'x',
+    self.assertEqual(entry.passwd, 'x',
                       msg='Could not set attribute: passwd')
     entry.gid = 10
-    self.assertEquals(entry.gid, 10,
+    self.assertEqual(entry.gid, 10,
                       msg='Could not set attribute: gid')
     members = ['foo', 'bar']
     entry.members = members
-    self.assertEquals(entry.members, members,
+    self.assertEqual(entry.members, members,
                       msg='Could not set attribute: members')
 
   def testVerify(self):
@@ -110,13 +110,13 @@ class TestGroupMapEntry(unittest.TestCase):
     entry = group.GroupMapEntry()
     
     # Empty object should bomb
-    self.failIf(entry.Verify())
+    self.assertFalse(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
     entry = group.GroupMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.Key(), entry.name)
+    self.assertEqual(entry.Key(), entry.name)
 
 
 if __name__ == '__main__':

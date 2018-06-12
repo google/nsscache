@@ -27,7 +27,10 @@ import tempfile
 import time
 import unittest
 
-import mox
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 
 from nss_cache import config
 from nss_cache import error
@@ -60,7 +63,7 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 
     # Construct a fake source.
     def GetFile(map_name, dst_file, current_file, location):
-      print "GetFile: %s" % dst_file
+      print("GetFile: %s" % dst_file)
       f = open(dst_file, 'w')
       f.write('root:x:0:0:root:/root:/bin/bash\n')
       f.close()

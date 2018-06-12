@@ -22,7 +22,10 @@ import grp
 import pwd
 import unittest
 
-import mox
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 
 from nss_cache import config
 from nss_cache import error
@@ -48,9 +51,9 @@ class TestNSS(mox.MoxTestBase):
 
     self.mox.ReplayAll()
 
-    self.assertEquals('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
-    self.assertEquals('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
-    self.assertEquals('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
+    self.assertEqual('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
+    self.assertEqual('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
+    self.assertEqual('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
 
   def testGetMapException(self):
     """GetMap throws error.UnsupportedMap for unsupported maps."""
@@ -86,7 +89,7 @@ class TestNSS(mox.MoxTestBase):
     password_map = nss.GetPasswdMap()
 
     self.assertTrue(isinstance(password_map, passwd.PasswdMap))
-    self.assertEquals(len(password_map), 2)
+    self.assertEqual(len(password_map), 2)
     self.assertTrue(password_map.Exists(entry1))
     self.assertTrue(password_map.Exists(entry2))
 
@@ -116,7 +119,7 @@ class TestNSS(mox.MoxTestBase):
     group_map = nss.GetGroupMap()
 
     self.assertTrue(isinstance(group_map, group.GroupMap))
-    self.assertEquals(len(group_map), 2)
+    self.assertEqual(len(group_map), 2)
     self.assertTrue(group_map.Exists(entry1))
     self.assertTrue(group_map.Exists(entry2))
 
@@ -143,7 +146,7 @@ class TestNSS(mox.MoxTestBase):
     shadow_map = nss.GetShadowMap()
 
     self.assertTrue(isinstance(shadow_map, shadow.ShadowMap))
-    self.assertEquals(len(shadow_map), 2)
+    self.assertEqual(len(shadow_map), 2)
     self.assertTrue(shadow_map.Exists(entry1))
     self.assertTrue(shadow_map.Exists(entry2))
 

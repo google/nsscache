@@ -24,7 +24,11 @@ import tempfile
 import time
 import unittest
  
-import mox
+
+try:
+  from mox3 import mox
+except ImportError:
+  import mox
 
 from nss_cache.util import timestamps
 

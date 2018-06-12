@@ -31,20 +31,17 @@ import re
 import shutil
 import stat
 import sys
-import ConfigParser
+import configparser
 
 from nss_cache import config
 from nss_cache import error
 from nss_cache.caches import caches
 from nss_cache.util import file_formats
 
-if sys.version >= (2, 5):
-  def LongestLength(l): return len(max(l, key=len))
-else: # Python < 2.4, 50% slower
-  def LongestLength(l): return max([len(x) for x in l])
+def LongestLength(l): return len(max(l, key=len))
 
 # Load suffix config variables
-parser = ConfigParser.ConfigParser()
+parser = configparser.ConfigParser()
 for i in sys.argv:
   if ('nsscache.conf') in i:
     # Remove '--config-file=' from the string
@@ -235,8 +232,8 @@ class FilesCache(caches.Cache):
       self.log.debug('Writing index %s', index_filename)
 
       index = self._indices[index_name]
-      key_length = LongestLength(index.keys())
-      pos_length = LongestLength(index.values())
+      key_length = LongestLength(list(index.keys()))
+      pos_length = LongestLength(list(index.values()))
       max_length = key_length + pos_length
       # Open for write/truncate
       index_file = open(index_filename, 'w')
@@ -247,7 +244,7 @@ class FilesCache(caches.Cache):
         uid = stat_info.st_uid
         gid = stat_info.st_gid
         os.chown(index_filename, uid, gid)
-      except OSError, e:
+      except OSError as e:
         if e.errno == errno.ENOENT:
           os.chmod(index_filename,
                    stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)

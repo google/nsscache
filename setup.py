@@ -20,15 +20,15 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-import distutils.core
+from setuptools import setup, find_packages
 
 import nss_cache
 
-distutils.core.setup(name='nsscache',
+setup(name='nsscache',
                      version=nss_cache.__version__,
                      author='Jamie Wilkinson',
                      author_email='jaq@google.com',
-                     url='http://code.google.com/p/nsscache/',
+                     url='https://github.com/google/nsscache',
                      description='nsscache tool and library',
                      license='GPL',
                      long_description=
@@ -49,4 +49,14 @@ as LDAP.''',
                                'nss_cache.update',
                                'nss_cache.sources'],
                      scripts=['nsscache'],
-                     data_files=[('/etc', ['nsscache.conf'])])
+                     data_files=[('/etc', ['nsscache.conf'])],
+                     setup_requires=['pytest-runner'],
+                     tests_require=['pytest', 'mox', 'mox3'],
+                     extras_require={
+                       'bdb': ['bsddb3'],
+                       'ldap': ['python-ldap'],
+                       'http': ['pycurl'],
+                       's3': ['boto3'],
+                       },
+
+)
