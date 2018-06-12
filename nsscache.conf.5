@@ -217,7 +217,10 @@ source.
 .B s3_bucket
 AWS S3 bucket containing
 .I passwd, group, shadow
-objects. It is highly recommended to use s3 source only with AWS IAM role
+objects. 
+.B boto3
+python package should be installed to use this type of source. 
+It is highly recommended to use s3 source only with AWS IAM role
 attached to the ec2 instance configured for read-only access to the bucket.
 So no extra configuration options like access_key and secret provided in config.
 Though they may be used via ~/.aws/config and ~/.aws/credentials because python
