@@ -35,6 +35,7 @@ setup(name='nsscache',
 '''nsscache is a Python library and a commandline frontend to that library
 that synchronises a local NSS cache against a remote directory service, such
 as LDAP.''',
+      project_urls={'Source Code': 'https://github.com/google/nsscache'},
                      classifiers=['Development Status :: 4 - Beta',
                                   'Environment :: Console',
                                   'Indended Audience :: System Administrators',
