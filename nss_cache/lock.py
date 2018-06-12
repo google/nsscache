@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Lock management for nss_cache module."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
@@ -175,7 +174,8 @@ class PidFile(object):
     try:
       pid = int(pid_content.strip())
     except (AttributeError, ValueError) as e:
-      self.log.warning('Not sending TERM, could not parse pid file content: %r', pid_content)
+      self.log.warning('Not sending TERM, could not parse pid file content: %r',
+                       pid_content)
       return
 
     self.log.debug('retrieved pid %d' % pid)

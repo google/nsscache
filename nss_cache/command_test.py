@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/command.py."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -30,9 +29,9 @@ import time
 import unittest
 
 try:
-    from mox3 import mox
+  from mox3 import mox
 except ImportError:
-    import mox
+  import mox
 
 from nss_cache import command
 from nss_cache import config
@@ -89,20 +88,18 @@ class TestCommand(mox.MoxTestBase):
 
     self.assertEqual('LOCK', c._Lock(force=True))
 
-
   def testUnlock(self):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     mock_lock = lock.PidFile(filename=None)
     mock_lock.Lock(force=False).AndReturn(True)
     mock_lock.Locked().AndReturn(True)
     mock_lock.Unlock()
-    mock_lock.Locked().AndReturn(False) # destructor
+    mock_lock.Locked().AndReturn(False)  # destructor
 
     self.mox.ReplayAll()
     c = command.Command()
     c._Lock()
     c._Unlock()
-
 
   def testCommandHelp(self):
     c = command.Command()
@@ -133,13 +130,19 @@ class TestUpdateCommand(mox.MoxTestBase):
       pass
 
     self.conf = DummyConfig()
-    self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
-                         config.MAP_AUTOMOUNT: config.MapOptions()}
-    self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy',
-                                                    'dir': self.workdir}
+    self.conf.options = {
+        config.MAP_PASSWORD: config.MapOptions(),
+        config.MAP_AUTOMOUNT: config.MapOptions()
+    }
+    self.conf.options[config.MAP_PASSWORD].cache = {
+        'name': 'dummy',
+        'dir': self.workdir
+    }
     self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
-    self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy',
-                                                     'dir': self.workdir}
+    self.conf.options[config.MAP_AUTOMOUNT].cache = {
+        'name': 'dummy',
+        'dir': self.workdir
+    }
     self.conf.options[config.MAP_AUTOMOUNT].source = {'name': 'dummy'}
     self.conf.timestamp_dir = self.workdir
     self.conf.lockfile = None
@@ -160,7 +163,9 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
 
     self.mox.StubOutWithMock(c, 'UpdateMaps')
-    c.UpdateMaps(self.conf, incremental=True, force_lock=False, force_write=False).AndReturn(0)
+    c.UpdateMaps(
+        self.conf, incremental=True, force_lock=False,
+        force_write=False).AndReturn(0)
     self.mox.ReplayAll()
 
     self.assertEqual(0, c.Run(self.conf, []))
@@ -179,12 +184,16 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
 
     self.mox.StubOutWithMock(c, 'UpdateMaps')
-    c.UpdateMaps(self.conf, incremental=False, force_lock=True, force_write=True).AndReturn(0)
+    c.UpdateMaps(
+        self.conf, incremental=False, force_lock=True,
+        force_write=True).AndReturn(0)
     self.mox.ReplayAll()
 
-    self.assertEqual(0, c.Run(self.conf,
-                               ['-m', config.MAP_PASSWORD, '-f',
-                                '--force-write', '--force-lock']))
+    self.assertEqual(
+        0,
+        c.Run(
+            self.conf,
+            ['-m', config.MAP_PASSWORD, '-f', '--force-write', '--force-lock']))
     self.assertEqual(['passwd'], self.conf.maps)
 
   def testUpdateSingleMaps(self):
@@ -206,18 +215,20 @@ class TestUpdateCommand(mox.MoxTestBase):
     source_mock.GetMap(config.MAP_PASSWORD, location=None).AndReturn(passwd_map)
 
     self.mox.StubOutWithMock(source_factory, 'Create')
-    source_factory.Create(self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
+    source_factory.Create(
+        self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
 
     cache_mock = self.mox.CreateMock(caches.Cache)
     cache_mock.WriteMap(map_data=passwd_map).AndReturn(0)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache, config.MAP_PASSWORD).AndReturn(cache_mock)
+    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache,
+                         config.MAP_PASSWORD).AndReturn(cache_mock)
 
     self.mox.ReplayAll()
     c = command.Update()
-    self.assertEqual(0, c.UpdateMaps(self.conf,
-                                      incremental=True, force_write=False))
+    self.assertEqual(
+        0, c.UpdateMaps(self.conf, incremental=True, force_write=False))
 
   def testUpdateAutomounts(self):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
@@ -238,10 +249,12 @@ class TestUpdateCommand(mox.MoxTestBase):
 
     source_mock = self.mox.CreateMock(source.Source)
     source_mock.GetAutomountMasterMap().AndReturn(automount_map)
-    source_mock.GetMap(config.MAP_AUTOMOUNT, location='foo').AndReturn(automount_map)
+    source_mock.GetMap(
+        config.MAP_AUTOMOUNT, location='foo').AndReturn(automount_map)
 
     self.mox.StubOutWithMock(source_factory, 'Create')
-    source_factory.Create(self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
+    source_factory.Create(
+        self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
 
     cache_mock = self.mox.CreateMock(caches.Cache)
     cache_mock.GetMapLocation().AndReturn('home')
@@ -249,25 +262,33 @@ class TestUpdateCommand(mox.MoxTestBase):
     cache_mock.WriteMap(map_data=automount_map).AndReturn(0)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_AUTOMOUNT].cache, config.MAP_AUTOMOUNT, automount_mountpoint='/home').AndReturn(cache_mock)
-    cache_factory.Create(self.conf.options[config.MAP_AUTOMOUNT].cache, config.MAP_AUTOMOUNT, automount_mountpoint=None).AndReturn(cache_mock)
+    cache_factory.Create(
+        self.conf.options[config.MAP_AUTOMOUNT].cache,
+        config.MAP_AUTOMOUNT,
+        automount_mountpoint='/home').AndReturn(cache_mock)
+    cache_factory.Create(
+        self.conf.options[config.MAP_AUTOMOUNT].cache,
+        config.MAP_AUTOMOUNT,
+        automount_mountpoint=None).AndReturn(cache_mock)
 
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEqual(0, c.UpdateMaps(self.conf,
-                                      incremental=True, force_write=False))
+    self.assertEqual(
+        0, c.UpdateMaps(self.conf, incremental=True, force_write=False))
 
   def testUpdateMapsTrapsPermissionDenied(self):
     self.mox.StubOutWithMock(map_updater.MapUpdater, 'UpdateFromSource')
-    map_updater.MapUpdater.UpdateFromSource(mox.IgnoreArg(), incremental=True, force_write=False).AndRaise(error.PermissionDenied)
+    map_updater.MapUpdater.UpdateFromSource(
+        mox.IgnoreArg(), incremental=True,
+        force_write=False).AndRaise(error.PermissionDenied)
 
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
     lock_mock = lock.PidFile(filename=None)
     lock_mock.Lock(force=False).AndReturn(True)
     lock_mock.Locked().AndReturn(True)
     lock_mock.Unlock()
-    
+
     self.conf.maps = [config.MAP_PASSWORD]
     self.conf.cache = 'dummy'
     modify_stamp = 1
@@ -278,7 +299,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     source_mock = self.mox.CreateMock(source.Source)
 
     self.mox.StubOutWithMock(source_factory, 'Create')
-    source_factory.Create(self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
+    source_factory.Create(
+        self.conf.options[config.MAP_PASSWORD].source).AndReturn(source_mock)
 
     cache_mock = self.mox.CreateMock(caches.Cache)
 
@@ -287,8 +309,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEqual(1, c.UpdateMaps(self.conf, incremental=True,
-                                      force_write=False))
+    self.assertEqual(
+        1, c.UpdateMaps(self.conf, incremental=True, force_write=False))
 
   def testUpdateMapsCanForceLock(self):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
@@ -300,8 +322,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEqual(c.UpdateMaps(self.conf, False, force_lock=True),
-                      c.ERR_LOCK)
+    self.assertEqual(
+        c.UpdateMaps(self.conf, False, force_lock=True), c.ERR_LOCK)
 
   def testSleep(self):
     self.mox.StubOutWithMock(time, 'sleep')
@@ -309,7 +331,11 @@ class TestUpdateCommand(mox.MoxTestBase):
 
     c = command.Update()
     self.mox.StubOutWithMock(c, 'UpdateMaps')
-    c.UpdateMaps(self.conf, incremental=True, force_lock=mox.IgnoreArg(), force_write=mox.IgnoreArg()).AndReturn(0)
+    c.UpdateMaps(
+        self.conf,
+        incremental=True,
+        force_lock=mox.IgnoreArg(),
+        force_write=mox.IgnoreArg()).AndReturn(0)
     self.mox.ReplayAll()
 
     c.Run(self.conf, ['-s', '1'])
@@ -332,7 +358,11 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
 
     self.mox.StubOutWithMock(c, 'UpdateMaps')
-    c.UpdateMaps(self.conf, incremental=mox.IgnoreArg(), force_lock=mox.IgnoreArg(), force_write=True).AndReturn(0)
+    c.UpdateMaps(
+        self.conf,
+        incremental=mox.IgnoreArg(),
+        force_lock=mox.IgnoreArg(),
+        force_write=True).AndReturn(0)
     self.mox.ReplayAll()
 
     self.assertEqual(0, c.Run(self.conf, ['--force-write']))
@@ -341,7 +371,11 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
 
     self.mox.StubOutWithMock(c, 'UpdateMaps')
-    c.UpdateMaps(self.conf, incremental=mox.IgnoreArg(), force_lock=True, force_write=mox.IgnoreArg()).AndReturn(0)
+    c.UpdateMaps(
+        self.conf,
+        incremental=mox.IgnoreArg(),
+        force_lock=True,
+        force_write=mox.IgnoreArg()).AndReturn(0)
     self.mox.ReplayAll()
 
     self.assertEqual(0, c.Run(self.conf, ['--force-lock']))
@@ -352,7 +386,8 @@ class TestUpdateCommand(mox.MoxTestBase):
     c._Lock(force=False, path=None).AndReturn(True)
     self.mox.ReplayAll()
     # Create an invalid map name.
-    self.assertEqual(1, c.Run(self.conf, ['-m', config.MAP_PASSWORD + 'invalid']))
+    self.assertEqual(1, c.Run(self.conf,
+                              ['-m', config.MAP_PASSWORD + 'invalid']))
 
 
 class TestVerifyCommand(mox.MoxTestBase):
@@ -472,15 +507,15 @@ class TestVerifyCommand(mox.MoxTestBase):
     c = command.Verify()
     c.VerifyMaps = FakeVerifyMaps
 
-    self.assertEqual(0, c.Run(self.conf, ['-m',
-                                           config.MAP_PASSWORD]))
+    self.assertEqual(0, c.Run(self.conf, ['-m', config.MAP_PASSWORD]))
 
   def testVerifyMapsSucceedsOnGoodMaps(self):
     cache_mock = self.mox.CreateMock(caches.Cache)
     cache_mock.GetMap().AndReturn(self.small_map)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache, config.MAP_PASSWORD).AndReturn(cache_mock)
+    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache,
+                         config.MAP_PASSWORD).AndReturn(cache_mock)
 
     self.conf.maps = [config.MAP_PASSWORD]
 
@@ -498,7 +533,8 @@ class TestVerifyCommand(mox.MoxTestBase):
     cache_mock.GetMap().AndReturn(self.big_map)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache, config.MAP_PASSWORD).AndReturn(cache_mock)
+    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache,
+                         config.MAP_PASSWORD).AndReturn(cache_mock)
 
     self.conf.maps = [config.MAP_PASSWORD]
 
@@ -516,7 +552,8 @@ class TestVerifyCommand(mox.MoxTestBase):
     cache_mock.GetMap().AndRaise(error.CacheNotFound)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache, config.MAP_PASSWORD).AndReturn(cache_mock)
+    cache_factory.Create(self.conf.options[config.MAP_PASSWORD].cache,
+                         config.MAP_PASSWORD).AndReturn(cache_mock)
 
     self.conf.maps = [config.MAP_PASSWORD]
 
@@ -562,7 +599,8 @@ class TestVerifyCommand(mox.MoxTestBase):
     source_mock.Verify().AndReturn(1)
 
     self.mox.StubOutWithMock(source_factory, 'Create')
-    source_factory.Create(self.conf.options[config.MAP_PASSWORD].cache).AndReturn(source_mock)
+    source_factory.Create(
+        self.conf.options[config.MAP_PASSWORD].cache).AndReturn(source_mock)
 
     self.conf.maps = [config.MAP_PASSWORD]
 
@@ -576,8 +614,7 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     def FakeCreate(conf):
       """Stub routine returning a pmock to test VerifySources."""
-      self.assertEqual(conf,
-                        self.conf.options[config.MAP_PASSWORD].source)
+      self.assertEqual(conf, self.conf.options[config.MAP_PASSWORD].source)
       raise error.SourceUnavailable
 
     old_source_base_create = source_factory.Create
@@ -658,8 +695,7 @@ class TestRepairCommand(unittest.TestCase):
 
     c = command.Repair()
 
-    self.assertEqual(1, c.Run(self.conf, ['-m',
-                                           config.MAP_PASSWORD]))
+    self.assertEqual(1, c.Run(self.conf, ['-m', config.MAP_PASSWORD]))
 
 
 class TestHelpCommand(unittest.TestCase):
@@ -700,6 +736,7 @@ class TestStatusCommand(mox.MoxTestBase):
 
     # stub out parts of update.MapUpdater
     class DummyUpdater(map_updater.MapUpdater):
+
       def GetModifyTimestamp(self):
         return 1
 
@@ -711,8 +748,10 @@ class TestStatusCommand(mox.MoxTestBase):
 
     self.conf = DummyConfig()
     self.conf.timestamp_dir = 'TEST_DIR'
-    self.conf.options = {config.MAP_PASSWORD: config.MapOptions(),
-                         config.MAP_AUTOMOUNT: config.MapOptions()}
+    self.conf.options = {
+        config.MAP_PASSWORD: config.MapOptions(),
+        config.MAP_AUTOMOUNT: config.MapOptions()
+    }
     self.conf.options[config.MAP_PASSWORD].cache = {'name': 'dummy'}
     self.conf.options[config.MAP_PASSWORD].source = {'name': 'dummy'}
     self.conf.options[config.MAP_AUTOMOUNT].cache = {'name': 'dummy'}
@@ -777,7 +816,10 @@ class TestStatusCommand(mox.MoxTestBase):
     cache_mock.GetMapLocation().AndReturn('/etc/auto.master')
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_AUTOMOUNT].cache, config.MAP_AUTOMOUNT, automount_mountpoint='automount_mountpoint').AndReturn(cache_mock)
+    cache_factory.Create(
+        self.conf.options[config.MAP_AUTOMOUNT].cache,
+        config.MAP_AUTOMOUNT,
+        automount_mountpoint='automount_mountpoint').AndReturn(cache_mock)
 
     self.mox.ReplayAll()
 
@@ -789,7 +831,8 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertTrue('value' in values[0])
 
     values = c.GetSingleMapMetadata(
-        config.MAP_AUTOMOUNT, self.conf,
+        config.MAP_AUTOMOUNT,
+        self.conf,
         automount_mountpoint='automount_mountpoint')
 
     self.assertTrue('map' in values[0])
@@ -799,8 +842,7 @@ class TestStatusCommand(mox.MoxTestBase):
 
   def testGetSingleMapMetadataTimestampEpoch(self):
     c = command.Status()
-    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
-                                    epoch=True)
+    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=True)
     self.assertTrue('map' in values[0])
     self.assertTrue('key' in values[0])
     self.assertTrue('value' in values[0])
@@ -814,10 +856,8 @@ class TestStatusCommand(mox.MoxTestBase):
     time.tzset()
 
     c = command.Status()
-    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
-                                    epoch=False)
-    self.assertEqual('Wed Dec 31 16:00:02 1969',
-                         values[1]['value'])
+    values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf, epoch=False)
+    self.assertEqual('Wed Dec 31 16:00:02 1969', values[1]['value'])
 
   def testGetAutomountMapMetadata(self):
     # need to stub out GetSingleMapMetadata (tested above) and then
@@ -826,24 +866,40 @@ class TestStatusCommand(mox.MoxTestBase):
 
     # stub out GetSingleMapMetadata
     class DummyStatus(command.Status):
-      def GetSingleMapMetadata(self, unused_map_name, unused_conf,
-                               automount_mountpoint=None, epoch=False):
-        return {'map': 'map_name', 'last-modify-timestamp': 'foo',
-                'last-update-timestamp': 'bar'}
+
+      def GetSingleMapMetadata(self,
+                               unused_map_name,
+                               unused_conf,
+                               automount_mountpoint=None,
+                               epoch=False):
+        return {
+            'map': 'map_name',
+            'last-modify-timestamp': 'foo',
+            'last-update-timestamp': 'bar'
+        }
 
     # the master map to loop over
     master_map = automount.AutomountMap()
-    master_map.Add(automount.AutomountMapEntry({'key': '/home',
-                                           'location': '/etc/auto.home'}))
-    master_map.Add(automount.AutomountMapEntry({'key': '/auto',
-                                           'location': '/etc/auto.auto'}))
+    master_map.Add(
+        automount.AutomountMapEntry({
+            'key': '/home',
+            'location': '/etc/auto.home'
+        }))
+    master_map.Add(
+        automount.AutomountMapEntry({
+            'key': '/auto',
+            'location': '/etc/auto.auto'
+        }))
 
     # mock out a cache to return the master map
     cache_mock = self.mox.CreateMock(caches.Cache)
     cache_mock.GetMap().AndReturn(master_map)
 
     self.mox.StubOutWithMock(cache_factory, 'Create')
-    cache_factory.Create(self.conf.options[config.MAP_AUTOMOUNT].cache, config.MAP_AUTOMOUNT, automount_mountpoint=None).AndReturn(cache_mock)
+    cache_factory.Create(
+        self.conf.options[config.MAP_AUTOMOUNT].cache,
+        config.MAP_AUTOMOUNT,
+        automount_mountpoint=None).AndReturn(cache_mock)
 
     self.mox.ReplayAll()
 

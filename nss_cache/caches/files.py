@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 """An implementation of a nss_files format local cache, with indexing.
 
 libnss-cache is a NSS module that reads NSS data from files in /etc,
@@ -38,7 +37,10 @@ from nss_cache import error
 from nss_cache.caches import caches
 from nss_cache.util import file_formats
 
-def LongestLength(l): return len(max(l, key=len))
+
+def LongestLength(l):
+  return len(max(l, key=len))
+
 
 # Load suffix config variables
 parser = configparser.ConfigParser()
@@ -46,13 +48,14 @@ for i in sys.argv:
   if ('nsscache.conf') in i:
     # Remove '--config-file=' from the string
     if ('--config-file') in i:
-      i = i[14:] 
+      i = i[14:]
     parser.read(i)
   else:
     # Config in nsscache folder
     parser.read('nsscache.conf')
 prefix = parser.get('suffix', 'prefix')
 suffix = parser.get('suffix', 'suffix')
+
 
 def RegisterAllImplementations(register_callback):
   """Register our cache classes independently from the import scheme."""
@@ -84,8 +87,8 @@ class FilesCache(caches.Cache):
      automount_mountpoint: A string containing the automount mountpoint, used
        only by automount maps.
     """
-    super(FilesCache, self).__init__(conf, map_name,
-                                     automount_mountpoint=automount_mountpoint)
+    super(FilesCache, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
 
     # Documented in nsscache.conf example.
     self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
@@ -95,6 +98,7 @@ class FilesCache(caches.Cache):
     if hasattr(self, '_INDEX_ATTRIBUTES'):
       for index in self._INDEX_ATTRIBUTES:
         self._indices[index] = {}
+
   def GetMap(self, cache_filename=None):
     """Returns the map from the cache.
 
@@ -173,8 +177,9 @@ class FilesCache(caches.Cache):
 
     missing_from_map = cache_keys - written_keys
     if missing_from_map:
-      self.log.warn('verify failed: %d keys found, unexpected in the on-disk '
-                    'cache', len(missing_from_map))
+      self.log.warn(
+          'verify failed: %d keys found, unexpected in the on-disk '
+          'cache', len(missing_from_map))
       if len(missing_from_map) < 1000:
         self.log.debug('keys missing from map: %r', missing_from_map)
       else:
@@ -247,12 +252,11 @@ class FilesCache(caches.Cache):
       except OSError as e:
         if e.errno == errno.ENOENT:
           os.chmod(index_filename,
-                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
-        index_line = ('%s\0%s\0%s\n' %
-                      (key, pos,
-                       '\0' * (max_length - len(key) - len(pos))))
+        index_line = ('%s\0%s\0%s\n' % (key, pos, '\0' *
+                                        (max_length - len(key) - len(pos))))
         index_file.write(index_line)
       index_file.close()
 
@@ -263,10 +267,12 @@ class FilesSshkeyMapHandler(FilesCache):
   _INDEX_ATTRIBUTES = ('name',)
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_SSHKEY
+    if map_name is None:
+      map_name = config.MAP_SSHKEY
     super(FilesSshkeyMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesSshkeyMapParser()
+
   def _ExpectedKeysForEntry(self, entry):
     """Generate a list of expected cache keys for this type of map.
 
@@ -299,7 +305,8 @@ class FilesPasswdMapHandler(FilesCache):
   _INDEX_ATTRIBUTES = ('name', 'uid')
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_PASSWORD
+    if map_name is None:
+      map_name = config.MAP_PASSWORD
     super(FilesPasswdMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesPasswdMapParser()
@@ -325,10 +332,9 @@ class FilesPasswdMapHandler(FilesCache):
     Returns:
       Number of bytes written to the target.
     """
-    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
-                                               entry.uid, entry.gid,
-                                               entry.gecos, entry.dir,
-                                               entry.shell)
+    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.uid, entry.gid, entry.gecos, entry.dir,
+        entry.shell)
     target.write(password_entry + '\n')
     return len(password_entry) + 1
 
@@ -339,7 +345,8 @@ class FilesGroupMapHandler(FilesCache):
   _INDEX_ATTRIBUTES = ('name', 'gid')
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_GROUP
+    if map_name is None:
+      map_name = config.MAP_GROUP
     super(FilesGroupMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesGroupMapParser()
@@ -369,7 +376,8 @@ class FilesShadowMapHandler(FilesCache):
   _INDEX_ATTRIBUTES = ('name',)
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_SHADOW
+    if map_name is None:
+      map_name = config.MAP_SHADOW
     super(FilesShadowMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesShadowMapParser()
@@ -387,15 +395,10 @@ class FilesShadowMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write a ShadowMapEntry to the target cache."""
-    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
-                                                   entry.passwd,
-                                                   entry.lstchg or '',
-                                                   entry.min or '',
-                                                   entry.max or '',
-                                                   entry.warn or '',
-                                                   entry.inact or '',
-                                                   entry.expire or '',
-                                                   entry.flag or '')
+    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.lstchg or '', entry.min or '',
+        entry.max or '', entry.warn or '', entry.inact or '', entry.expire or
+        '', entry.flag or '')
     target.write(shadow_entry + '\n')
     return len(shadow_entry) + 1
 
@@ -406,7 +409,8 @@ class FilesNetgroupMapHandler(FilesCache):
   _TUPLE_RE = re.compile('^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_NETGROUP
+    if map_name is None:
+      map_name = config.MAP_NETGROUP
     super(FilesNetgroupMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesNetgroupMapParser()
@@ -437,7 +441,8 @@ class FilesAutomountMapHandler(FilesCache):
   CACHE_FILENAME = None  # we have multiple files, set as we update.
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_AUTOMOUNT
+    if map_name is None:
+      map_name = config.MAP_AUTOMOUNT
     super(FilesAutomountMapHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
     self.map_parser = file_formats.FilesAutomountMapParser()
@@ -467,8 +472,9 @@ class FilesAutomountMapHandler(FilesCache):
     pattern = re.compile(prefix)
     if entry.options is not None:
       if prefix != '':
-        if (pattern.match(entry.location)): # Found string with regex
-          entry.location = re.sub(r'({0})'.format(prefix), r'{0}'.format(suffix), entry.location)
+        if (pattern.match(entry.location)):  # Found string with regex
+          entry.location = re.sub(r'({0})'.format(prefix),
+                                  r'{0}'.format(suffix), entry.location)
       automount_entry = '%s %s %s' % (entry.key, entry.options, entry.location)
     else:
       automount_entry = '%s %s' % (entry.key, entry.location)

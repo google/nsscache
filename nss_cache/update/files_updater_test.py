@@ -13,13 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/files_updater.py."""
 
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)',
               'blaedd@google.com (David MacKinnon)')
-
 
 import os
 import shutil
@@ -63,21 +61,21 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 
     # Construct a fake source.
     def GetFile(map_name, dst_file, current_file, location):
-      print("GetFile: %s" % dst_file)
+      print('GetFile: %s' % dst_file)
       f = open(dst_file, 'w')
       f.write('root:x:0:0:root:/root:/bin/bash\n')
       f.close()
       os.utime(dst_file, (1, 2))
-      os.system("ls -al %s" % dst_file)
+      os.system('ls -al %s' % dst_file)
       return dst_file
 
     dst_file = mox.Value()
     source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(config.MAP_PASSWORD,
-                        mox.Remember(dst_file),
-                        current_file=mox.IgnoreArg(),
-                        location=mox.IgnoreArg()
-                       ).WithSideEffects(GetFile).AndReturn(dst_file)
+    source_mock.GetFile(
+        config.MAP_PASSWORD,
+        mox.Remember(dst_file),
+        current_file=mox.IgnoreArg(),
+        location=mox.IgnoreArg()).WithSideEffects(GetFile).AndReturn(dst_file)
 
     # Construct the cache.
     cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
@@ -87,18 +85,18 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
     password_map.Add(map_entry)
     cache.Write(password_map)
 
-    updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-                                           self.workdir,
-                                           {'name': 'files',
-                                            'dir': self.workdir2})
+    updater = files_updater.FileMapUpdater(config.MAP_PASSWORD, self.workdir, {
+        'name': 'files',
+        'dir': self.workdir2
+    })
     updater.WriteModifyTimestamp(original_modify_stamp)
 
     self.mox.ReplayAll()
 
-    self.assertEqual(0, updater.UpdateCacheFromSource(cache,
-                                                      source_mock,
-                                                      force_write=False,
-                                                      location=None))
+    self.assertEqual(
+        0,
+        updater.UpdateCacheFromSource(
+            cache, source_mock, force_write=False, location=None))
 
     self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
     self.assertNotEqual(None, updater.GetUpdateTimestamp())
@@ -109,9 +107,10 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
     new_modify_stamp = time.gmtime(2)
     # Construct an updater
     self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-                                                self.workdir,
-                                                {'name': 'files',
-                                                 'dir': self.workdir2})
+                                                self.workdir, {
+                                                    'name': 'files',
+                                                    'dir': self.workdir2
+                                                })
     self.updater.WriteModifyTimestamp(original_modify_stamp)
 
     # Construct a cache
@@ -125,13 +124,15 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
       return dst_file
 
     source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(config.MAP_PASSWORD, mox.IgnoreArg(), mox.IgnoreArg(), location=None).WithSideEffects(GetFileEffects)
+    source_mock.GetFile(
+        config.MAP_PASSWORD, mox.IgnoreArg(), mox.IgnoreArg(),
+        location=None).WithSideEffects(GetFileEffects)
 
     #source_mock = MockSource()
-    self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
-                                                           source_mock,
-                                                           force_write=False,
-                                                           location=None))
+    self.assertEqual(
+        0,
+        self.updater.UpdateCacheFromSource(
+            cache, source_mock, force_write=False, location=None))
     self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
     self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
 
@@ -141,9 +142,10 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
     new_modify_stamp = time.gmtime(2)
     # Construct an updater
     self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-                                                self.workdir,
-                                                {'name': 'files',
-                                                 'dir': self.workdir2})
+                                                self.workdir, {
+                                                    'name': 'files',
+                                                    'dir': self.workdir2
+                                                })
     self.updater.WriteModifyTimestamp(original_modify_stamp)
 
     # Construct a cache
@@ -155,17 +157,19 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
     cache.Write(password_map)
 
     source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(config.MAP_PASSWORD,
-                        mox.IgnoreArg(),
-                        current_file=mox.IgnoreArg(),
-                        location=None).AndReturn(None)
+    source_mock.GetFile(
+        config.MAP_PASSWORD,
+        mox.IgnoreArg(),
+        current_file=mox.IgnoreArg(),
+        location=None).AndReturn(None)
     self.mox.ReplayAll()
-    self.assertRaises(error.EmptyMap,
-                      self.updater.UpdateCacheFromSource,
-                      cache,
-                      source_mock,
-                      force_write=False,
-                      location=None)
+    self.assertRaises(
+        error.EmptyMap,
+        self.updater.UpdateCacheFromSource,
+        cache,
+        source_mock,
+        force_write=False,
+        location=None)
     self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
     self.assertEqual(None, self.updater.GetUpdateTimestamp())
 
@@ -374,7 +378,6 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 #     self.assertEqual(return_value, 1)
 
 #     cache_factory.Create = original_create
-
 
 if __name__ == '__main__':
   unittest.main()

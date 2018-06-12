@@ -11,14 +11,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-
-
 """Command objects."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
-
 
 import inspect
 import logging
@@ -26,9 +22,9 @@ import optparse
 import os
 import shutil
 try:
-    import io
+  import io
 except ImportError:
-    from io import StringIO
+  from io import StringIO
 
 import tempfile
 import time
@@ -97,10 +93,14 @@ class Command(object):
     parser.disable_interspersed_args()
 
     # commonly used options
-    parser.add_option('-m', '--map', action='append',
-                      type='string', dest='maps',
-                      help='map to operate on, can be'
-                      ' supplied multiple times')
+    parser.add_option(
+        '-m',
+        '--map',
+        action='append',
+        type='string',
+        dest='maps',
+        help='map to operate on, can be'
+        ' supplied multiple times')
 
     return parser
 
@@ -118,8 +118,8 @@ class Command(object):
       0 if the command was successful
       non-zero shell error code if not.
     """
-    raise NotImplementedError('command %r not implemented'
-                              % self.__class__.__name__)
+    raise NotImplementedError(
+        'command %r not implemented' % self.__class__.__name__)
 
   def _Lock(self, path=None, force=False):
     """Grab a system-wide lock for this command.
@@ -177,28 +177,37 @@ class Update(Command):
   def __init__(self):
     """Initialize the argument parser for this command object."""
     super(Update, self).__init__()
-    self.parser.add_option('-f', '--full',
-                           action='store_false',
-                           help='force a full update from the data source',
-                           dest='incremental', default=True)
-    self.parser.add_option('-s', '--sleep',
-                           action='store', type='int',
-                           default=False, dest='delay',
-                           help='number of seconds to sleep before'
-                           ' executing command')
-    self.parser.add_option('--force-write',
-                           action='store_true',
-                           default=False,
-                           dest='force_write',
-                           help='force the update to write new maps, overriding'
-                           ' safety checks, such as refusing to write empty'
-                           'maps.')
-    self.parser.add_option('--force-lock',
-                           action='store_true',
-                           default=False,
-                           dest='force_lock',
-                           help='forcibly acquire the lock, and issue a SIGTERM'
-                           'to any nsscache process holding the lock.')
+    self.parser.add_option(
+        '-f',
+        '--full',
+        action='store_false',
+        help='force a full update from the data source',
+        dest='incremental',
+        default=True)
+    self.parser.add_option(
+        '-s',
+        '--sleep',
+        action='store',
+        type='int',
+        default=False,
+        dest='delay',
+        help='number of seconds to sleep before'
+        ' executing command')
+    self.parser.add_option(
+        '--force-write',
+        action='store_true',
+        default=False,
+        dest='force_write',
+        help='force the update to write new maps, overriding'
+        ' safety checks, such as refusing to write empty'
+        'maps.')
+    self.parser.add_option(
+        '--force-lock',
+        action='store_true',
+        default=False,
+        dest='force_lock',
+        help='forcibly acquire the lock, and issue a SIGTERM'
+        'to any nsscache process holding the lock.')
 
   def Run(self, conf, args):
     """Run the Update command.
@@ -230,10 +239,11 @@ class Update(Command):
       self.log.info('Delaying %d seconds before executing', options.delay)
       time.sleep(options.delay)
 
-    return self.UpdateMaps(conf,
-                           incremental=options.incremental,
-                           force_write=options.force_write,
-                           force_lock=options.force_lock)
+    return self.UpdateMaps(
+        conf,
+        incremental=options.incremental,
+        force_write=options.force_write,
+        force_lock=options.force_lock)
 
   def UpdateMaps(self, conf, incremental, force_write=False, force_lock=False):
     """Update each configured map.
@@ -283,8 +293,8 @@ class Update(Command):
       # startup directory, but we convewrt them to absolute paths so that future
       # temp dirs do not mess with our output routines.
       old_cwd = os.getcwd()
-      tempdir = tempfile.mkdtemp(dir=cache_options['dir'],
-                                 prefix='nsscache-%s-' % map_name)
+      tempdir = tempfile.mkdtemp(
+          dir=cache_options['dir'], prefix='nsscache-%s-' % map_name)
       if not os.path.isabs(cache_options['dir']):
         cache_options['dir'] = os.path.abspath(cache_options['dir'])
       if not os.path.isabs(conf.timestamp_dir):
@@ -305,18 +315,17 @@ class Update(Command):
           else:
             self.log.info('Rebuilding and verifying %s cache.', map_name)
 
-          retval = updater.UpdateFromSource(source, incremental=incremental,
-                                          force_write=force_write)
+          retval = updater.UpdateFromSource(
+              source, incremental=incremental, force_write=force_write)
         except error.PermissionDenied:
-          self.log.error('Permission denied: could not update map %r.  Aborting',
-                       map_name)
+          self.log.error(
+              'Permission denied: could not update map %r.  Aborting', map_name)
           retval += 1
         except (error.EmptyMap, error.InvalidMap) as e:
           self.log.error(e)
           retval += 1
         except error.InvalidMerge as e:
-          self.log.warn('Could not merge map %r: %s.  Skipping.',
-                         map_name, e)
+          self.log.warn('Could not merge map %r: %s.  Skipping.', map_name, e)
       finally:
         # Start chdir cleanup
         os.chdir(old_cwd)
@@ -333,19 +342,23 @@ class Update(Command):
     if hasattr(source, 'UPDATER') and source.UPDATER == config.UPDATER_FILE:
       if map_name == config.MAP_AUTOMOUNT:
         return files_updater.FileAutomountUpdater(map_name, conf.timestamp_dir,
-                                                     cache_options)
+                                                  cache_options)
       else:
-        return files_updater.FileMapUpdater(map_name, conf.timestamp_dir,
-                                            cache_options,
-                                            can_do_incremental=True)
+        return files_updater.FileMapUpdater(
+            map_name,
+            conf.timestamp_dir,
+            cache_options,
+            can_do_incremental=True)
     else:
       if map_name == config.MAP_AUTOMOUNT:
         return map_updater.AutomountUpdater(map_name, conf.timestamp_dir,
-                                               cache_options)
+                                            cache_options)
       else:
-        return map_updater.MapUpdater(map_name, conf.timestamp_dir,
-                                      cache_options,
-                                      can_do_incremental=True)
+        return map_updater.MapUpdater(
+            map_name,
+            conf.timestamp_dir,
+            cache_options,
+            can_do_incremental=True)
 
 
 class Verify(Command):
@@ -388,8 +401,8 @@ class Verify(Command):
     self.log.info('Verifying data caches.')
     errors += self.VerifyMaps(conf)
 
-    self.log.info('Verification result: %d warnings, %d errors',
-                  warnings, errors)
+    self.log.info('Verification result: %d warnings, %d errors', warnings,
+                  errors)
     if warnings + errors:
       self.log.info('Verification failed!')
     else:
@@ -451,7 +464,7 @@ class Verify(Command):
         cache_map = cache.GetMap()
       except error.CacheNotFound:
         self.log.error('Cache missing!')
-        retval +=1
+        retval += 1
         continue
 
       self.log.debug('built cache map of %d entries', len(cache_map))
@@ -461,15 +474,16 @@ class Verify(Command):
       missing_entries = 0
       for map_entry in cache_map:
         if map_entry not in nss_map:
-          self.log.info('The following entry is present in the cache '
-                        'but not availible via NSS! %s', map_entry.name)
+          self.log.info(
+              'The following entry is present in the cache '
+              'but not availible via NSS! %s', map_entry.name)
           self.log.debug('missing entry data: %s', map_entry)
           missing_entries += 1
 
       if missing_entries > 0:
-        self.log.warning('Missing %d entries in %s map',
-                         missing_entries, map_name)
-        retval +=1
+        self.log.warning('Missing %d entries in %s map', missing_entries,
+                         map_name)
+        retval += 1
 
     return retval
 
@@ -489,7 +503,7 @@ class Verify(Command):
         except error.SourceUnavailable as e:
           self.log.debug('map %s dumps source error %s', map_name, e)
           self.log.error('Map %s is unvavailable!', map_name)
-          retval +=1
+          retval += 1
           continue
         retval += source.Verify()
     else:
@@ -527,8 +541,8 @@ class Help(Command):
       print('Usage: nsscache [global options] %s [options]' % help_command)
       print()
       try:
-        callable_action = getattr(inspect.getmodule(self),
-                                  help_command.capitalize())
+        callable_action = getattr(
+            inspect.getmodule(self), help_command.capitalize())
         help_text = callable_action().Help()
       except AttributeError:
         print('command %r is not implemented' % help_command)
@@ -599,21 +613,27 @@ class Status(Command):
 
   def __init__(self):
     super(Status, self).__init__()
-    self.parser.add_option('--epoch',
-                           action='store_true',
-                           help='show timestamps in UNIX epoch time',
-                           dest='epoch', default=False)
-    self.parser.add_option('--template',
-                           action='store',
-                           help='Set format for output',
-                           metavar='FORMAT', dest='template',
-                           default='NSS map: %(map)s\n%(key)s: %(value)s')
-    self.parser.add_option('--automount-template',
-                           action='store',
-                           help='Set format for automount output',
-                           metavar='FORMAT', dest='automount_template',
-                           default=('NSS map: %(map)s\nAutomount map: '
-                                    '%(automount)s\n%(key)s: %(value)s'))
+    self.parser.add_option(
+        '--epoch',
+        action='store_true',
+        help='show timestamps in UNIX epoch time',
+        dest='epoch',
+        default=False)
+    self.parser.add_option(
+        '--template',
+        action='store',
+        help='Set format for output',
+        metavar='FORMAT',
+        dest='template',
+        default='NSS map: %(map)s\n%(key)s: %(value)s')
+    self.parser.add_option(
+        '--automount-template',
+        action='store',
+        help='Set format for automount output',
+        metavar='FORMAT',
+        dest='automount_template',
+        default=('NSS map: %(map)s\nAutomount map: '
+                 '%(automount)s\n%(key)s: %(value)s'))
 
   def Run(self, conf, args):
     """Run the Status command.
@@ -647,15 +667,18 @@ class Status(Command):
           output = options.automount_template % value_dict
           print(output)
       else:
-        for value_dict in self.GetSingleMapMetadata(map_name, conf,
-                                                    epoch=options.epoch):
+        for value_dict in self.GetSingleMapMetadata(
+            map_name, conf, epoch=options.epoch):
           self.log.debug('Value dict: %r', value_dict)
           output = options.template % value_dict
           print(output)
 
     return os.EX_OK
 
-  def GetSingleMapMetadata(self, map_name, conf, automount_mountpoint=None,
+  def GetSingleMapMetadata(self,
+                           map_name,
+                           conf,
+                           automount_mountpoint=None,
                            epoch=False):
     """Return metadata from map specified.
 
@@ -674,14 +697,14 @@ class Status(Command):
     updater = map_updater.MapUpdater(map_name, conf.timestamp_dir,
                                      cache_options, automount_mountpoint)
 
-    modify_dict = {'key': 'last-modify-timestamp',
-                   'map': map_name}
-    update_dict = {'key': 'last-update-timestamp',
-                   'map': map_name}
+    modify_dict = {'key': 'last-modify-timestamp', 'map': map_name}
+    update_dict = {'key': 'last-update-timestamp', 'map': map_name}
     if map_name == config.MAP_AUTOMOUNT:
       # have to find out *which* automount map from a cache object!
-      cache = cache_factory.Create(cache_options, config.MAP_AUTOMOUNT,
-                                   automount_mountpoint=automount_mountpoint)
+      cache = cache_factory.Create(
+          cache_options,
+          config.MAP_AUTOMOUNT,
+          automount_mountpoint=automount_mountpoint)
       automount = cache.GetMapLocation()
       modify_dict['automount'] = automount
       update_dict['automount'] = automount
@@ -693,11 +716,13 @@ class Status(Command):
       # If we are displaying the time as a string, do so in localtime.  This is
       # the only place such a conversion is appropriate.
       if last_modify_timestamp:
-        last_modify_timestamp = time.asctime(time.localtime(last_modify_timestamp))
+        last_modify_timestamp = time.asctime(
+            time.localtime(last_modify_timestamp))
       else:
         last_modify_timestamp = 'Unknown'
       if last_update_timestamp:
-        last_update_timestamp = time.asctime(time.localtime(last_update_timestamp))
+        last_update_timestamp = time.asctime(
+            time.localtime(last_update_timestamp))
       else:
         last_update_timestamp = 'Unknown'
 
@@ -732,13 +757,12 @@ class Status(Command):
 
     # now get the contents of the master map, and get the status for each map
     # we find
-    cache = cache_factory.Create(cache_options, config.MAP_AUTOMOUNT,
-                                 automount_mountpoint=None)
+    cache = cache_factory.Create(
+        cache_options, config.MAP_AUTOMOUNT, automount_mountpoint=None)
     master_map = cache.GetMap()
 
     for map_entry in master_map:
-      values = self.GetSingleMapMetadata(map_name, conf,
-                                         automount_mountpoint=map_entry.key,
-                                         epoch=epoch)
+      values = self.GetSingleMapMetadata(
+          map_name, conf, automount_mountpoint=map_entry.key, epoch=epoch)
       value_list.extend(values)
     return value_list

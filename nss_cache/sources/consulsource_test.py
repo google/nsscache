@@ -21,28 +21,30 @@ class TestConsulSource(unittest.TestCase):
     """Initialize a basic config dict."""
     super(TestConsulSource, self).setUp()
     self.config = {
-      'passwd_url': 'PASSWD_URL',
-      'group_url': 'GROUP_URL',
-      'datacenter': 'TEST_DATACENTER',
-      'token': 'TEST_TOKEN',
+        'passwd_url': 'PASSWD_URL',
+        'group_url': 'GROUP_URL',
+        'datacenter': 'TEST_DATACENTER',
+        'token': 'TEST_TOKEN',
     }
 
   def testDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource({})
     self.assertEqual(source.conf['datacenter'],
-                      consulsource.ConsulFilesSource.DATACENTER)
-    self.assertEqual(source.conf['token'],
-                      consulsource.ConsulFilesSource.TOKEN)
+                     consulsource.ConsulFilesSource.DATACENTER)
+    self.assertEqual(source.conf['token'], consulsource.ConsulFilesSource.TOKEN)
 
   def testOverrideDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource(self.config)
     self.assertEqual(source.conf['datacenter'], 'TEST_DATACENTER')
     self.assertEqual(source.conf['token'], 'TEST_TOKEN')
-    self.assertEqual(source.conf['passwd_url'], 'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
-    self.assertEqual(source.conf['group_url'], 'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['passwd_url'],
+                     'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['group_url'],
+                     'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
 
 
 class TestPasswdMapParser(unittest.TestCase):
+
   def setUp(self):
     """Set some default avalible data for testing."""
     self.good_entry = passwd.PasswdMapEntry()
@@ -57,19 +59,26 @@ class TestPasswdMapParser(unittest.TestCase):
 
   def testGetMap(self):
     passwd_map = passwd.PasswdMap()
-    cache_info = io.StringIO('''[
+    cache_info = io.StringIO("""[
                                    {"Key": "org/users/foo/uid", "Value": "MTA="},
                                    {"Key": "org/users/foo/gid", "Value": "MTA="},
                                    {"Key": "org/users/foo/home", "Value": "L2hvbWUvZm9v"},
                                    {"Key": "org/users/foo/shell", "Value": "L2Jpbi9iYXNo"},
                                    {"Key": "org/users/foo/comment", "Value": "SG93IE5vdyBCcm93biBDb3c="},
                                    {"Key": "org/users/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
-                                   ]''')
+                                   ]""")
     self.parser.GetMap(cache_info, passwd_map)
     self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
-    data = {'uid': '10', 'gid': '10', 'comment': 'How Now Brown Cow', 'shell': '/bin/bash', 'home': '/home/foo', 'passwd': 'x'}
+    data = {
+        'uid': '10',
+        'gid': '10',
+        'comment': 'How Now Brown Cow',
+        'shell': '/bin/bash',
+        'home': '/home/foo',
+        'passwd': 'x'
+    }
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 
@@ -99,11 +108,11 @@ class TestConsulGroupMapParser(unittest.TestCase):
 
   def testGetMap(self):
     group_map = group.GroupMap()
-    cache_info = io.StringIO('''[
+    cache_info = io.StringIO("""[
                                    {"Key": "org/groups/foo/gid", "Value": "MTA="},
                                    {"Key": "org/groups/foo/members", "Value": "Zm9vCmJhcg=="},
                                    {"Key": "org/groups/foo/subkey/irrelevant_key", "Value": "YmFjb24="}
-                                   ]''')
+                                   ]""")
     self.parser.GetMap(cache_info, group_map)
     self.assertEqual(self.good_entry, group_map.PopItem())
 
@@ -142,13 +151,13 @@ class TestConsulShadowMapParser(unittest.TestCase):
 
   def testGetMap(self):
     shadow_map = shadow.ShadowMap()
-    cache_info = io.StringIO('''[
+    cache_info = io.StringIO("""[
                                    {"Key": "org/groups/foo/passwd", "Value": "Kg=="},
                                    {"Key": "org/groups/foo/lstchg", "Value": "MTcyNDY="},
                                    {"Key": "org/groups/foo/min", "Value": "MA=="},
                                    {"Key": "org/groups/foo/max", "Value": "OTk5OTk="},
                                    {"Key": "org/groups/foo/warn", "Value": "Nw=="}
-                                   ]''')
+                                   ]""")
     self.parser.GetMap(cache_info, shadow_map)
     self.assertEqual(self.good_entry, shadow_map.PopItem())
 

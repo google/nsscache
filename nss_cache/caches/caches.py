@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Base class of cache for nsscache."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
@@ -33,6 +32,7 @@ from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
+
 
 class Cache(object):
   """Abstract base class for Caches.
@@ -152,12 +152,12 @@ class Cache(object):
       os.chown(self.temp_cache_filename, uid, gid)
     except OSError as e:
       if e.errno == errno.ENOENT:
-        if self.map_name == "sshkey":
+        if self.map_name == 'sshkey':
           os.chmod(self.temp_cache_filename,
-                   stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
         else:
           os.chmod(self.temp_cache_filename,
-                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
                    self.temp_cache_filename, self.GetCacheFilename())
     os.rename(self.temp_cache_filename, self.GetCacheFilename())
@@ -183,8 +183,8 @@ class Cache(object):
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
-    raise NotImplementedError('%s must implement this method!' %
-                              self.__class__.__name__)
+    raise NotImplementedError(
+        '%s must implement this method!' % self.__class__.__name__)
 
   def GetMapLocation(self):
     """Return the location of the Map in this cache.
@@ -195,8 +195,8 @@ class Cache(object):
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
-    raise NotImplementedError('%s must implement this method!' %
-                              self.__class__.__name__)
+    raise NotImplementedError(
+        '%s must implement this method!' % self.__class__.__name__)
 
   def WriteMap(self, map_data=None, force_write=False):
     """Write a map to disk.

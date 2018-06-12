@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 """Parsing methods for file cache types."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -64,6 +63,7 @@ class FilesMapParser(object):
                       entry, line)
     return data
 
+
 class FilesSshkeyMapParser(FilesMapParser):
   """Class for parsing nss_files module sshkey cache."""
 
@@ -75,6 +75,7 @@ class FilesSshkeyMapParser(FilesMapParser):
     map_entry.name = entry[0]
     map_entry.sshkey = entry[1]
     return map_entry
+
 
 class FilesPasswdMapParser(FilesMapParser):
   """Class for parsing nss_files module passwd cache."""

@@ -13,9 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-
-
 """Main program body for nsscache.
 
 The nsscache program is the user interface to the nss_cache package,
@@ -24,7 +21,6 @@ responsible for updating or building local persistent cache, e.g. nss_db.
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
-
 
 import logging
 import logging.handlers
@@ -37,7 +33,6 @@ import nss_cache
 from nss_cache import command
 from nss_cache import config
 from nss_cache import error
-
 
 # Hack to support python 2.3's logging module
 try:
@@ -92,15 +87,16 @@ class NssCacheApp(object):
     else:
       facility = logging.handlers.SysLogHandler.LOG_DAEMON
       try:
-        handler = logging.handlers.SysLogHandler(address='/dev/log',
-                                                 facility=facility)
+        handler = logging.handlers.SysLogHandler(
+            address='/dev/log', facility=facility)
       except socket.error:
         print('/dev/log could not be opened; falling back on stderr.')
         # Omitting an argument to StreamHandler results in sys.stderr being
         # used.
         handler = logging.StreamHandler()
-      format_str = (os.path.basename(sys.argv[0]) +
-                    '[%(process)d]: %(levelname)s %(message)s')
+      format_str = (
+          os.path.basename(sys.argv[0]) +
+          '[%(process)d]: %(levelname)s %(message)s')
       fmt = logging.Formatter(format_str)
       handler.setFormatter(fmt)
       handler.setLevel(level=logging.INFO)
@@ -130,8 +126,8 @@ class NssCacheApp(object):
         continue
       if hasattr(cls, 'Help'):
         short_help = cls().Help(short=True)
-        command_descriptions.append('  %-21s %.40s' % (name.lower(),
-                                                       short_help.lower()))
+        command_descriptions.append(
+            '  %-21s %.40s' % (name.lower(), short_help.lower()))
 
     usage += '\n'.join(command_descriptions)
     version_string = ('nsscache ' + nss_cache.__version__ + '\n'
@@ -150,15 +146,17 @@ class NssCacheApp(object):
     parser.disable_interspersed_args()
 
     # Add options.
-    parser.set_defaults(verbose=False,
-                        debug=False)
-    parser.add_option('-v', '--verbose', action='store_true',
-                      help='enable verbose output')
-    parser.add_option('-d', '--debug', action='store_true',
-                      help='enable debugging output')
-    parser.add_option('-c', '--config-file', type='string',
-                      help='read configuration from FILE',
-                      metavar='FILE')
+    parser.set_defaults(verbose=False, debug=False)
+    parser.add_option(
+        '-v', '--verbose', action='store_true', help='enable verbose output')
+    parser.add_option(
+        '-d', '--debug', action='store_true', help='enable debugging output')
+    parser.add_option(
+        '-c',
+        '--config-file',
+        type='string',
+        help='read configuration from FILE',
+        metavar='FILE')
 
     # filthy monkeypatch hack to remove the prepended 'usage: '
     # TODO(jaq): we really ought to subclass OptionParser instead...
@@ -210,8 +208,7 @@ class NssCacheApp(object):
     if options.config_file:
       conf.config_file = options.config_file
 
-    self.log.info('using nss_cache library, version %s',
-                  nss_cache.__version__)
+    self.log.info('using nss_cache library, version %s', nss_cache.__version__)
     self.log.debug('library path is %r', nss_cache.__file__)
 
     # Identify the command to dispatch.

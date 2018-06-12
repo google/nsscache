@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of an automount map for nsscache.
 
 AutomountMap:  An implementation of NSS automount maps based on the Map
@@ -37,7 +36,7 @@ class AutomountMap(maps.Map):
   def __init__(self, iterable=None):
     """Construct a AutomountMap object using optional iterable."""
     super(AutomountMap, self).__init__(iterable)
-    
+
   def Add(self, entry):
     """Add a new object, verify it is a AutomountMapEntry object."""
     if not isinstance(entry, AutomountMapEntry):
@@ -50,11 +49,11 @@ class AutomountMapEntry(maps.MapEntry):
   __slots__ = ('key', 'location', 'options')
   _KEY = 'key'
   _ATTRS = ('key', 'location', 'options')
-  
+
   def __init__(self, data=None):
     """Construct a AutomountMapEntry."""
     self.key = None
     self.location = None
     self.options = None
-    
+
     super(AutomountMapEntry, self).__init__(data)
