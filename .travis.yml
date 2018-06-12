@@ -7,7 +7,7 @@ install:
 script:
  - pip install boto3
  - python -c "import boto3"
- - ./runtests.py
+ - python ./runtests.py
  - python setup.py install --root=/tmp/nsscache
 
 python:
