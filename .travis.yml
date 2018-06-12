@@ -10,8 +10,7 @@ script:
 # - python -c "import sys; print '\n'.join(sys.path)"
  - |-
     if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
-      ls -la /home/travis/virtualenv/python2.7.14/lib/python2.7
-      ls -la /home/travis/virtualenv/python2.7.14/lib/python2.7/lib-dynload
+      ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
       ls -la /usr/lib/python2.7/lib-dynload
     fi
  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
