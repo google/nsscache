@@ -13,7 +13,8 @@ script:
       # ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
       # ls -la /usr/lib/python2.7/lib-dynload
       ln -s /usr/lib/python2.7/lib-dynload/_bsddb.x86_64-linux-gnu.so /opt/python/2.7.14/lib/python2.7/lib-dynload/
-      ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
+      ls -la /opt/python/2.7.14/lib/python2.7/
+      # ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
     fi
  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
  - python setup.py install --root=/tmp/nsscache
