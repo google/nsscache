@@ -3,10 +3,12 @@ language: python
 install:
  - travis_retry sudo apt-get update -qq
  - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
- - travis_retry pip install -r requirements.txt
+ - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then travis_retry pip install boto3; fi
 
 script:
- - python ./runtests.py
+ - /usr/bin/python -c "import sys; print '\n'.join(sys.path)"
+ - python -c "import sys; print '\n'.join(sys.path)"
+ - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
  - python setup.py install --root=/tmp/nsscache
 
 python:
