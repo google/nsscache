@@ -5,23 +5,15 @@ install:
  - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
  - |-
     if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
-      travis_retry pip install boto3
-      travis_retry pip install pycurl
-      travis_retry pip install python-ldap
-      travis_retry pip install mox
+      travis_retry pip install -r requirements.txt
     fi
 
 script:
-# - /usr/bin/python -c "import sys; print '\n'.join(sys.path)"
-# - python -c "import sys; print '\n'.join(sys.path)"
  - |-
     if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
-      # ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
-      # ls -la /usr/lib/python2.7/lib-dynload
-      # ln -s /usr/lib/python2.7/lib-dynload/_bsddb.x86_64-linux-gnu.so /opt/python/2.7.14/lib/python2.7/lib-dynload/
+      # see discussion https://github.com/travis-ci/travis-ci/issues/4260
+      ls -la /opt/python
       ln -s /usr/lib/python2.7/lib-dynload/_bsddb.x86_64-linux-gnu.so /opt/python/2.7.14/lib/python2.7/lib-dynload/_bsddb.so
-      # ls -la /opt/python/2.7.14/lib/python2.7/
-      # ls -la /opt/python/2.7.14/lib/python2.7/lib-dynload
     fi
  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
  - python setup.py install --root=/tmp/nsscache
