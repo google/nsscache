@@ -25,9 +25,6 @@ __author__ = 'springer@google.com (Matthew Springer)'
 
 import logging
 
-from nss_cache.caches import files
-from nss_cache.caches import nssdb
-
 _cache_implementations = {}
 
 
@@ -80,9 +77,17 @@ def Create(conf, map_name, automount_mountpoint=None):
 
   return _cache_implementations[cache_name][map_name](
       conf, map_name, automount_mountpoint=automount_mountpoint)
-  
+
+from nss_cache.caches import files
 files.RegisterAllImplementations(RegisterImplementation)
-nssdb.RegisterAllImplementations(RegisterImplementation)
+
+try:
+  from nss_cache.caches import nssdb
+  nssdb.RegisterAllImplementations(RegisterImplementation)
+except ImportError:
+  pass
+
+  
 
 
 

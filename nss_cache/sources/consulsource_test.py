@@ -8,7 +8,11 @@ import unittest
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-from nss_cache.sources import consulsource
+
+try:
+  from nss_cache.sources import consulsource
+except ImportError:
+  raise unittest.SkipTest('consulsource import failed')
 
 
 class TestConsulSource(unittest.TestCase):

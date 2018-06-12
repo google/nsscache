@@ -33,7 +33,10 @@ from nss_cache.maps import automount
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-from nss_cache.sources import ldapsource
+try:
+  from nss_cache.sources import ldapsource
+except ImportError:
+  raise unittest.SkipTest('ldapsource import failed')
 
 
 class TestLdapSource(mox.MoxTestBase):

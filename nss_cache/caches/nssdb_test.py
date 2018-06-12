@@ -18,7 +18,6 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-import bsddb3
 import logging
 import os.path
 import select
@@ -29,17 +28,26 @@ import time
 import unittest
 
 try:
+  import bsddb3
+except ImportError:
+  raise unittest.SkipTest('bsddb3 import failed')
+  
+try:
   from mox3 import mox
 except ImportError:
   import mox
 
 from nss_cache import error
 
-from nss_cache.caches import nssdb
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 
+try:
+  from nss_cache.caches import nssdb
+except ImportError:
+  raise unittest.SkipTest('nssdb import failed')
+  
 
 def NoMakeDB():
   return not os.path.exists('/usr/bin/makedb')

@@ -51,12 +51,13 @@ as LDAP.''',
                      scripts=['nsscache'],
                      data_files=[('/etc', ['nsscache.conf'])],
                      setup_requires=['pytest-runner'],
-                     tests_require=['pytest', 'mox', 'mox3'],
+                     tests_require=['pytest', 'mox3'],
                      extras_require={
                        'bdb': ['bsddb3'],
                        'ldap': ['python-ldap'],
                        'http': ['pycurl'],
                        's3': ['boto3'],
+                       'consul': ['pycurl'],
                        },
 
 )

@@ -8,7 +8,10 @@ import unittest
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-from nss_cache.sources import s3source
+try:
+  from nss_cache.sources import s3source
+except:
+  raise unittest.SkipTest('s3source import failed')
 
 class TestS3Source(unittest.TestCase):
 

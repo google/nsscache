@@ -35,9 +35,12 @@ from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
-
-from nss_cache.sources import httpsource
 from nss_cache.util import file_formats
+
+try:
+  from nss_cache.sources import httpsource
+except ImportError:
+  raise unittest.SkipTest('httpsource import failed')
 
 
 class TestHttpSource(unittest.TestCase):
