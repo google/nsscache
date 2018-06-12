@@ -26,3 +26,4 @@ debian/.debhelper/
 .cache
 .eggs
 nsscache.egg-info
+/.pytest_cache
