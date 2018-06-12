@@ -1,12 +1,14 @@
 language: python
 
+virtualenv:
+ - system_site_packages: true
+
 install:
  - travis_retry sudo apt-get update -qq
  - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
+ - travis_retry pip install boto3
 
 script:
- - pip install boto3
- - python -c "import boto3"
  - python ./runtests.py
  - python setup.py install --root=/tmp/nsscache
 
