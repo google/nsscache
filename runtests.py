@@ -52,8 +52,6 @@ from nss_cache.sources.source_factory_test import *
 from nss_cache.sources.consulsource_test import *
 from nss_cache.sources.httpsource_test import *
 from nss_cache.sources.ldapsource_test import *
-# Unsupported and deprecated.
-#from nss_cache.sources.zsyncsource_test import *
 
 from nss_cache.update.updater_test import *
 from nss_cache.update.map_updater_test import *

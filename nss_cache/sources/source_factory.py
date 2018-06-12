@@ -57,13 +57,6 @@ httpsource.RegisterImplementation(RegisterImplementation)
 ldapsource.RegisterImplementation(RegisterImplementation)
 consulsource.RegisterImplementation(RegisterImplementation)
 
-# Don't load the zsync source if zsync python module isn't there.
-try:
-  from nss_cache.sources import zsyncsource
-  zsyncsource.RegisterImplementation(RegisterImplementation)
-except ImportError:
-  pass
-
 
 def Create(conf):
   """Source creation factory method.

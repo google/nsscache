@@ -37,7 +37,6 @@ from nss_cache.caches import files
 from nss_cache.maps import automount
 from nss_cache.maps import passwd
 from nss_cache.sources import source
-from nss_cache.sources import zsyncsource
 
 from nss_cache.update import files_updater
 
