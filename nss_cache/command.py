@@ -17,15 +17,11 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import inspect
+import io
 import logging
 import optparse
 import os
 import shutil
-try:
-  import io
-except ImportError:
-  from io import StringIO
-
 import tempfile
 import time
 

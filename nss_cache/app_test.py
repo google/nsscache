@@ -18,11 +18,8 @@
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
+import io
 import os
-try:
-  import StringIO
-except ImportError:
-  from io import StringIO
 import sys
 import unittest
 
