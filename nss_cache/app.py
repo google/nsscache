@@ -75,7 +75,11 @@ class NssCacheApp(object):
     See the file README.style for logging policy set up here.
     """
     # default to syslog unless on a tty
-    if os.isatty(sys.stdin.fileno()):
+    try:
+      is_tty = os.isatty(sys.stdin.fileno())
+    except ValueError:
+      is_tty = False
+    if is_tty:
       format_str = ('%(levelname)-8s %(asctime)-15s '
                     '%(filename)s:%(lineno)d: '
                     '%(funcName)s: '
