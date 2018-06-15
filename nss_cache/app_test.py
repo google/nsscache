@@ -20,7 +20,7 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 import logging
 import os
 try:
-  import io
+  import StringIO
 except ImportError:
   from io import StringIO
 import sys
