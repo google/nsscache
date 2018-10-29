@@ -690,6 +690,7 @@ class GroupUpdateGetter(UpdateGetter):
     if 'groupregex' in conf:
       self.groupregex = re.compile(self.conf['groupregex'])
     self.essential_fields = ['cn']
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
     """Return a GroupMap instance."""
@@ -715,8 +716,9 @@ class GroupUpdateGetter(UpdateGetter):
       for member_dn in obj['member']:
         member_uid = member_dn.split(',')[0].split('=')[1]
         if base and member_dn.endswith(base):
+          # Only include groups. NB: if ldap_base is not set in the group section, all users and groups
+          # will be added to to the group_members list
           group_members.append(member_uid)
-          continue
         if hasattr(self, 'groupregex'):
           members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
         else:
@@ -762,8 +764,11 @@ class GroupUpdateGetter(UpdateGetter):
             if submember_name in _group_map and submember_name not in visited:
               visited.append(submember_name)
               _expand_members(_group_map[submember_name], visited)
-    for gr in data_map:
-      _expand_members(gr, [gr.name])
+    
+    if self.conf.get("nested_groups"):
+      self.log.info("Expanding nested groups")
+      for gr in data_map:
+        _expand_members(gr, [gr.name])
 
 
 class ShadowUpdateGetter(UpdateGetter):
