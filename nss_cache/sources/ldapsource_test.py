@@ -868,7 +868,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(passwd.PasswdMap, type(data))
+    self.assertEqual(passwd.PasswdMap, type(data))
 
   def testGroupEmptySourceGetUpdates(self):
     """Test that getUpdates on the GroupUpdateGetter works."""
@@ -877,7 +877,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(group.GroupMap, type(data))
+    self.assertEqual(group.GroupMap, type(data))
 
   def testShadowEmptySourceGetUpdates(self):
     """Test that getUpdates on the ShadowUpdateGetter works."""
@@ -886,7 +886,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(shadow.ShadowMap, type(data))
+    self.assertEqual(shadow.ShadowMap, type(data))
 
   def testAutomountEmptySourceGetsUpdates(self):
     """Test that getUpdates on the AutomountUpdateGetter works."""
@@ -895,7 +895,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(automount.AutomountMap, type(data))
+    self.assertEqual(automount.AutomountMap, type(data))
 
   def testBadScopeException(self):
     """Test that a bad scope raises a config.ConfigurationError."""
