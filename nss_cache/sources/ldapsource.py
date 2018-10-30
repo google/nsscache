@@ -715,10 +715,9 @@ class GroupUpdateGetter(UpdateGetter):
     elif 'member' in obj:
       for member_dn in obj['member']:
         member_uid = member_dn.split(',')[0].split('=')[1]
-        if base and member_dn.endswith(base):
-          # Only include groups. NB: if ldap_base is not set in the group section, all users and groups
-          # will be added to to the group_members list
-          group_members.append(member_uid)
+        # Note that there is not currently a way to consistently distinguish
+        # a group from a person
+        group_members.append(member_uid)
         if hasattr(self, 'groupregex'):
           members.append(''.join([x for x in self.groupregex.findall(member_uid)]))
         else:
