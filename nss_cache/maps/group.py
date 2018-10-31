@@ -48,9 +48,9 @@ class GroupMap(maps.Map):
 class GroupMapEntry(maps.MapEntry):
   """This class represents NSS group map entries."""
   # Using slots saves us over 2x memory on large maps.
-  __slots__ = ('name', 'passwd', 'gid', 'members')
+  __slots__ = ('name', 'passwd', 'gid', 'members', 'groupmembers')
   _KEY = 'name'
-  _ATTRS = ('name', 'passwd', 'gid', 'members')
+  _ATTRS = ('name', 'passwd', 'gid', 'members', 'groupmembers')
   
   def __init__(self, data=None):
     """Construct a GroupMapEntry, setting reasonable defaults."""
@@ -58,9 +58,11 @@ class GroupMapEntry(maps.MapEntry):
     self.passwd = None
     self.gid = None
     self.members = None
+    self.groupmembers = None
     
     super(GroupMapEntry, self).__init__(data)
     
     # Seed data with defaults if needed
     if self.passwd is None: self.passwd = 'x'
     if self.members is None: self.members = []
+    if self.groupmembers is None: self.groupmembers = []
