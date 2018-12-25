@@ -135,7 +135,7 @@ class PidFile(object):
       fcntl.lockf(self._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
       return_val = True
     except IOError, e:
-      if e.errno == fcntl.F_GETSIG:
+      if e.errno in [errno.EACCES, errno.EAGAIN]:
         # Catch the error raised when the file is locked.
         if not force:
           self.log.debug('%s already locked!', self.filename)

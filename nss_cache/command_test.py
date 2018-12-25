@@ -813,8 +813,8 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                     epoch=False)
-    self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
-                         values[1]['value'])
+    self.failUnless(values[1]['value'] in ['Wed Dec 31 16:00:02 1969',
+                                        'Thu Jan  1 00:00:02 1970'])
 
   def testGetAutomountMapMetadata(self):
     # need to stub out GetSingleMapMetadata (tested above) and then
