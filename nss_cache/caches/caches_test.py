@@ -19,6 +19,7 @@
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
 import os
+import platform
 import stat
 import tempfile
 import unittest
@@ -48,14 +49,19 @@ class TestCls(mox.MoxTestBase):
   def setUp(self):
     self.workdir = tempfile.mkdtemp()
     self.config = {'dir': self.workdir}
+    if platform.system() == 'FreeBSD':
+        # FreeBSD doesn't have a shadow file
+        self.shadow = config.MAP_PASSWORD
+    else:
+        self.shadow = config.MAP_SHADOW
 
   def tearDown(self):
     os.rmdir(self.workdir)
 
   def testCopyOwnerMissing(self):
-    expected = os.stat(os.path.join('/etc', config.MAP_SHADOW))
+    expected = os.stat(os.path.join('/etc', self.shadow))
     expected = stat.S_IMODE(expected.st_mode)
-    cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
+    cache = FakeCacheCls(config=self.config, map_name=self.shadow)
     cache._Begin()
     cache._Commit()
     data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
@@ -63,9 +69,9 @@ class TestCls(mox.MoxTestBase):
     os.unlink(cache.GetCacheFilename())
 
   def testCopyOwnerPresent(self):
-    expected = os.stat(os.path.join('/etc/', config.MAP_SHADOW))
+    expected = os.stat(os.path.join('/etc/', self.shadow))
     expected = stat.S_IMODE(expected.st_mode)
-    cache = FakeCacheCls(config=self.config, map_name=config.MAP_SHADOW)
+    cache = FakeCacheCls(config=self.config, map_name=self.shadow)
     cache._Begin()
     cache._Commit()
     data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
