@@ -230,26 +230,26 @@ class FilesCache(caches.Cache):
   def WriteIndex(self):
     """Generate an index for libnss-cache from this map."""
     for index_name in self._indices:
-      # magic string ".ix"
-      index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
-      self.log.debug('Writing index %s', index_filename)
+      # index file write to tmp file first, magic string ".ix"
+      tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(), index_name)
+      self.log.debug('Writing index %s', tmp_index_filename)
 
       index = self._indices[index_name]
       key_length = LongestLength(index.keys())
       pos_length = LongestLength(index.values())
       max_length = key_length + pos_length
       # Open for write/truncate
-      index_file = open(index_filename, 'w')
+      index_file = open(tmp_index_filename, 'w')
       # setup permissions
       try:
-        shutil.copymode(self.GetCompatFilename(), index_filename)
+        shutil.copymode(self.GetCompatFilename(), tmp_index_filename)
         stat_info = os.stat(self.GetCompatFilename())
         uid = stat_info.st_uid
         gid = stat_info.st_gid
-        os.chown(index_filename, uid, gid)
+        os.chown(tmp_index_filename, uid, gid)
       except OSError, e:
         if e.errno == errno.ENOENT:
-          os.chmod(index_filename,
+          os.chmod(tmp_index_filename,
                    stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
@@ -258,6 +258,12 @@ class FilesCache(caches.Cache):
                        '\0' * (max_length - len(key) - len(pos))))
         index_file.write(index_line)
       index_file.close()
+    for index_name in self._indices:
+      # rename tmp index file to target index file in order to
+      # prevent getting user info fail during update index.
+      tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(), index_name)
+      index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
+      os.rename(tmp_index_filename, index_filename)
 
 
 class FilesSshkeyMapHandler(FilesCache):
