@@ -216,6 +216,56 @@ class TestFilesCache(mox.MoxTestBase):
     self.assertEqual('11\x0015\x00\n', f.readline())
     self.assertEqual('12\x0030\x00\n', f.readline())
 
+  def testWriteCacheAndIndex(self):
+    cache = files.FilesPasswdMapHandler(self.config)
+    entries = [passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+               passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+               ]
+    pmap = passwd.PasswdMap(entries)
+    written = cache.Write(pmap)
+    cache.WriteIndex()
+
+    self.assertTrue('foo' in written)
+    self.assertTrue('bar' in written)
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    self.failUnless(os.path.exists(index_filename),
+                    'Index not created %s' % index_filename)
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    self.failUnless(os.path.exists(index_filename),
+                    'Index not created %s' % index_filename)
+
+    entries = [passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+               passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+               passwd.PasswdMapEntry(dict(name='quux', uid=12, gid=11)),
+               ]
+    pmap = passwd.PasswdMap(entries)
+    written = cache.Write(pmap)
+    self.assertTrue('foo' in written)
+    self.assertTrue('bar' in written)
+    self.assertTrue('quux' in written)
+
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    f = open(index_filename)
+    self.assertEqual('bar\x0015\x00\n', f.readline())
+    self.assertEqual('foo\x000\x00\x00\n', f.readline())
+
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    f = open(index_filename)
+    self.assertEqual('10\x000\x00\x00\n', f.readline())
+    self.assertEqual('11\x0015\x00\n', f.readline())
+
+    cache.WriteIndex()
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    f = open(index_filename)
+    self.assertEqual('bar\x0015\x00\x00\n', f.readline())
+    self.assertEqual('foo\x000\x00\x00\x00\n', f.readline())
+    self.assertEqual('quux\x0030\x00\n', f.readline())
+
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    f = open(index_filename)
+    self.assertEqual('10\x000\x00\x00\n', f.readline())
+    self.assertEqual('11\x0015\x00\n', f.readline())
+    self.assertEqual('12\x0030\x00\n', f.readline())
 
 if __name__ == '__main__':
   unittest.main()
