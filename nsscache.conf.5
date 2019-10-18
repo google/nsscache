@@ -107,9 +107,9 @@ Leave disabled if connecting to
 .I openldap
 or
 .I slapd.
-If this option is anabled, default AD attributes will be used for mapping.
-sAMAccountName will be mapped to uid, RID will be mapped to uidNumber and gidNumber.
-This can be overriden bei setting the \fBldap_uidattr\fP and \fBldap_uidNumber\fP and \fBldap_gidNumber\fP options.
+If this option is enabled, sAMAccountName will be mapped to uid.
+RID will be mapped to uidNumber and gidNumber. To override, enable
+the options \fBldap_uidNumber\fP and \fBldap_gidNumber\fP.
 
 .TP
 .B ldap_uri
@@ -188,7 +188,7 @@ Set to 1 to enable STARTTLS. Leave absent to disable.
 
 .TP
 .B ldap_uidattr
-The uid-like attribute in your directory.  Defaults to uid.
+The uid-like attribute in your directory. Defaults to uid.
 
 .TP
 .B ldap_uidnumber

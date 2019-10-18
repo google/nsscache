@@ -686,10 +686,10 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.gecos = pw.gecos.replace('\n','')
 
-    if 'uidattr' in self.conf:
-      pw.name = obj[self.conf['uidattr']][0]
-    elif 'sAMAccountName' in obj:
+    if self.conf.get('ad'):
       pw.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
+      pw.name = obj[self.conf['uidattr']][0]
     else:
       pw.name = obj['uid'][0]
 
@@ -771,7 +771,7 @@ class GroupUpdateGetter(UpdateGetter):
 
     gr = group.GroupMapEntry()
 
-    if 'sAMAccountName' in obj:
+    if self.conf.get('ad'):
       gr.name = obj['sAMAccountName'][0]
     else:
       gr.name = obj['cn'][0]
@@ -882,10 +882,10 @@ class ShadowUpdateGetter(UpdateGetter):
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
     shadow_ent = shadow.ShadowMapEntry()
-    if 'uidattr' in self.conf:
-      shadow_ent.name = obj[self.conf['uidattr']][0]
-    elif 'sAMAccountName' in obj:
+    if self.conf.get('ad'):
       shadow_ent.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
+      shadow_ent.name = obj[self.conf['uidattr']][0]
     else:
       shadow_ent.name = obj['uid'][0]
 
