@@ -101,6 +101,14 @@ These options configure the behaviour of the
 source.
 
 .TP
+.B ldap_ad
+Type of Directory to connect to. 1 means Active Directory.
+Leave disabled if connecting to
+.I openldap
+or
+.I slapd.
+
+.TP
 .B ldap_uri
 The LDAP URI to connect to.
 
@@ -180,6 +188,23 @@ Set to 1 to enable STARTTLS. Leave absent to disable.
 The uid-like attribute in your directory.  Defaults to uid.
 
 .TP
+.B ldap_uidnumber
+Only relevant for Active Directory. if enabled (set to 1),
+the uidNumber attribute will be used instead of the relative identifier (RID).
+It has no effect if the option \fBldap_ad\fP is disabled.
+
+.TP
+.B ldap_gidnumber
+Only relevant for Active Directory. if enabled (set to 1),
+the gidNumber attribute will be used instead of the relative identifier (RID).
+It has no effect if the option \fBldap_ad\fP is disabled.
+
+.TP
+.B ldap_offset
+Default Offset option to map uidNumber and gidNumber to higher number.
+This is useful to avoid conflict with already existing uidNumber and gidNumber.
+
+.TP
 .B ldap_uidregex
 A Python regex to extract uid components from the uid-like attribute.
 All matching groups are concatenated without spaces.
@@ -203,6 +228,12 @@ if this is set.
 .B ldap_override_shell
 If specified, set every user's login shell to the given one.  May be
 useful on bastion hosts or to ensure uniformity.
+
+.TP
+.B ldap_home_dir
+Set a home directory for all users in passwd. If enabled (set to 1),
+all users will have their home directory in
+.I /home.
 
 .TP
 .B ldap_rfc2307bis
