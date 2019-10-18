@@ -728,10 +728,10 @@ class PasswdUpdateGetter(UpdateGetter):
 
     if self.conf.get('home_dir'):
       pw.dir = '/home/%s' % pw.name
-    elif 'homeDirectory' in obj:
-      pw.dir = obj['homeDirectory'][0]
     elif 'unixHomeDirectory' in obj:
       pw.dir = obj['unixHomeDirectory'][0]
+    elif 'homeDirectory' in obj:
+      pw.dir = obj['homeDirectory'][0]
     else:
       pw.dir = ''
 
