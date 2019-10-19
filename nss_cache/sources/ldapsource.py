@@ -26,6 +26,8 @@ import ldap
 import ldap.sasl
 import urllib
 import re
+import sys
+import struct
 from distutils.version import StrictVersion
 
 from nss_cache import error
@@ -36,6 +38,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
+
 
 IS_LDAP24_OR_NEWER = StrictVersion(ldap.__version__) >= StrictVersion('2.4')
 
@@ -66,6 +69,35 @@ def setCookieOnControl(control, cookie, page_size):
     control.controlValue = (page_size, cookie)
 
   return cookie
+
+def sidToStr(sid):
+  """ Converts a hexadecimal string returned from the LDAP query to a
+  string version of the SID in format of S-1-5-21-1270288957-3800934213-3019856503-500
+  This function was based from: http://www.gossamer-threads.com/lists/apache/bugs/386930
+  """
+  # The revision level (typically 1)
+  if sys.version_info.major < 3:
+      revision = ord(sid[0])
+  else:
+      revision = sid[0]
+  # The number of dashes minus 2
+  if sys.version_info.major < 3:
+      number_of_sub_ids = ord(sid[1])
+  else:
+      number_of_sub_ids = sid[1]
+  # Identifier Authority Value (typically a value of 5 representing "NT Authority")
+  # ">Q" is the format string. ">" specifies that the bytes are big-endian.
+  # The "Q" specifies "unsigned long long" because 8 bytes are being decoded.
+  # Since the actual SID section being decoded is only 6 bytes, we must precede it with 2 empty bytes.
+  iav = struct.unpack('>Q', b'\x00\x00' + sid[2:8])[0]
+  # The sub-ids include the Domain SID and the RID representing the object
+  # '<I' is the format string. "<" specifies that the bytes are little-endian. "I" specifies "unsigned int".
+  # This decodes in 4 byte chunks starting from the 8th byte until the last byte
+  sub_ids = [struct.unpack('<I', sid[8 + 4 * i:12 + 4 * i])[0]
+             for i in range(number_of_sub_ids)]
+
+  return 'S-{0}-{1}-{2}'.format(revision, iav, '-'.join([str(sub_id) for sub_id in sub_ids]))
+
 
 class LdapSource(source.Source):
   """Source for data in LDAP.
@@ -621,11 +653,16 @@ class PasswdUpdateGetter(UpdateGetter):
     super(PasswdUpdateGetter, self).__init__(conf)
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName']
-    if 'uidattr' in self.conf:
-      self.attrs.append(self.conf['uidattr'])
-    if 'uidregex' in self.conf:
-      self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
+    if self.conf.get('ad'):
+      self.attrs.extend(('sAMAccountName', 'objectSid', 'displayName', 'unixHomeDirectory'))
+      self.essential_fields = ['sAMAccountName', 'objectSid']
+    else:
+      if 'uidattr' in self.conf:
+        self.attrs.append(self.conf['uidattr'])
+      if 'uidregex' in self.conf:
+        self.uidregex = re.compile(self.conf['uidregex'])
+      self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
@@ -636,7 +673,9 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw = passwd.PasswdMapEntry()
 
-    if 'gecos' in obj:
+    if self.conf.get('ad'):
+      pw.gecos = obj['displayName'][0]
+    elif 'gecos' in obj:
       pw.gecos = obj['gecos'][0]
     elif 'cn' in obj:
       pw.gecos = obj['cn'][0]
@@ -647,7 +686,9 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.gecos = pw.gecos.replace('\n','')
 
-    if 'uidattr' in self.conf:
+    if self.conf.get('ad'):
+      pw.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
       pw.name = obj[self.conf['uidattr']][0]
     else:
       pw.name = obj['uid'][0]
@@ -662,11 +703,30 @@ class PasswdUpdateGetter(UpdateGetter):
     else:
       pw.shell = ''
 
-    pw.uid = int(obj['uidNumber'][0])
-    pw.gid = int(obj['gidNumber'][0])
-    try:
+    if self.conf.get('ad'):
+      if self.conf.get('uidnumber'):
+        pw.uid = int(obj['uidNumber'][0])
+      else:
+        pw.uid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+      if self.conf.get('gidnumber'):
+        pw.gid = int(obj['gidNumber'][0])
+      else:
+        pw.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+    else:
+      pw.uid = int(obj['gidNumber'][0])
+      pw.gid = int(obj['gidNumber'][0])
+
+    if 'offset' in self.conf:
+      pw.uid = int(pw.uid + self.conf['offset'])
+      pw.gid = int(pw.gid + self.conf['offset'])
+
+    if self.conf.get('home_dir'):
+      pw.dir = '/home/%s' % pw.name
+    elif 'unixHomeDirectory' in obj:
+      pw.dir = obj['unixHomeDirectory'][0]
+    elif 'homeDirectory' in obj:
       pw.dir = obj['homeDirectory'][0]
-    except KeyError:
+    else:
       pw.dir = ''
 
     # hack
@@ -681,15 +741,19 @@ class GroupUpdateGetter(UpdateGetter):
   def __init__(self, conf):
     super(GroupUpdateGetter, self).__init__(conf)
     # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
-    if conf.get('rfc2307bis'):
-      self.attrs = ['cn', 'gidNumber', 'member']
-    elif conf.get('rfc2307bis_alt'):
-      self.attrs = ['cn', 'gidNumber', 'uniqueMember']
+    if self.conf.get('ad'):
+      self.attrs = ['sAMAccountName', 'gidNumber', 'member', 'objectSid']
+      self.essential_fields = ['sAMAccountName']
     else:
-      self.attrs = ['cn', 'gidNumber', 'memberUid']
-    if 'groupregex' in conf:
-      self.groupregex = re.compile(self.conf['groupregex'])
-    self.essential_fields = ['cn']
+      if conf.get('rfc2307bis'):
+        self.attrs = ['cn', 'gidNumber', 'member']
+      elif conf.get('rfc2307bis_alt'):
+        self.attrs = ['cn', 'gidNumber', 'uniqueMember']
+      else:
+        self.attrs = ['cn', 'gidNumber', 'memberUid']
+      if 'groupregex' in conf:
+        self.groupregex = re.compile(self.conf['groupregex'])
+      self.essential_fields = ['cn']
     self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
@@ -701,7 +765,10 @@ class GroupUpdateGetter(UpdateGetter):
 
     gr = group.GroupMapEntry()
 
-    gr.name = obj['cn'][0]
+    if self.conf.get('ad'):
+      gr.name = obj['sAMAccountName'][0]
+    else:
+      gr.name = obj['cn'][0]
     # group passwords are deferred to gshadow
     gr.passwd = '*'
     base = self.conf.get("base")
@@ -727,7 +794,17 @@ class GroupUpdateGetter(UpdateGetter):
       members.extend(obj['uniqueMember'])
     members.sort()
 
-    gr.gid = int(obj['gidNumber'][0])
+    if self.conf.get('ad'):
+      if self.conf.get('gidnumber'):
+        gr.gid = int(obj['gidnumber'][0])
+      else:
+        gr.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+    else:
+      gr.gid = int(obj['gidnumber'][0])
+
+    if 'offset' in self.conf:
+      gr.gid = int(gr.gid + self.conf['offset'])
+
     gr.members = members
     gr.groupmembers = group_members
 
@@ -748,7 +825,7 @@ class GroupUpdateGetter(UpdateGetter):
               uidmembers.extend(obj['uid'])
         del gr.members[:]
         gr.members.extend(uidmembers)
-    
+
     _group_map = {i.name: i for i in data_map}
     
     def _expand_members(obj, visited=None):
@@ -778,11 +855,16 @@ class ShadowUpdateGetter(UpdateGetter):
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
-    if 'uidattr' in self.conf:
-      self.attrs.append(self.conf['uidattr'])
-    if 'uidregex' in self.conf:
-      self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid']
+    if self.conf.get('ad'):
+      self.attrs.extend(('sAMAccountName', 'pwdLastSet'))
+      self.essential_fields = ['sAMAccountName']
+    else:
+      if 'uidattr' in self.conf:
+        self.attrs.append(self.conf['uidattr'])
+      if 'uidregex' in self.conf:
+        self.uidregex = re.compile(self.conf['uidregex'])
+      self.essential_fields = ['uid']
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
     """Return a ShadowMap instance."""
@@ -791,8 +873,10 @@ class ShadowUpdateGetter(UpdateGetter):
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
     shadow_ent = shadow.ShadowMapEntry()
-    if 'uidattr' in self.conf:
-      shadow_ent.name = obj[uidattr][0]
+    if self.conf.get('ad'):
+      shadow_ent.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
+      shadow_ent.name = obj[self.conf['uidattr']][0]
     else:
       shadow_ent.name = obj['uid'][0]
 
@@ -802,7 +886,9 @@ class ShadowUpdateGetter(UpdateGetter):
     # TODO(jaq): does nss_ldap check the contents of the userPassword
     # attribute?
     shadow_ent.passwd = '*'
-    if 'shadowLastChange' in obj:
+    if self.conf.get('ad'):
+      shadow_ent.lstchg = int((int(obj['pwdLastSet'][0])/10000000 - 11644473600) / 86400 )
+    elif 'shadowLastChange' in obj:
       shadow_ent.lstchg = int(obj['shadowLastChange'][0])
     if 'shadowMin' in obj:
       shadow_ent.min = int(obj['shadowMin'][0])
