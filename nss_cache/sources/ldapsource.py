@@ -26,8 +26,7 @@ import ldap
 import ldap.sasl
 import urllib
 import re
-import sys
-import struct
+from binascii import b2a_hex
 from distutils.version import StrictVersion
 
 from nss_cache import error
@@ -71,32 +70,43 @@ def setCookieOnControl(control, cookie, page_size):
   return cookie
 
 def sidToStr(sid):
-  """ Converts a hexadecimal string returned from the LDAP query to a
-  string version of the SID in format of S-1-5-21-1270288957-3800934213-3019856503-500
-  This function was based from: http://www.gossamer-threads.com/lists/apache/bugs/386930
+  """ Converts an objectSid hexadecimal string returned from the LDAP query to the
+  objectSid string version in format of S-1-5-21-1270288957-3800934213-3019856503-500
+  For more information about the objectSid binary structure:
+  https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/78eb9013-1c3a-4970-ad1f-2b1dad588a25
+  https://devblogs.microsoft.com/oldnewthing/?p=40253
+  This function was based from:
+  https://ldap3.readthedocs.io/_modules/ldap3/protocol/formatters/formatters.html#format_sid
   """
-  # The revision level (typically 1)
-  if sys.version_info.major < 3:
-      revision = ord(sid[0])
-  else:
-      revision = sid[0]
-  # The number of dashes minus 2
-  if sys.version_info.major < 3:
-      number_of_sub_ids = ord(sid[1])
-  else:
-      number_of_sub_ids = sid[1]
-  # Identifier Authority Value (typically a value of 5 representing "NT Authority")
-  # ">Q" is the format string. ">" specifies that the bytes are big-endian.
-  # The "Q" specifies "unsigned long long" because 8 bytes are being decoded.
-  # Since the actual SID section being decoded is only 6 bytes, we must precede it with 2 empty bytes.
-  iav = struct.unpack('>Q', b'\x00\x00' + sid[2:8])[0]
-  # The sub-ids include the Domain SID and the RID representing the object
-  # '<I' is the format string. "<" specifies that the bytes are little-endian. "I" specifies "unsigned int".
-  # This decodes in 4 byte chunks starting from the 8th byte until the last byte
-  sub_ids = [struct.unpack('<I', sid[8 + 4 * i:12 + 4 * i])[0]
-             for i in range(number_of_sub_ids)]
+  try:
+    if sid.startswith(b'S-1') or sid.startswith('S-1'):
+      return sid
+  except Exception:
+    pass
+  try:
+    if str is not bytes:
+      revision = int(sid[0])
+      sub_authorities = int(sid[1])
+      identifier_authority = int.from_bytes(sid[2:8], byteorder='big')
+      if identifier_authority >= 2 ** 32:
+        identifier_authority = hex(identifier_authority)
 
-  return 'S-{0}-{1}-{2}'.format(revision, iav, '-'.join([str(sub_id) for sub_id in sub_ids]))
+      sub_authority = '-' + '-'.join([str(int.from_bytes(sid[8 + (i * 4): 12 + (i * 4)], byteorder='little')) for i in range(sub_authorities)])
+    else:
+      revision = int(b2a_hex(sid[0]), 16)
+      sub_authorities = int(b2a_hex(sid[1]), 16)
+      identifier_authority = int(b2a_hex(sid[2:8]), 16)
+      if identifier_authority >= 2 ** 32:
+        identifier_authority = hex(identifier_authority)
+
+      sub_authority = '-' + '-'.join([str(int(b2a_hex(sid[11 + (i * 4): 7 + (i * 4): -1]), 16)) for i in range(sub_authorities)])
+    objectSid = 'S-' + str(revision) + '-' + str(identifier_authority) + sub_authority
+
+    return objectSid
+  except Exception:
+    pass
+
+  return sid
 
 
 class LdapSource(source.Source):
