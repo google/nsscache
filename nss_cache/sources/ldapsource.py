@@ -806,11 +806,11 @@ class GroupUpdateGetter(UpdateGetter):
 
     if self.conf.get('ad'):
       if self.conf.get('gidnumber'):
-        gr.gid = int(obj['gidnumber'][0])
+        gr.gid = int(obj['gidNumber'][0])
       else:
         gr.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
     else:
-      gr.gid = int(obj['gidnumber'][0])
+      gr.gid = int(obj['gidNumber'][0])
 
     if 'offset' in self.conf:
       gr.gid = int(gr.gid + self.conf['offset'])
