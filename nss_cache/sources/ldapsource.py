@@ -93,8 +93,8 @@ def sidToStr(sid):
 
       sub_authority = '-' + '-'.join([str(int.from_bytes(sid[8 + (i * 4): 12 + (i * 4)], byteorder='little')) for i in range(sub_authorities)])
     else:
-      revision = int(b2a_hex(sid[0]), 16)
-      sub_authorities = int(b2a_hex(sid[1]), 16)
+      revision = int(b2a_hex(sid[0]))
+      sub_authorities = int(b2a_hex(sid[1]))
       identifier_authority = int(b2a_hex(sid[2:8]), 16)
       if identifier_authority >= 2 ** 32:
         identifier_authority = hex(identifier_authority)
@@ -714,11 +714,11 @@ class PasswdUpdateGetter(UpdateGetter):
       pw.shell = ''
 
     if self.conf.get('ad'):
-      if self.conf.get('uidnumber'):
+      if self.conf.get('user_uidnumber'):
         pw.uid = int(obj['uidNumber'][0])
       else:
         pw.uid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
-      if self.conf.get('gidnumber'):
+      if self.conf.get('user_gidnumber'):
         pw.gid = int(obj['gidNumber'][0])
       else:
         pw.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
@@ -805,7 +805,7 @@ class GroupUpdateGetter(UpdateGetter):
     members.sort()
 
     if self.conf.get('ad'):
-      if self.conf.get('gidnumber'):
+      if self.conf.get('group_gidnumber'):
         gr.gid = int(obj['gidNumber'][0])
       else:
         gr.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])

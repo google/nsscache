@@ -191,15 +191,21 @@ Set to 1 to enable STARTTLS. Leave absent to disable.
 The uid-like attribute in your directory. Defaults to uid.
 
 .TP
-.B ldap_uidnumber
-Only relevant for Active Directory. if enabled (set to 1),
-the uidNumber attribute will be used instead of the relative identifier (RID).
+.B ldap_user_uidnumber
+For Active Directory only. if enabled (set to 1), the user's
+uidNumber attribute will be used instead of the relative identifier (RID).
 It has no effect if the option \fBldap_ad\fP is disabled.
 
 .TP
-.B ldap_gidnumber
-Only relevant for Active Directory. if enabled (set to 1),
-the gidNumber attribute will be used instead of the relative identifier (RID).
+.B ldap_user_gidnumber
+For Active Directory only. if enabled (set to 1), the user's
+gidNumber attribute will be used instead of the relative identifier (RID).
+It has no effect if the option \fBldap_ad\fP is disabled.
+
+.TP
+.B ldap_group_gidnumber
+For Active Directory only. if enabled (set to 1), the group's
+gidNumber attribute will be used instead of the relative identifier (RID).
 It has no effect if the option \fBldap_ad\fP is disabled.
 
 .TP
