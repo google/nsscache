@@ -1004,7 +1004,7 @@ class SshkeyUpdateGetter(UpdateGetter):
     skey = sshkey.SshkeyMapEntry()
 
     if 'uidattr' in self.conf:
-      skey.name = obj[uidattr][0]
+      skey.name = obj[self.conf['uidattr']][0]
     else:
       skey.name = obj['uid'][0]
 
