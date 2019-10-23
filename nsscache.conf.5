@@ -102,14 +102,9 @@ source.
 
 .TP
 .B ldap_ad
-Type of Directory to connect to. 1 means Active Directory.
-Leave disabled if connecting to
-.I openldap
-or
-.I slapd.
-If this option is enabled, sAMAccountName will be mapped to uid.
-RID will be mapped to uidNumber and gidNumber. To override, enable
-the options \fBldap_uidNumber\fP and \fBldap_gidNumber\fP.
+Set to 1 if connecting to Active Directory. If enabled, default Active Directory
+attributes will be used for mapping. Leave disabled if connecting to
+.I openldap.
 
 .TP
 .B ldap_uri
@@ -191,27 +186,16 @@ Set to 1 to enable STARTTLS. Leave absent to disable.
 The uid-like attribute in your directory. Defaults to uid.
 
 .TP
-.B ldap_user_uidnumber
-For Active Directory only. if enabled (set to 1), the user's
-uidNumber attribute will be used instead of the relative identifier (RID).
-It has no effect if the option \fBldap_ad\fP is disabled.
-
-.TP
-.B ldap_user_gidnumber
-For Active Directory only. if enabled (set to 1), the user's
-gidNumber attribute will be used instead of the relative identifier (RID).
-It has no effect if the option \fBldap_ad\fP is disabled.
-
-.TP
-.B ldap_group_gidnumber
-For Active Directory only. if enabled (set to 1), the group's
-gidNumber attribute will be used instead of the relative identifier (RID).
-It has no effect if the option \fBldap_ad\fP is disabled.
+.B ldap_use_rid
+If enabled (set to 1) the relative identifier (RID) wll be used for mapping. 
+By default uidNumber and gidNumber will be mapped when connectin to OpenLdap.
+Leave disabled for default.
+It has no effect if the option \fBldap_ad\fP is enabled.
 
 .TP
 .B ldap_offset
 Default Offset option to map uidNumber and gidNumber to higher number.
-This is useful to avoid conflict with already existing uidNumber and gidNumber.
+This can be useful to avoid conflict with already existing uidNumber and gidNumber.
 
 .TP
 .B ldap_uidregex
