@@ -222,6 +222,7 @@ class LdapSource(source.Source):
     # Setting global ldap defaults.
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
                     configuration['tls_require_cert'])
+    ldap.set_option(ldap.OPT_REFERRALS, 0)
     if 'tls_cacertdir' in configuration:
         ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
     if 'tls_cacertfile' in configuration:
@@ -625,24 +626,25 @@ class UpdateGetter(object):
     data_map = self.CreateMap()
 
     for obj in source:
-      for field in self.essential_fields:
-        if field not in obj:
-          logging.warn('invalid object passed: %r not in %r', field, obj)
-          raise ValueError('Invalid object passed: %r', obj)
+      if type(obj) == dict:
+        for field in self.essential_fields:
+          if field not in obj:
+            logging.warn('invalid object passed: %r not in %r', field, obj)
+            raise ValueError('Invalid object passed: %r', obj)
 
-      try:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
-      except KeyError:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
+        try:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+        except KeyError:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
-      if max_ts is None or obj_ts > max_ts:
-        max_ts = obj_ts
+        if max_ts is None or obj_ts > max_ts:
+          max_ts = obj_ts
 
-      try:
-        if not data_map.Add(self.Transform(obj)):
-          logging.info('could not add obj: %r', obj)
-      except AttributeError, e:
-        logging.warning('error %r, discarding malformed obj: %r',
+        try:
+          if not data_map.Add(self.Transform(obj)):
+            logging.info('could not add obj: %r', obj)
+        except AttributeError, e:
+          logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
     # Perform some post processing on the data_map.
     self.PostProcess(data_map, source, search_filter, search_scope)
