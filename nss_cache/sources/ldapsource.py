@@ -725,7 +725,7 @@ class PasswdUpdateGetter(UpdateGetter):
       else:
         pw.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
     else:
-      pw.uid = int(obj['gidNumber'][0])
+      pw.uid = int(obj['uidNumber'][0])
       pw.gid = int(obj['gidNumber'][0])
 
     if 'offset' in self.conf:
