@@ -666,7 +666,8 @@ class PasswdUpdateGetter(UpdateGetter):
     self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
                   'homeDirectory', 'loginShell', 'fullName', 'sambaSID']
     if self.conf.get('ad'):
-      self.attrs.extend(('sAMAccountName', 'objectSid', 'displayName', 'unixHomeDirectory'))
+      self.attrs = ['sAMAccountName', 'objectSid', 'displayName',
+                    'unixHomeDirectory', 'pwdLastSet', 'loginShell']
       self.essential_fields = ['sAMAccountName', 'objectSid']
     else:
       if 'uidattr' in self.conf:
