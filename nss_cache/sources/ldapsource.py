@@ -626,7 +626,7 @@ class UpdateGetter(object):
     data_map = self.CreateMap()
 
     for obj in source:
-      if type(obj) == dict:
+      if type(obj) is dict:
         for field in self.essential_fields:
           if field not in obj:
             logging.warn('invalid object passed: %r not in %r', field, obj)
@@ -752,7 +752,7 @@ class GroupUpdateGetter(UpdateGetter):
     super(GroupUpdateGetter, self).__init__(conf)
     # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
     if self.conf.get('ad'):
-      self.attrs = ['sAMAccountName', 'gidNumber', 'member', 'objectSid']
+      self.attrs = ['sAMAccountName', 'member', 'objectSid']
       self.essential_fields = ['sAMAccountName']
     else:
       if conf.get('rfc2307bis'):
