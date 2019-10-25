@@ -537,7 +537,10 @@ class LdapSource(source.Source):
     if since is None:
       # one minute in the future
       since = int(time.time() + 60)
-    results = self.GetPasswdMap(since=since)
+    try:
+      results = self.GetPasswdMap(since=since)
+    except KeyError:
+      results = self.GetGroupMap(since=since)
     return len(results)
 
 
@@ -663,13 +666,13 @@ class PasswdUpdateGetter(UpdateGetter):
 
   def __init__(self, conf):
     super(PasswdUpdateGetter, self).__init__(conf)
-    self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
-                  'homeDirectory', 'loginShell', 'fullName', 'sambaSID']
     if self.conf.get('ad'):
       self.attrs = ['sAMAccountName', 'objectSid', 'displayName',
                     'unixHomeDirectory', 'pwdLastSet', 'loginShell']
       self.essential_fields = ['sAMAccountName', 'objectSid']
     else:
+      self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
+                    'homeDirectory', 'loginShell', 'fullName', 'sambaSID']
       if 'uidattr' in self.conf:
         self.attrs.append(self.conf['uidattr'])
       if 'uidregex' in self.conf:
