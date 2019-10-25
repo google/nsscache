@@ -321,6 +321,8 @@ class LdapSource(source.Source):
         try:
           result_type, data, _, serverctrls = self.conn.result3(
             self.message_id, all=0, timeout=self.conf['timelimit'])
+          if data and not data[0][0]:
+            continue
 
           # Paged requests return a new cookie in serverctrls at the end of a page,
           # so we search for the cookie and perform another search if needed.
@@ -629,26 +631,25 @@ class UpdateGetter(object):
     data_map = self.CreateMap()
 
     for obj in source:
-      if type(obj) is dict:
-        for field in self.essential_fields:
-          if field not in obj:
-            logging.warn('invalid object passed: %r not in %r', field, obj)
-            raise ValueError('Invalid object passed: %r', obj)
+      for field in self.essential_fields:
+        if field not in obj:
+          logging.warn('invalid object passed: %r not in %r', field, obj)
+          raise ValueError('Invalid object passed: %r', obj)
 
-        try:
-          obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
-        except KeyError:
-          obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
+      try:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+      except KeyError:
+        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
-        if max_ts is None or obj_ts > max_ts:
-          max_ts = obj_ts
+      if max_ts is None or obj_ts > max_ts:
+        max_ts = obj_ts
 
-        try:
-          if not data_map.Add(self.Transform(obj)):
-            logging.info('could not add obj: %r', obj)
-        except AttributeError, e:
-          logging.warning('error %r, discarding malformed obj: %r',
-                        str(e), obj)
+      try:
+        if not data_map.Add(self.Transform(obj)):
+          logging.info('could not add obj: %r', obj)
+      except AttributeError, e:
+        logging.warning('error %r, discarding malformed obj: %r',
+                      str(e), obj)
     # Perform some post processing on the data_map.
     self.PostProcess(data_map, source, search_filter, search_scope)
 
