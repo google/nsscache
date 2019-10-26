@@ -321,7 +321,7 @@ class LdapSource(source.Source):
         try:
           result_type, data, _, serverctrls = self.conn.result3(
             self.message_id, all=0, timeout=self.conf['timelimit'])
-          # we need to filter ou AD referrals
+          # we need to filter out AD referrals
           if data and not data[0][0]:
             continue
 
