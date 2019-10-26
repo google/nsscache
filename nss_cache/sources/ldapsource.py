@@ -669,7 +669,7 @@ class UpdateGetter(object):
           logging.info('could not add obj: %r', obj)
       except AttributeError, e:
         logging.warning('error %r, discarding malformed obj: %r',
-                      str(e), obj)
+                        str(e), obj)
     # Perform some post processing on the data_map.
     self.PostProcess(data_map, source, search_filter, search_scope)
 
