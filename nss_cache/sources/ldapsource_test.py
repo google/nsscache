@@ -473,13 +473,13 @@ class TestLdapSource(mox.MoxTestBase):
                            'unixHomeDirectory': ['/home/test'],
                            'loginShell': ['/bin/sh'],
                            'pwdLastSet': ['132161071270000000'],
-                           'modifyTimestamp': ['20070227012807Z']})
+                           'whenChanged': ['20070227012807.0Z']})
 
     config = dict(self.config)
     config['ad'] = '1'
     attrlist = ['sAMAccountName', 'pwdLastSet', 'loginShell',
                  'objectSid', 'displayName',
-                 'modifyTimestamp', 'unixHomeDirectory']
+                 'whenChanged', 'unixHomeDirectory']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
     mock_rlo.simple_bind_s(
@@ -525,14 +525,14 @@ class TestLdapSource(mox.MoxTestBase):
                            'unixHomeDirectory': ['/home/test'],
                            'loginShell': ['/bin/sh'],
                            'pwdLastSet': ['132161071270000000'],
-                           'modifyTimestamp': ['20070227012807Z']})
+                           'whenChanged': ['20070227012807.0Z']})
 
     config = dict(self.config)
     config['ad'] = '1'
     config['offset'] = 10000
     attrlist = ['sAMAccountName', 'pwdLastSet', 'loginShell',
                  'objectSid', 'displayName',
-                 'modifyTimestamp', 'unixHomeDirectory']
+                 'whenChanged', 'unixHomeDirectory']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
     mock_rlo.simple_bind_s(
@@ -724,18 +724,16 @@ class TestLdapSource(mox.MoxTestBase):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
                         {'objectSid': [b'\x01\x05\x00\x00\x00\x00\x00\x05\x15\x00\x00\x00\xa0e\xcf~xK\x9b_\xe7|\x87p\t\x1c\x01\x00'],
                          'sAMAccountName': ['testgroup'],
-                         'gidNumber': [1000],
                          'cn': ['testgroup'],
                          'member': ['cn=testguy,ou=People,dc=example,dc=com',
                                     'cn=fooguy,ou=People,dc=example,dc=com',
                                     'cn=barguy,ou=People,dc=example,dc=com'],
-                         'modifyTimestamp': ['20070227012807Z']})
+                         'whenChanged': ['20070227012807.0Z']})
 
     config = dict(self.config)
     config['ad'] = '1'
     attrlist = ['sAMAccountName', 'objectSid',
-                'gidNumber', 'member',
-                'modifyTimestamp']
+                'member', 'whenChanged']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
     mock_rlo.simple_bind_s(

@@ -562,13 +562,19 @@ class UpdateGetter(object):
       number of seconds since epoch.
     """
     try:
-      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+      if self.conf.get('ad'):
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%S.0Z')
+      else:
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
     except ValueError:
       # Some systems add a decimal component; try to filter it:
       m = re.match('([0-9]*)(\.[0-9]*)?(Z)', ldap_ts_string)
       if m:
         ldap_ts_string = m.group(1) + m.group(3)
-      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+      if self.conf.get('ad'):
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%S.0Z')
+      else:
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
     return int(calendar.timegm(t))
 
   def FromTimestampToLdap(self, ts):
@@ -580,7 +586,10 @@ class UpdateGetter(object):
     Returns:
       LDAP format timestamp string.
     """
-    t = time.strftime('%Y%m%d%H%M%SZ', time.gmtime(ts))
+    if self.conf.get('ad'):
+      t = time.strftime('%Y%m%d%H%M%S.0Z', time.gmtime(ts))
+    else:
+      t = time.strftime('%Y%m%d%H%M%SZ', time.gmtime(ts))
     return t
 
   def GetUpdates(self, source, search_base, search_filter,
@@ -601,15 +610,23 @@ class UpdateGetter(object):
       error.ConfigurationError: scope is invalid
       ValueError: an object in the source map is malformed
     """
-    self.attrs.append('modifyTimestamp')
+    if self.conf.get('ad'):
+      self.attrs.append('whenChanged')
+    else:
+      self.attrs.append('modifyTimestamp')
 
     if since is not None:
       ts = self.FromTimestampToLdap(since)
       # since openldap disallows modifyTimestamp "greater than" we have to
       # increment by one second.
-      ts = int(ts.rstrip('Z')) + 1
-      ts = '%sZ' % ts
-      search_filter = ('(&%s(modifyTimestamp>=%s))' % (search_filter, ts))
+      if self.conf.get('ad'):
+        ts = int(ts.rstrip('.0Z')) + 1
+        ts = '%s.0Z' % ts
+        search_filter = ('(&%s(whenChanged>=%s))' % (search_filter, ts))
+      else:
+        ts = int(ts.rstrip('Z')) + 1
+        ts = '%sZ' % ts
+        search_filter = ('(&%s(modifyTimestamp>=%s))' % (search_filter, ts))
 
     if search_scope == 'base':
       search_scope = ldap.SCOPE_BASE
@@ -636,10 +653,13 @@ class UpdateGetter(object):
           logging.warn('invalid object passed: %r not in %r', field, obj)
           raise ValueError('Invalid object passed: %r', obj)
 
-      try:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
-      except KeyError:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
+      if self.conf.get('ad'):
+        obj_ts = self.FromLdapToTimestamp(obj['whenChanged'][0])
+      else:
+        try:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+        except KeyError:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
       if max_ts is None or obj_ts > max_ts:
         max_ts = obj_ts
@@ -757,7 +777,7 @@ class GroupUpdateGetter(UpdateGetter):
     # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
     if self.conf.get('ad'):
       self.attrs = ['sAMAccountName', 'member', 'objectSid']
-      self.essential_fields = ['sAMAccountName']
+      self.essential_fields = ['sAMAccountName', 'objectSid']
     else:
       if conf.get('rfc2307bis'):
         self.attrs = ['cn', 'gidNumber', 'member', 'uid', 'sambaSID']
@@ -767,7 +787,7 @@ class GroupUpdateGetter(UpdateGetter):
         self.attrs = ['cn', 'gidNumber', 'memberUid', 'uid', 'sambaSID']
       if 'groupregex' in conf:
         self.groupregex = re.compile(self.conf['groupregex'])
-      self.essential_fields = ['cn']
+      self.essential_fields = ['cn', 'sambaSID']
     self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
@@ -781,7 +801,7 @@ class GroupUpdateGetter(UpdateGetter):
 
     if self.conf.get('ad'):
       gr.name = obj['sAMAccountName'][0]
-    # hack to map users as groups as well with the same name
+    # hack to map the users as the corresponding group with the same name
     elif 'uid' in obj:
       gr.name = obj['uid'][0]
     else:
@@ -873,7 +893,7 @@ class ShadowUpdateGetter(UpdateGetter):
                   'shadowExpire', 'shadowFlag', 'userPassword']
     if self.conf.get('ad'):
       self.attrs.extend(('sAMAccountName', 'pwdLastSet'))
-      self.essential_fields = ['sAMAccountName']
+      self.essential_fields = ['sAMAccountName', 'pwdLastSet']
     else:
       if 'uidattr' in self.conf:
         self.attrs.append(self.conf['uidattr'])
