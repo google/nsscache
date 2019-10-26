@@ -321,6 +321,7 @@ class LdapSource(source.Source):
         try:
           result_type, data, _, serverctrls = self.conn.result3(
             self.message_id, all=0, timeout=self.conf['timelimit'])
+          # we need to filter ou AD referrals
           if data and not data[0][0]:
             continue
 
@@ -542,6 +543,7 @@ class LdapSource(source.Source):
     try:
       results = self.GetPasswdMap(since=since)
     except KeyError:
+      # AD groups don't have all attributes of AD users
       results = self.GetGroupMap(since=since)
     return len(results)
 
@@ -563,6 +565,7 @@ class UpdateGetter(object):
     """
     try:
       if self.conf.get('ad'):
+        # AD timestamp has different format
         t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%S.0Z')
       else:
         t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
@@ -611,6 +614,7 @@ class UpdateGetter(object):
       ValueError: an object in the source map is malformed
     """
     if self.conf.get('ad'):
+      # AD attribute for modifyTimestamp is whenChanged
       self.attrs.append('whenChanged')
     else:
       self.attrs.append('modifyTimestamp')
@@ -688,6 +692,7 @@ class PasswdUpdateGetter(UpdateGetter):
   def __init__(self, conf):
     super(PasswdUpdateGetter, self).__init__(conf)
     if self.conf.get('ad'):
+      # attributes of AD user to be returned 
       self.attrs = ['sAMAccountName', 'objectSid', 'displayName',
                     'unixHomeDirectory', 'pwdLastSet', 'loginShell']
       self.essential_fields = ['sAMAccountName', 'objectSid']
@@ -741,9 +746,13 @@ class PasswdUpdateGetter(UpdateGetter):
       pw.shell = ''
 
     if self.conf.get('ad'):
+      # use the user's RID for uid and gid to have
+      # the correspondant group with the same name
       pw.uid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
       pw.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
     elif self.conf.get('use_rid'):
+      # use the user's RID for uid and gid to have
+      # the correspondant group with the same name
       pw.uid = int(sidToStr(obj['sambaSID'][0]).split('-')[-1])
       pw.gid = int(sidToStr(obj['sambaSID'][0]).split('-')[-1])
     else:
@@ -751,6 +760,8 @@ class PasswdUpdateGetter(UpdateGetter):
       pw.gid = int(obj['gidNumber'][0])
 
     if 'offset' in self.conf:
+      # map uid and gid to higher number
+      # to avoid conflict with local accounts
       pw.uid = int(pw.uid + self.conf['offset'])
       pw.gid = int(pw.gid + self.conf['offset'])
 
@@ -776,6 +787,7 @@ class GroupUpdateGetter(UpdateGetter):
     super(GroupUpdateGetter, self).__init__(conf)
     # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
     if self.conf.get('ad'):
+      # attributes of AD group to be returned 
       self.attrs = ['sAMAccountName', 'member', 'objectSid']
       self.essential_fields = ['sAMAccountName', 'objectSid']
     else:
@@ -891,7 +903,8 @@ class ShadowUpdateGetter(UpdateGetter):
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
-    if self.conf.get('ad'):
+    if self.conf.get('ad'):  
+      # attributes of AD user to be returned for shadow
       self.attrs.extend(('sAMAccountName', 'pwdLastSet'))
       self.essential_fields = ['sAMAccountName', 'pwdLastSet']
     else:
@@ -923,6 +936,11 @@ class ShadowUpdateGetter(UpdateGetter):
     # attribute?
     shadow_ent.passwd = '*'
     if self.conf.get('ad'):
+      # Time attributes of AD objects use interval date/time format with a value
+      # that represents the number of 100-nanosecond intervals since January 1, 1601.
+      # We need to calculate the difference between 1970-01-01 and 1601-01-01 in seconds wich is 11644473600
+      # then abstract it from the pwdLastChange value in seconds, then devide it by 86400 to get the 
+      # days since Jan 1, 1970 the password wa changed.
       shadow_ent.lstchg = int((int(obj['pwdLastSet'][0])/10000000 - 11644473600) / 86400 )
     elif 'shadowLastChange' in obj:
       shadow_ent.lstchg = int(obj['shadowLastChange'][0])
