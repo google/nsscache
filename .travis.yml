@@ -2,7 +2,7 @@ language: python
 
 install:
  - travis_retry sudo apt-get update -qq
- - travis_retry sudo apt-get install -y libnss-db python3-ldap python3-mox python3-pycurl
+ - travis_retry sudo apt-get install -y libnss-db libcurl4-gnutls-dev
  - pip install .
  - travis_retry pip install -r requirements.txt
 
