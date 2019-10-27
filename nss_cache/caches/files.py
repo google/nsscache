@@ -51,6 +51,8 @@ for i in sys.argv:
     if ('--config-file') in i:
       i = i[14:] 
     parser.read(i)
+  elif os.path.isfile('/etc/nsscache.conf'):
+    parser.read('/etc/nsscache.conf')
   else:
     # Config in nsscache folder
     parser.read('nsscache.conf')
