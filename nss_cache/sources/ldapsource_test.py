@@ -248,18 +248,75 @@ class TestLdapSource(mox.MoxTestBase):
 
   def testGetPasswdMap(self):
     test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
-                          {'uidNumber': [1000],
+                          {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                           'uidNumber': [1000],
                            'gidNumber': [1000],
-                           'uid': ['Testguy McTest'],
-                           'cn': ['test'],
+                           'uid': ['test'],
+                           'cn': ['Testguy McTest'],
                            'homeDirectory': ['/home/test'],
                            'loginShell': ['/bin/sh'],
                            'userPassword': ['p4ssw0rd'],
                            'modifyTimestamp': ['20070227012807Z']})
+
     config = dict(self.config)
     attrlist = ['uid', 'uidNumber', 'gidNumber',
+                'gecos', 'cn', 'homeDirectory', 'sambaSID',
+                'fullName', 'loginShell', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetPasswdMap()
+
+    self.assertEqual(1, len(data))
+
+    first = data.PopItem()
+
+    self.assertEqual('test', first.name)
+
+  def testGetPasswdMapWithUidAttr(self):
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                           'uidNumber': [1000],
+                           'gidNumber': [1000],
+                           'uid': ['test'],
+                           'name': ['test'],
+                           'cn': ['Testguy McTest'],
+                           'homeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'userPassword': ['p4ssw0rd'],
+                           'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['uidattr'] = 'name'
+    attrlist = ['uid', 'uidNumber', 'gidNumber',
                 'gecos', 'cn', 'homeDirectory',
-                'fullName',
+                'fullName', 'name', 'sambaSID',
                 'loginShell', 'modifyTimestamp']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -296,23 +353,25 @@ class TestLdapSource(mox.MoxTestBase):
 
     first = data.PopItem()
 
-    self.assertEqual('Testguy McTest', first.name)
+    self.assertEqual('test', first.name)
 
   def testGetPasswdMapWithShellOverride(self):
     test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
-                          {'uidNumber': [1000],
+                          {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                           'uidNumber': [1000],
                            'gidNumber': [1000],
-                           'uid': ['Testguy McTest'],
-                           'cn': ['test'],
+                           'uid': ['test'],
+                           'cn': ['Testguy McTest'],
                            'homeDirectory': ['/home/test'],
                            'loginShell': ['/bin/sh'],
                            'userPassword': ['p4ssw0rd'],
                            'modifyTimestamp': ['20070227012807Z']})
+
     config = dict(self.config)
     config['override_shell'] = '/bin/false'
     attrlist = ['uid', 'uidNumber', 'gidNumber',
                 'gecos', 'cn', 'homeDirectory',
-                'fullName',
+                'fullName', 'sambaSID',
                 'loginShell', 'modifyTimestamp']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -351,16 +410,330 @@ class TestLdapSource(mox.MoxTestBase):
 
     self.assertEqual('/bin/false', first.shell)
 
+  def testGetPasswdMapWithUseRid(self):
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                           'uidNumber': [1000],
+                           'gidNumber': [1000],
+                           'uid': ['test'],
+                           'cn': ['Testguy McTest'],
+                           'homeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'userPassword': ['p4ssw0rd'],
+                           'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['use_rid'] = '1'
+    attrlist = ['uid', 'uidNumber', 'gidNumber',
+                'gecos', 'cn', 'homeDirectory',
+                'fullName', 'sambaSID',
+                'loginShell', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetPasswdMap()
+
+    self.assertEqual(1, len(data))
+
+    first = data.PopItem()
+
+    self.assertEqual('test', first.name)
+
+  def testGetPasswdMapAD(self):
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'objectSid': [b'\x01\x05\x00\x00\x00\x00\x00\x05\x15\x00\x00\x00\xa0e\xcf~xK\x9b_\xe7|\x87p\t\x1c\x01\x00'],
+                           'sAMAccountName': ['test'],
+                           'displayName': ['Testguy McTest'],
+                           'unixHomeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'pwdLastSet': ['132161071270000000'],
+                           'whenChanged': ['20070227012807.0Z']})
+
+    config = dict(self.config)
+    config['ad'] = '1'
+    attrlist = ['sAMAccountName', 'pwdLastSet', 'loginShell',
+                 'objectSid', 'displayName',
+                 'whenChanged', 'unixHomeDirectory']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetPasswdMap()
+
+    self.assertEqual(1, len(data))
+
+    first = data.PopItem()
+
+    self.assertEqual('test', first.name)
+
+  def testGetPasswdMapADWithOffeset(self):
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'objectSid': [b'\x01\x05\x00\x00\x00\x00\x00\x05\x15\x00\x00\x00\xa0e\xcf~xK\x9b_\xe7|\x87p\t\x1c\x01\x00'],
+                           'sAMAccountName': ['test'],
+                           'displayName': ['Testguy McTest'],
+                           'unixHomeDirectory': ['/home/test'],
+                           'loginShell': ['/bin/sh'],
+                           'pwdLastSet': ['132161071270000000'],
+                           'whenChanged': ['20070227012807.0Z']})
+
+    config = dict(self.config)
+    config['ad'] = '1'
+    config['offset'] = 10000
+    attrlist = ['sAMAccountName', 'pwdLastSet', 'loginShell',
+                 'objectSid', 'displayName',
+                 'whenChanged', 'unixHomeDirectory']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_account], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetPasswdMap()
+
+    self.assertEqual(1, len(data))
+
+    first = data.PopItem()
+
+    self.assertEqual('test', first.name)
+
   def testGetGroupMap(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
-                        {'gidNumber': [1000],
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
                          'cn': ['testgroup'],
                          'memberUid': ['testguy', 'fooguy', 'barguy'],
                          'modifyTimestamp': ['20070227012807Z']})
 
     config = dict(self.config)
-    attrlist = ['cn', 'gidNumber', 'memberUid',
-                'modifyTimestamp']
+    attrlist = ['cn', 'uid', 'gidNumber', 'memberUid',
+                'sambaSID', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('testgroup', ent.name)
+
+  def testGetGroupMapWithUseRid(self):
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
+                         'cn': ['testgroup'],
+                         'memberUid': ['testguy', 'fooguy', 'barguy'],
+                         'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['use_rid'] = '1'
+    attrlist = ['cn', 'uid', 'gidNumber', 'memberUid',
+                'sambaSID', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('testgroup', ent.name)
+
+  def testGetGroupMapAsUser(self):
+    test_posix_group = ('cn=test,ou=People,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'uidNumber': [1000],
+                         'gidNumber': [1000],
+                         'uid': ['test'],
+                         'cn': ['Testguy McTest'],
+                         'homeDirectory': ['/home/test'],
+                         'loginShell': ['/bin/sh'],
+                         'userPassword': ['p4ssw0rd'],
+                         'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['use_rid'] = '1'
+    attrlist = ['cn', 'uid', 'gidNumber', 'memberUid',
+                'sambaSID', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('test', ent.name)
+
+  def testGetGroupMapAD(self):
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'objectSid': [b'\x01\x05\x00\x00\x00\x00\x00\x05\x15\x00\x00\x00\xa0e\xcf~xK\x9b_\xe7|\x87p\t\x1c\x01\x00'],
+                         'sAMAccountName': ['testgroup'],
+                         'cn': ['testgroup'],
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
+                                    'cn=fooguy,ou=People,dc=example,dc=com',
+                                    'cn=barguy,ou=People,dc=example,dc=com'],
+                         'whenChanged': ['20070227012807.0Z']})
+
+    config = dict(self.config)
+    config['ad'] = '1'
+    attrlist = ['sAMAccountName', 'objectSid',
+                'member', 'whenChanged']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
     mock_rlo.simple_bind_s(
@@ -400,7 +773,8 @@ class TestLdapSource(mox.MoxTestBase):
 
   def testGetGroupMapBis(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
-                        {'gidNumber': [1000],
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
                          'cn': ['testgroup'],
                          'member': ['cn=testguy,ou=People,dc=example,dc=com',
                                     'cn=fooguy,ou=People,dc=example,dc=com',
@@ -409,8 +783,8 @@ class TestLdapSource(mox.MoxTestBase):
 
     config = dict(self.config)
     config['rfc2307bis'] = 1
-    attrlist = ['cn', 'gidNumber', 'member',
-                'modifyTimestamp']
+    attrlist = ['cn', 'uid', 'gidNumber', 'member',
+                'sambaSID','modifyTimestamp']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
     mock_rlo.simple_bind_s(
@@ -449,18 +823,212 @@ class TestLdapSource(mox.MoxTestBase):
     self.assertEqual('testgroup', ent.name)
     self.assertEqual(3, len(ent.members))
 
+  def testGetGroupNestedNotConfigured(self):
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
+                         'cn': ['testgroup'],
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
+                                    'cn=fooguy,ou=People,dc=example,dc=com',
+                                    'cn=barguy,ou=People,dc=example,dc=com',
+                                    'cn=child,ou=Group,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+    test_child_group = ('cn=child,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72714'],
+                         'gidNumber': [1001],
+                         'cn': ['child'],
+                         'member': ['cn=newperson,ou=People,dc=example,dc=com',
+                                    'cn=fooperson,ou=People,dc=example,dc=com',
+                                    'cn=barperson,ou=People,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
 
+    config = dict(self.config)
+    config['rfc2307bis'] = 1
+    attrlist = ['cn', 'uid', 'gidNumber', 'member',
+                'sambaSID','modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group, test_child_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(2, len(data))
+    datadict = {i.name: i for i in data}
+    self.assertIn("child", datadict)
+    self.assertIn("testgroup", datadict)
+    self.assertEqual(len(datadict["testgroup"].members), 4)
+    self.assertEqual(len(datadict["child"].members), 3)
+    self.assertNotIn("newperson", datadict["testgroup"].members)
+
+  def testGetGroupNested(self):
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
+                         'cn': ['testgroup'],
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
+                                    'cn=fooguy,ou=People,dc=example,dc=com',
+                                    'cn=barguy,ou=People,dc=example,dc=com',
+                                    'cn=child,ou=Group,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+    test_child_group = ('cn=child,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72714'],
+                         'gidNumber': [1001],
+                         'cn': ['child'],
+                         'member': ['cn=newperson,ou=People,dc=example,dc=com',
+                                    'cn=fooperson,ou=People,dc=example,dc=com',
+                                    'cn=barperson,ou=People,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['rfc2307bis'] = 1
+    config["nested_groups"] = 1
+    attrlist = ['cn', 'uid', 'gidNumber', 'member',
+                'sambaSID','modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_posix_group, test_child_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(2, len(data))
+    datadict = {i.name: i for i in data}
+    self.assertIn("child", datadict)
+    self.assertIn("testgroup", datadict)
+    self.assertEqual(len(datadict["testgroup"].members), 7)
+    self.assertEqual(len(datadict["child"].members), 3)
+    self.assertIn("newperson", datadict["testgroup"].members)
+
+  def testGetGroupLoop(self):
+    test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
+                         'cn': ['testgroup'],
+                         'member': ['cn=testguy,ou=People,dc=example,dc=com',
+                                    'cn=fooguy,ou=People,dc=example,dc=com',
+                                    'cn=barguy,ou=People,dc=example,dc=com',
+                                    'cn=child,ou=Group,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+    test_child_group = ('cn=child,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72714'],
+                         'gidNumber': [1001],
+                         'cn': ['child'],
+                         'member': ['cn=newperson,ou=People,dc=example,dc=com',
+                                    'cn=fooperson,ou=People,dc=example,dc=com',
+                                    'cn=barperson,ou=People,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+    test_loop_group = ('cn=loop,ou=Group,dc=example,dc=com',
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72715'],
+                         'gidNumber': [1002],
+                         'cn': ['loop'],
+                         'member': ['cn=loopperson,ou=People,dc=example,dc=com',
+                                    'cn=testgroup,ou=Group,dc=example,dc=com'],
+                         'modifyTimestamp': ['20070227012807Z']})
+
+    config = dict(self.config)
+    config['rfc2307bis'] = 1
+    config["nested_groups"] = 1
+    attrlist = ['cn', 'uid', 'gidNumber', 'member',
+                'sambaSID','modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [
+                             test_posix_group,
+                             test_child_group, test_loop_group], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+    source = ldapsource.LdapSource(config)
+    data = source.GetGroupMap()
+
+    self.assertEqual(3, len(data))
+    datadict = {i.name: i for i in data}
+    self.assertIn("child", datadict)
+    self.assertIn("testgroup", datadict)
+    self.assertEqual(len(datadict["testgroup"].members), 7)
+    self.assertEqual(len(datadict["child"].members), 3)
+    self.assertIn("newperson", datadict["testgroup"].members)
 
   def testGetGroupMapBisAlt(self):
     test_posix_group = ('cn=test,ou=Group,dc=example,dc=com',
-                        {'gidNumber': [1000],
+                        {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                         'gidNumber': [1000],
                          'cn': ['testgroup'],
                          'uniqueMember':
                          ['cn=testguy,ou=People,dc=example,dc=com'],
                          'modifyTimestamp': ['20070227012807Z']})
     dn_user = 'cn=testguy,ou=People,dc=example,dc=com'
     test_posix_account = (dn_user,
-                          {'uidNumber': [1000],
+                          {'sambaSID': ['S-1-5-21-2562418665-3218585558-1813906818-1576'],
+                           'uidNumber': [1000],
                            'gidNumber': [1000],
                            'uid': ['test'],
                            'cn': ['testguy'],
@@ -472,7 +1040,7 @@ class TestLdapSource(mox.MoxTestBase):
     config = dict(self.config)
     config['rfc2307bis_alt'] = 1
     attrlist = ['cn', 'gidNumber', 'uniqueMember',
-                'modifyTimestamp']
+                'uid', 'sambaSID', 'modifyTimestamp']
     uidattr  = ['uid']
 
     mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -539,6 +1107,63 @@ class TestLdapSource(mox.MoxTestBase):
     config = dict(self.config)
     attrlist = ['uid', 'shadowLastChange',
                 'shadowMin', 'shadowMax',
+                'shadowWarning', 'shadowInactive',
+                'shadowExpire', 'shadowFlag',
+                'userPassword', 'modifyTimestamp']
+
+    mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+    mock_rlo.simple_bind_s(
+        cred='TEST_BIND_PASSWORD',
+        who='TEST_BIND_DN')
+    mock_rlo.search_ext(base='TEST_BASE',
+                        filterstr='TEST_FILTER',
+                        scope=ldap.SCOPE_ONELEVEL,
+                        attrlist=mox.SameElementsAs(attrlist),
+                        serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
+
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_ENTRY, [test_shadow], None, []))
+    mock_rlo.result3('TEST_RES',
+                     all=0,
+                     timeout='TEST_TIMELIMIT').AndReturn(
+                         (ldap.RES_SEARCH_RESULT, None, None, []))
+
+    self.mox.StubOutWithMock(ldap, 'ldapobject')
+    ldap.ldapobject.ReconnectLDAPObject(
+        uri='TEST_URI',
+        retry_max='TEST_RETRY_MAX',
+        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+
+    self.mox.ReplayAll()
+
+    source = ldapsource.LdapSource(config)
+    data = source.GetShadowMap()
+
+    self.assertEqual(1, len(data))
+
+    ent = data.PopItem()
+
+    self.assertEqual('test', ent.name)
+    self.assertEqual('p4ssw0rd', ent.passwd)
+
+  def testGetShadowMapWithUidAttr(self):
+    test_shadow = ('cn=test,ou=People,dc=example,dc=com',
+                   {'uid': ['test'],
+                    'name': ['test'],
+                    'shadowLastChange': ['11296'],
+                    'shadowMax': ['99999'],
+                    'shadowWarning': ['7'],
+                    'shadowInactive': ['-1'],
+                    'shadowExpire': ['-1'],
+                    'shadowFlag': ['134537556'],
+                    'modifyTimestamp': ['20070227012807Z'],
+                    'userPassword': ['{CRYPT}p4ssw0rd']})
+    config = dict(self.config)
+    config['uidattr'] = 'name'
+    attrlist = ['uid', 'shadowLastChange',
+                'shadowMin', 'shadowMax', 'name',
                 'shadowWarning', 'shadowInactive',
                 'shadowExpire', 'shadowFlag',
                 'userPassword', 'modifyTimestamp']
@@ -803,7 +1428,7 @@ class TestLdapSource(mox.MoxTestBase):
   def testVerify(self):
     attrlist = ['uid', 'uidNumber', 'gidNumber',
                 'gecos', 'cn', 'homeDirectory',
-                'fullName',
+                'fullName', 'sambaSID',
                 'loginShell', 'modifyTimestamp']
     filterstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
 
@@ -868,7 +1493,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(passwd.PasswdMap, type(data))
+    self.assertEqual(passwd.PasswdMap, type(data))
 
   def testGroupEmptySourceGetUpdates(self):
     """Test that getUpdates on the GroupUpdateGetter works."""
@@ -877,7 +1502,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(group.GroupMap, type(data))
+    self.assertEqual(group.GroupMap, type(data))
 
   def testShadowEmptySourceGetUpdates(self):
     """Test that getUpdates on the ShadowUpdateGetter works."""
@@ -886,7 +1511,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(shadow.ShadowMap, type(data))
+    self.assertEqual(shadow.ShadowMap, type(data))
 
   def testAutomountEmptySourceGetsUpdates(self):
     """Test that getUpdates on the AutomountUpdateGetter works."""
@@ -895,7 +1520,7 @@ class TestUpdateGetter(unittest.TestCase):
     data = getter.GetUpdates(self.source, 'TEST_BASE',
                              'TEST_FILTER', 'base', None)
 
-    self.failUnlessEqual(automount.AutomountMap, type(data))
+    self.assertEqual(automount.AutomountMap, type(data))
 
   def testBadScopeException(self):
     """Test that a bad scope raises a config.ConfigurationError."""

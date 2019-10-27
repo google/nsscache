@@ -95,5 +95,5 @@ class NsscacheTestProgram(unittest.TestProgram):
 
 
 if __name__ == '__main__':
-  os.chdir(os.path.dirname(sys.argv[0]))
+  os.chdir(sys.path[0])
   NsscacheTestProgram()
