@@ -11,6 +11,7 @@ script:
  - python setup.py install --root=/tmp/nsscache
 
 python:
+ - "2.7"
  - "3.8"
  - "nightly"
 matrix:
