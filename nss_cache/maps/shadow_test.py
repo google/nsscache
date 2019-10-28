@@ -47,10 +47,10 @@ class TestShadowMap(unittest.TestCase):
     
   def testInit(self):
     """Construct an empty or seeded ShadowMap."""
-    self.assertEquals(shadow.ShadowMap, type(shadow.ShadowMap()),
+    self.assertEqual(shadow.ShadowMap, type(shadow.ShadowMap()),
                       msg='failed to create emtpy ShadowMap')
     smap = shadow.ShadowMap([self._good_entry])
-    self.assertEquals(self._good_entry, smap.PopItem(),
+    self.assertEqual(self._good_entry, smap.PopItem(),
                       msg='failed to seed ShadowMap with list')
     self.assertRaises(TypeError, shadow.ShadowMap, ['string'])
     
@@ -58,12 +58,12 @@ class TestShadowMap(unittest.TestCase):
     """Add throws an error for objects it can't verify."""
     smap = shadow.ShadowMap()
     entry = self._good_entry
-    self.assert_(smap.Add(entry), msg='failed to append new entry.')
+    self.assertTrue(smap.Add(entry), msg='failed to append new entry.')
 
-    self.assertEquals(1, len(smap), msg='unexpected size for Map.')
+    self.assertEqual(1, len(smap), msg='unexpected size for Map.')
         
     ret_entry = smap.PopItem()
-    self.assertEquals(ret_entry, entry, msg='failed to pop existing entry.')
+    self.assertEqual(ret_entry, entry, msg='failed to pop existing entry.')
 
     pentry = passwd.PasswdMapEntry()
     pentry.name = 'foo'
@@ -77,60 +77,60 @@ class TestShadowMapEntry(unittest.TestCase):
     
   def testInit(self):
     """Construct empty and seeded ShadowMapEntry."""
-    self.assert_(shadow.ShadowMapEntry(),
+    self.assertTrue(shadow.ShadowMapEntry(),
                  msg='Could not create empty ShadowMapEntry')
     seed = {'name': 'foo'}
     entry = shadow.ShadowMapEntry(seed)
-    self.assert_(entry.Verify(),
+    self.assertTrue(entry.Verify(),
                  msg='Could not verify seeded ShadowMapEntry')
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Entry returned wrong value for name')
-    self.assertEquals(entry.passwd, '!!',
+    self.assertEqual(entry.passwd, '!!',
                       msg='Entry returned wrong value for passwd')
-    self.assertEquals(entry.lstchg, None,
+    self.assertEqual(entry.lstchg, None,
                       msg='Entry returned wrong value for lstchg')
-    self.assertEquals(entry.min, None,
+    self.assertEqual(entry.min, None,
                       msg='Entry returned wrong value for min')
-    self.assertEquals(entry.max, None,
+    self.assertEqual(entry.max, None,
                       msg='Entry returned wrong value for max')
-    self.assertEquals(entry.warn, None,
+    self.assertEqual(entry.warn, None,
                       msg='Entry returned wrong value for warn')
-    self.assertEquals(entry.inact, None,
+    self.assertEqual(entry.inact, None,
                       msg='Entry returned wrong value for inact')
-    self.assertEquals(entry.expire, None,
+    self.assertEqual(entry.expire, None,
                       msg='Entry returned wrong value for expire')
-    self.assertEquals(entry.flag, None,
+    self.assertEqual(entry.flag, None,
                       msg='Entry returned wrong value for flag')
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
     entry = shadow.ShadowMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Could not set attribute: name')
     entry.passwd = 'seekret'
-    self.assertEquals(entry.passwd, 'seekret',
+    self.assertEqual(entry.passwd, 'seekret',
                       msg='Could not set attribute: passwd')
     entry.lstchg = 0
-    self.assertEquals(entry.lstchg, 0,
+    self.assertEqual(entry.lstchg, 0,
                       msg='Could not set attribute: lstchg')
     entry.min = 0
-    self.assertEquals(entry.min, 0,
+    self.assertEqual(entry.min, 0,
                       msg='Could not set attribute: min')
     entry.max = 0
-    self.assertEquals(entry.max, 0,
+    self.assertEqual(entry.max, 0,
                       msg='Could not set attribute: max')
     entry.warn = 0
-    self.assertEquals(entry.warn, 0,
+    self.assertEqual(entry.warn, 0,
                       msg='Could not set attribute: warn')
     entry.inact = 0
-    self.assertEquals(entry.inact, 0,
+    self.assertEqual(entry.inact, 0,
                       msg='Could not set attribute: inact')
     entry.expire = 0
-    self.assertEquals(entry.expire, 0,
+    self.assertEqual(entry.expire, 0,
                       msg='Could not set attribute: expire')
     entry.flag = 0
-    self.assertEquals(entry.flag, 0,
+    self.assertEqual(entry.flag, 0,
                       msg='Could not set attribute: flag')
 
   def testVerify(self):
@@ -138,13 +138,13 @@ class TestShadowMapEntry(unittest.TestCase):
     entry = shadow.ShadowMapEntry()
     
     # Emtpy object should bomb
-    self.failIf(entry.Verify())
+    self.assertFalse(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
     entry = shadow.ShadowMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.Key(), entry.name)
+    self.assertEqual(entry.Key(), entry.name)
 
 
 if __name__ == '__main__':

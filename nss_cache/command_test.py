@@ -23,13 +23,16 @@ import grp
 import os
 import pwd
 import shutil
-import StringIO
+from io import BytesIO as StringIO
 import sys
 import tempfile
 import time
 import unittest
 
-import mox
+try:
+  import mox
+except ImportError:
+  import mox3
 
 from nss_cache import command
 from nss_cache import config
@@ -166,7 +169,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -446,7 +449,7 @@ class TestVerifyCommand(mox.MoxTestBase):
     c = command.Verify()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -638,7 +641,7 @@ class TestRepairCommand(unittest.TestCase):
     c = command.Repair()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -663,7 +666,7 @@ class TestHelpCommand(unittest.TestCase):
 
   def setUp(self):
     self.stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
+    sys.stdout = StringIO()
 
   def tearDown(self):
     sys.stdout = self.stdout
@@ -741,7 +744,7 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -754,7 +757,7 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertEqual([], args)
 
   def testObeysMapsFlag(self):
-    stdout_buffer = StringIO.StringIO()
+    stdout_buffer = StringIO()
 
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer

@@ -24,10 +24,13 @@ import logging
 import time
 import ldap
 import ldap.sasl
-import urllib
 import re
 from binascii import b2a_hex
 from distutils.version import StrictVersion
+try:
+  from urllib import quote
+except ImportError:
+  from urllib.parse import quote
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -175,7 +178,7 @@ class LdapSource(source.Source):
     # LDAPI URLs must be url escaped socket filenames; rewrite if necessary.
     if 'uri' in configuration:
       if configuration['uri'].startswith('ldapi://'):
-        configuration['uri'] = 'ldapi://' + urllib.quote(configuration['uri'][8:], '')
+        configuration['uri'] = 'ldapi://' + quote(configuration['uri'][8:], '')
     if not 'bind_dn' in configuration:
       configuration['bind_dn'] = self.BIND_DN
     if not 'bind_password' in configuration:
@@ -259,7 +262,7 @@ class LdapSource(source.Source):
           self.conn.simple_bind_s(who=configuration['bind_dn'],
                                 cred=str(configuration['bind_password']))
         break
-      except ldap.SERVER_DOWN, e:
+      except ldap.SERVER_DOWN as e:
         retry_count += 1
         self.log.warning('Failed LDAP connection: attempt #%s.', retry_count)
         self.log.debug('ldap error is %r', e)
@@ -671,7 +674,7 @@ class UpdateGetter(object):
       try:
         if not data_map.Add(self.Transform(obj)):
           logging.info('could not add obj: %r', obj)
-      except AttributeError, e:
+      except AttributeError as e:
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
     # Perform some post processing on the data_map.

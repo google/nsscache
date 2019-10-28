@@ -33,9 +33,9 @@ class TestCacheFactory(unittest.TestCase):
     old_cache_implementations = cache_factory._cache_implementations
     cache_factory._cache_implementations = {}
     cache_factory.RegisterImplementation('dummy', 'dummy', DummyCache)
-    self.failUnlessEqual(1, len(cache_factory._cache_implementations))
-    self.failUnlessEqual(1, len(cache_factory._cache_implementations['dummy']))
-    self.failUnlessEqual(DummyCache,
+    self.assertEqual(1, len(cache_factory._cache_implementations))
+    self.assertEqual(1, len(cache_factory._cache_implementations['dummy']))
+    self.assertEqual(DummyCache,
                          cache_factory._cache_implementations['dummy']['dummy'])
     cache_factory._cache_implementations = old_cache_implementations
 

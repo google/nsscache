@@ -31,7 +31,10 @@ import sys
 import tempfile
 import unittest
 
-import mox
+try:
+  import mox
+except ImportError:
+  import mox3
 
 from nss_cache import lock
 
