@@ -3,9 +3,9 @@
 __author__ = 'hexedpackets@gmail.com (William Huba)'
 
 import base64
+import collections
 import logging
 import json
-from future.moves.collections import defaultdict
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd
@@ -129,7 +129,7 @@ class ConsulMapParser(object):
       A child of Map containing the cache data.
     """
 
-    entries = defaultdict(dict)
+    entries = collections.defaultdict(dict)
     for line in json.loads(cache_info.read()):
       key = line.get('Key', '').split('/')
       value = line.get('Value', '')
