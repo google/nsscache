@@ -20,6 +20,7 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import grp
 import pwd
+import spwd
 import unittest
 
 import mox
@@ -48,9 +49,9 @@ class TestNSS(mox.MoxTestBase):
 
     self.mox.ReplayAll()
 
-    self.assertEquals('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
-    self.assertEquals('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
-    self.assertEquals('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
+    self.assertEqual('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
+    self.assertEqual('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
+    self.assertEqual('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
 
   def testGetMapException(self):
     """GetMap throws error.UnsupportedMap for unsupported maps."""
@@ -86,7 +87,7 @@ class TestNSS(mox.MoxTestBase):
     password_map = nss.GetPasswdMap()
 
     self.assertTrue(isinstance(password_map, passwd.PasswdMap))
-    self.assertEquals(len(password_map), 2)
+    self.assertEqual(len(password_map), 2)
     self.assertTrue(password_map.Exists(entry1))
     self.assertTrue(password_map.Exists(entry2))
 
@@ -116,34 +117,47 @@ class TestNSS(mox.MoxTestBase):
     group_map = nss.GetGroupMap()
 
     self.assertTrue(isinstance(group_map, group.GroupMap))
-    self.assertEquals(len(group_map), 2)
+    self.assertEqual(len(group_map), 2)
     self.assertTrue(group_map.Exists(entry1))
     self.assertTrue(group_map.Exists(entry2))
 
   def testGetShadowMap(self):
     """Verify we build a correct shadow map from nss calls."""
-    line1 = 'foo:!!::::::::'
-    line2 = 'bar:!!::::::::'
-    lines = [line1, line2]
 
-    mock_getent = self.mox.CreateMockAnything()
-    mock_getent.communicate().AndReturn(['\n'.join(lines),''])
-    mock_getent.returncode = 0
+    foo = ('foo', '!', 18171, '', '', '', '', '', '')
+    bar = ('bar', '!', 17662, '', 0, 9999, 7, '', '')
+
+    self.mox.StubOutWithMock(spwd, 'getspall')
+    spwd.getspall().AndReturn([foo, bar])
 
     entry1 = shadow.ShadowMapEntry()
     entry1.name = 'foo'
+    entry1.passwd = '!'
+    entry1.lstchg = 18171
+    entry1.min = ''
+    entry1.max = ''
+    entry1.warn = ''
+    entry1.inact = ''
+    entry1.expire = ''
+    entry1.flag = ''
+
     entry2 = shadow.ShadowMapEntry()
     entry2.name = 'bar'
-
-    self.mox.StubOutWithMock(nss, '_SpawnGetent')
-    nss._SpawnGetent(config.MAP_SHADOW).AndReturn(mock_getent)
+    entry2.passwd = '!'
+    entry2.lstchg = 17662
+    entry2.min = ''
+    entry2.max = 0
+    entry2.warn = 9999
+    entry2.inact = 7
+    entry2.expire = ''
+    entry2.flag = ''
 
     self.mox.ReplayAll()
 
     shadow_map = nss.GetShadowMap()
 
     self.assertTrue(isinstance(shadow_map, shadow.ShadowMap))
-    self.assertEquals(len(shadow_map), 2)
+    self.assertEqual(len(shadow_map), 2)
     self.assertTrue(shadow_map.Exists(entry1))
     self.assertTrue(shadow_map.Exists(entry2))
 

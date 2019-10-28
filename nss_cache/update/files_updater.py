@@ -87,7 +87,7 @@ class FileMapUpdater(updater.Updater):
     finally:
       try:
         os.unlink(new_file)
-      except OSError, e:
+      except OSError as e:
         # If we're using zsync source, it already renames the file for us.
         if e.errno != errno.ENOENT:
           raise

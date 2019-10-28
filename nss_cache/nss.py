@@ -18,9 +18,10 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-import grp
-import logging
 import pwd
+import grp
+import spwd
+import logging
 import subprocess
 
 from nss_cache import config
@@ -84,48 +85,19 @@ def GetGroupMap():
 
 def GetShadowMap():
   """Returns a ShadowMap built from nss calls."""
-  getent = _SpawnGetent(config.MAP_SHADOW)
-  (getent_stdout, getent_stderr) = getent.communicate()
-
-  # The following is going to be map-specific each time, so no point in
-  # making more methods.
   shadow_map = shadow.ShadowMap()
 
-  for line in getent_stdout.split():
-    nss_entry = line.strip().split(':')
+  for nss_entry in spwd.getspall():
     map_entry = shadow.ShadowMapEntry()
     map_entry.name = nss_entry[0]
     map_entry.passwd = nss_entry[1]
-    if nss_entry[2] != '':
-      map_entry.lstchg = int(nss_entry[2])
-    if nss_entry[3] != '':
-      map_entry.min = int(nss_entry[3])
-    if nss_entry[4] != '':
-      map_entry.max = int(nss_entry[4])
-    if nss_entry[5] != '':
-      map_entry.warn = int(nss_entry[5])
-    if nss_entry[6] != '':
-      map_entry.inact = int(nss_entry[6])
-    if nss_entry[7] != '':
-      map_entry.expire = int(nss_entry[7])
-    if nss_entry[8] != '':
-      map_entry.flag = int(nss_entry[8])
+    map_entry.lstchg = nss_entry[2]
+    map_entry.min = nss_entry[3]
+    map_entry.max = nss_entry[4]
+    map_entry.warn = nss_entry[5]
+    map_entry.inact = nss_entry[6]
+    map_entry.expire = nss_entry[7]
+    map_entry.flag = nss_entry[8]
     shadow_map.Add(map_entry)
 
-  if getent_stderr:
-    logging.debug('captured error %s', getent_stderr)
-
-  retval = getent.returncode
-
-  if retval != 0:
-    logging.warning('%s returned error code: %d', GETENT, retval)
-
   return shadow_map
-
-
-def _SpawnGetent(map_name):
-  """Run 'getent map' in a subprocess for reading NSS data."""
-  getent = subprocess.Popen([GETENT, map_name],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-  return getent

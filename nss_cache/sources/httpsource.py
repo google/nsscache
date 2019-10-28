@@ -20,12 +20,15 @@ __author__ = ('blaedd@google.com (David MacKinnon',)
 
 import bz2
 import calendar
-import cStringIO
+import io
 import logging
 import os
 import pycurl
 import time
-import urlparse
+try:
+  from urllib.parse import urljoin
+except ImportError:
+  from urlparse import urljoin
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -177,7 +180,7 @@ class HttpFilesSource(source.Source):
     if location is None:
       self.log.error('A location is required to retrieve an automount map!')
       raise error.EmptyMap
-    automount_url = urlparse.urljoin(self.conf['automount_base_url'],
+    automount_url = urljoin(self.conf['automount_base_url'],
                                      location)
     return AutomountUpdateGetter().GetUpdates(self, automount_url, since)
 
@@ -304,10 +307,10 @@ class UpdateGetter(object):
 
     # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
     try:
-      response = cStringIO.StringIO(bz2.decompress(body))
+      response = io.StringIO(bz2.decompress(body))
       self.log.debug('bzip encoding found')
     except IOError:
-      response = cStringIO.StringIO(body)
+      response = io.StringIO(body)
 
     data_map = self.GetMap(cache_info=response)
     if http_ts_string:

@@ -60,7 +60,7 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 
     # Construct a fake source.
     def GetFile(map_name, dst_file, current_file, location):
-      print "GetFile: %s" % dst_file
+      print(("GetFile: %s" % dst_file))
       f = open(dst_file, 'w')
       f.write('root:x:0:0:root:/root:/bin/bash\n')
       f.close()

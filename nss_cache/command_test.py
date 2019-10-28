@@ -23,7 +23,7 @@ import grp
 import os
 import pwd
 import shutil
-import StringIO
+import io
 import sys
 import tempfile
 import time
@@ -69,10 +69,10 @@ class TestCommand(mox.MoxTestBase):
     c = command.Command()
 
     # First test that we create a lock and lock it.
-    self.assertEquals('LOCK', c._Lock())
+    self.assertEqual('LOCK', c._Lock())
 
     # Then we test that we lock the existing one a second time.
-    self.assertEquals('MORLOCK', c._Lock())
+    self.assertEqual('MORLOCK', c._Lock())
 
   def testForceLock(self):
     self.mox.StubOutClassWithMocks(lock, 'PidFile')
@@ -84,7 +84,7 @@ class TestCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
     c = command.Command()
 
-    self.assertEquals('LOCK', c._Lock(force=True))
+    self.assertEqual('LOCK', c._Lock(force=True))
 
 
   def testUnlock(self):
@@ -116,7 +116,7 @@ class TestCommand(mox.MoxTestBase):
 
     c = Dummy()
     self.assertTrue(isinstance(c, command.Command))
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
 
 class TestUpdateCommand(mox.MoxTestBase):
@@ -147,11 +147,11 @@ class TestUpdateCommand(mox.MoxTestBase):
 
   def testConstructor(self):
     c = command.Update()
-    self.failIfEqual(None, c)
+    self.assertNotEqual(None, c)
 
   def testHelp(self):
     c = command.Update()
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
   def testRunWithNoParameters(self):
     c = command.Update()
@@ -160,16 +160,16 @@ class TestUpdateCommand(mox.MoxTestBase):
     c.UpdateMaps(self.conf, incremental=True, force_lock=False, force_write=False).AndReturn(0)
     self.mox.ReplayAll()
 
-    self.assertEquals(0, c.Run(self.conf, []))
+    self.assertEqual(0, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Update()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = io.StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
-    self.assertEquals(2, c.Run(None, ['--invalid']))
+    self.assertEqual(2, c.Run(None, ['--invalid']))
     sys.stderr = stderr
 
   def testRunWithFlags(self):
@@ -179,7 +179,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     c.UpdateMaps(self.conf, incremental=False, force_lock=True, force_write=True).AndReturn(0)
     self.mox.ReplayAll()
 
-    self.assertEquals(0, c.Run(self.conf,
+    self.assertEqual(0, c.Run(self.conf,
                                ['-m', config.MAP_PASSWORD, '-f',
                                 '--force-write', '--force-lock']))
     self.assertEqual(['passwd'], self.conf.maps)
@@ -213,7 +213,7 @@ class TestUpdateCommand(mox.MoxTestBase):
 
     self.mox.ReplayAll()
     c = command.Update()
-    self.assertEquals(0, c.UpdateMaps(self.conf,
+    self.assertEqual(0, c.UpdateMaps(self.conf,
                                       incremental=True, force_write=False))
 
   def testUpdateAutomounts(self):
@@ -252,7 +252,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEquals(0, c.UpdateMaps(self.conf,
+    self.assertEqual(0, c.UpdateMaps(self.conf,
                                       incremental=True, force_write=False))
 
   def testUpdateMapsTrapsPermissionDenied(self):
@@ -284,7 +284,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEquals(1, c.UpdateMaps(self.conf, incremental=True,
+    self.assertEqual(1, c.UpdateMaps(self.conf, incremental=True,
                                       force_write=False))
 
   def testUpdateMapsCanForceLock(self):
@@ -297,7 +297,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     self.mox.ReplayAll()
 
     c = command.Update()
-    self.assertEquals(c.UpdateMaps(self.conf, False, force_lock=True),
+    self.assertEqual(c.UpdateMaps(self.conf, False, force_lock=True),
                       c.ERR_LOCK)
 
   def testSleep(self):
@@ -419,18 +419,18 @@ class TestVerifyCommand(mox.MoxTestBase):
 
   def testHelp(self):
     c = command.Verify()
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
   def testRunWithNoParameters(self):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return (0, 0)
 
     def FakeVerifyMaps(conf):
       """Assert that VerifyMaps is called with a config object."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return 0
 
     config.VerifyConfiguration = FakeVerifyConfiguration
@@ -440,28 +440,28 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     self.conf.maps = []
 
-    self.assertEquals(1, c.Run(self.conf, []))
+    self.assertEqual(1, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Verify()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = io.StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
-    self.assertEquals(2, c.Run(None, ['--invalid']))
+    self.assertEqual(2, c.Run(None, ['--invalid']))
     sys.stderr = stderr
 
   def testRunWithParameters(self):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return (0, 0)
 
     def FakeVerifyMaps(conf):
       """Assert that VerifyMaps is called with a config object."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return 0
 
     config.VerifyConfiguration = FakeVerifyConfiguration
@@ -469,7 +469,7 @@ class TestVerifyCommand(mox.MoxTestBase):
     c = command.Verify()
     c.VerifyMaps = FakeVerifyMaps
 
-    self.assertEquals(0, c.Run(self.conf, ['-m',
+    self.assertEqual(0, c.Run(self.conf, ['-m',
                                            config.MAP_PASSWORD]))
 
   def testVerifyMapsSucceedsOnGoodMaps(self):
@@ -488,7 +488,7 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     c = command.Verify()
 
-    self.assertEquals(0, c.VerifyMaps(self.conf))
+    self.assertEqual(0, c.VerifyMaps(self.conf))
 
   def testVerifyMapsBad(self):
     cache_mock = self.mox.CreateMock(caches.Cache)
@@ -506,7 +506,7 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     c = command.Verify()
 
-    self.assertEquals(1, c.VerifyMaps(self.conf))
+    self.assertEqual(1, c.VerifyMaps(self.conf))
 
   def testVerifyMapsException(self):
     cache_mock = self.mox.CreateMock(caches.Cache)
@@ -524,7 +524,7 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     c = command.Verify()
 
-    self.assertEquals(1, c.VerifyMaps(self.conf))
+    self.assertEqual(1, c.VerifyMaps(self.conf))
 
   def testVerifyMapsSkipsNetgroups(self):
     self.mox.StubOutWithMock(cache_factory, 'Create')
@@ -537,7 +537,7 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     c = command.Verify()
 
-    self.assertEquals(0, c.VerifyMaps(self.conf))
+    self.assertEqual(0, c.VerifyMaps(self.conf))
 
   def testVerifySourcesGood(self):
     source_mock = self.mox.CreateMock(source.Source)
@@ -548,12 +548,12 @@ class TestVerifyCommand(mox.MoxTestBase):
     self.conf.maps = [config.MAP_PASSWORD]
 
     self.mox.ReplayAll()
-    self.assertEquals(0, command.Verify().VerifySources(self.conf))
+    self.assertEqual(0, command.Verify().VerifySources(self.conf))
 
   def testVerifySourcesBad(self):
 
     self.conf.maps = []
-    self.assertEquals(1, command.Verify().VerifySources(self.conf))
+    self.assertEqual(1, command.Verify().VerifySources(self.conf))
 
     source_mock = self.mox.CreateMock(source.Source)
     source_mock.Verify().AndReturn(1)
@@ -565,15 +565,15 @@ class TestVerifyCommand(mox.MoxTestBase):
 
     self.mox.ReplayAll()
 
-    self.assertEquals(1, command.Verify().VerifySources(self.conf))
+    self.assertEqual(1, command.Verify().VerifySources(self.conf))
 
   def testVerifySourcesTrapsSourceUnavailable(self):
     self.conf.maps = []
-    self.assertEquals(1, command.Verify().VerifySources(self.conf))
+    self.assertEqual(1, command.Verify().VerifySources(self.conf))
 
     def FakeCreate(conf):
       """Stub routine returning a pmock to test VerifySources."""
-      self.assertEquals(conf,
+      self.assertEqual(conf,
                         self.conf.options[config.MAP_PASSWORD].source)
       raise error.SourceUnavailable
 
@@ -581,7 +581,7 @@ class TestVerifyCommand(mox.MoxTestBase):
     source_factory.Create = FakeCreate
     self.conf.maps = [config.MAP_PASSWORD]
 
-    self.assertEquals(1, command.Verify().VerifySources(self.conf))
+    self.assertEqual(1, command.Verify().VerifySources(self.conf))
 
     source_factory.Create = old_source_base_create
 
@@ -618,44 +618,44 @@ class TestRepairCommand(unittest.TestCase):
 
   def testHelp(self):
     c = command.Repair()
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
   def testRunWithNoParameters(self):
     c = command.Repair()
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return (0, 1)
 
     config.VerifyConfiguration = FakeVerifyConfiguration
 
     self.conf.maps = []
 
-    self.assertEquals(1, c.Run(self.conf, []))
+    self.assertEqual(1, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Repair()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = io.StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
-    self.assertEquals(2, c.Run(None, ['--invalid']))
+    self.assertEqual(2, c.Run(None, ['--invalid']))
     sys.stderr = stderr
 
   def testRunWithParameters(self):
 
     def FakeVerifyConfiguration(conf):
       """Assert that we call VerifyConfiguration correctly."""
-      self.assertEquals(conf, self.conf)
+      self.assertEqual(conf, self.conf)
       return (0, 1)
 
     config.VerifyConfiguration = FakeVerifyConfiguration
 
     c = command.Repair()
 
-    self.assertEquals(1, c.Run(self.conf, ['-m',
+    self.assertEqual(1, c.Run(self.conf, ['-m',
                                            config.MAP_PASSWORD]))
 
 
@@ -663,22 +663,22 @@ class TestHelpCommand(unittest.TestCase):
 
   def setUp(self):
     self.stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
+    sys.stdout = io.StringIO()
 
   def tearDown(self):
     sys.stdout = self.stdout
 
   def testHelp(self):
     c = command.Help()
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
   def testRunWithNoParameters(self):
     c = command.Help()
-    self.assertEquals(0, c.Run(None, []))
+    self.assertEqual(0, c.Run(None, []))
 
   def testRunHelpHelp(self):
     c = command.Help()
-    self.assertEquals(0, c.Run(None, ['help']))
+    self.assertEqual(0, c.Run(None, ['help']))
 
 
 class TestStatusCommand(mox.MoxTestBase):
@@ -730,21 +730,21 @@ class TestStatusCommand(mox.MoxTestBase):
 
   def testHelp(self):
     c = command.Status()
-    self.failIfEqual(None, c.Help())
+    self.assertNotEqual(None, c.Help())
 
   def testRunWithNoParameters(self):
     c = command.Status()
     self.conf.maps = []
-    self.assertEquals(0, c.Run(self.conf, []))
+    self.assertEqual(0, c.Run(self.conf, []))
 
   def testRunWithBadParameters(self):
     c = command.Status()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = io.StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
-    self.assertEquals(2, c.Run(None, ['--invalid']))
+    self.assertEqual(2, c.Run(None, ['--invalid']))
     sys.stderr = stderr
 
   def testEpochFormatParameter(self):
@@ -754,7 +754,7 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertEqual([], args)
 
   def testObeysMapsFlag(self):
-    stdout_buffer = StringIO.StringIO()
+    stdout_buffer = io.StringIO()
 
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -763,8 +763,8 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertEqual(0, c.Run(self.conf, ['-m', 'passwd']))
     sys.stdout = old_stdout
 
-    self.failIfEqual(0, len(stdout_buffer.getvalue()))
-    self.failIf(stdout_buffer.getvalue().find('group') >= 0)
+    self.assertNotEqual(0, len(stdout_buffer.getvalue()))
+    self.assertFalse(stdout_buffer.getvalue().find('group') >= 0)
 
   def testGetSingleMapMetadata(self):
     # test both automount and non-automount maps.
@@ -781,26 +781,26 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
 
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf)
-    self.failUnless('map' in values[0])
-    self.failUnless('key' in values[0])
-    self.failUnless('value' in values[0])
+    self.assertTrue('map' in values[0])
+    self.assertTrue('key' in values[0])
+    self.assertTrue('value' in values[0])
 
     values = c.GetSingleMapMetadata(
         config.MAP_AUTOMOUNT, self.conf,
         automount_mountpoint='automount_mountpoint')
 
-    self.failUnless('map' in values[0])
-    self.failUnless('key' in values[0])
-    self.failUnless('value' in values[0])
-    self.failUnless('automount' in values[0])
+    self.assertTrue('map' in values[0])
+    self.assertTrue('key' in values[0])
+    self.assertTrue('value' in values[0])
+    self.assertTrue('automount' in values[0])
 
   def testGetSingleMapMetadataTimestampEpoch(self):
     c = command.Status()
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                     epoch=True)
-    self.failUnless('map' in values[0])
-    self.failUnless('key' in values[0])
-    self.failUnless('value' in values[0])
+    self.assertTrue('map' in values[0])
+    self.assertTrue('key' in values[0])
+    self.assertTrue('value' in values[0])
     # values below are returned by dummyupdater
     self.assertEqual(1, values[0]['value'])
     self.assertEqual(2, values[1]['value'])
@@ -813,7 +813,7 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                     epoch=False)
-    self.failUnless(values[1]['value'] in ['Wed Dec 31 16:00:02 1969',
+    self.assertTrue(values[1]['value'] in ['Wed Dec 31 16:00:02 1969',
                                         'Thu Jan  1 00:00:02 1970'])
 
   def testGetAutomountMapMetadata(self):

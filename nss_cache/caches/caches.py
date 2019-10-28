@@ -101,7 +101,7 @@ class Cache(object):
       self.temp_cache_file = os.fdopen(fd, 'w+b')
       self.log.debug('opened temporary cache filename %r',
                      self.temp_cache_filename)
-    except OSError, e:
+    except OSError as e:
       if e.errno == errno.EACCES:
         self.log.info('Got OSError (%s) when trying to create temporary file',
                       e)
@@ -116,7 +116,7 @@ class Cache(object):
     # Safe file remove (ignore "no such file or directory" errors):
     try:
       os.remove(self.temp_cache_filename)
-    except OSError, e:
+    except OSError as e:
       if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
         raise  # re-raise exception if a different error occured
 
@@ -150,7 +150,7 @@ class Cache(object):
       uid = stat_info.st_uid
       gid = stat_info.st_gid
       os.chown(self.temp_cache_filename, uid, gid)
-    except OSError, e:
+    except OSError as e:
       if e.errno == errno.ENOENT:
         if self.map_name == "sshkey":
           os.chmod(self.temp_cache_filename,

@@ -18,7 +18,10 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-import bsddb
+try:
+  from bsddb import btopen
+except ImportError:
+  from bsddb3 import btopen
 import fcntl
 import os
 import select
