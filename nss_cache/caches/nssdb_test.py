@@ -26,16 +26,9 @@ import sys
 import tempfile
 import time
 import unittest
+from mox3 import mox
+from bsddb3 import btopen
 
-try:
-  from bsddb import btopen
-except ImportError:
-  from bsddb3 import btopen
-
-try:
-  import mox
-except ImportError:
-  import mox3
 
 from nss_cache import error
 
@@ -598,9 +591,9 @@ class TestNssDbCache(unittest.TestCase):
     pass_file = os.path.join(self.workdir, 'passwd.db')
     db = btopen(pass_file, 'c')
     ent = 'foo:x:1000:500:bar:/:/bin/sh'
-    db['00'] = ent
-    db['=1000'] = ent
-    db['.foo'] = ent
+    db[b'00'] = ent
+    db[b'=1000'] = ent
+    db[b'.foo'] = ent
     db.sync()
     self.assertTrue(os.path.exists(pass_file))
 

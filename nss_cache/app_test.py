@@ -18,11 +18,11 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-import logging
 import os
-from io import BytesIO as StringIO
 import sys
+import logging
 import unittest
+from io import StringIO
 
 from nss_cache import app
 
@@ -40,47 +40,47 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testRun(self):
     return_code = app.NssCacheApp().Run([], {})
-    self.assertEquals(os.EX_USAGE, return_code)
+    self.assertEqual(os.EX_USAGE, return_code)
 
   def testParseGlobalOptions(self):
     a = app.NssCacheApp()
     (options, args) = a.parser.parse_args(['-d', '-v', 'command'])
-    self.failIfEqual(None, options.debug)
-    self.failIfEqual(None, options.verbose)
+    self.assertNotEqual(None, options.debug)
+    self.assertNotEqual(None, options.verbose)
     self.assertEqual(['command'], args)
 
   def testParseCommandLineDebug(self):
     a = app.NssCacheApp()
     (options, args) = a.parser.parse_args(['-d'])
-    self.failIfEqual(None, options.debug)
+    self.assertNotEqual(None, options.debug)
     (options, args) = a.parser.parse_args(['--debug'])
-    self.failIfEqual(None, options.debug)
+    self.assertNotEqual(None, options.debug)
     a.Run(['-d'], {})
-    self.assertEquals(logging.DEBUG, a.log.getEffectiveLevel())
+    self.assertEqual(logging.DEBUG, a.log.getEffectiveLevel())
 
   def testParseCommandLineVerbose(self):
     a = app.NssCacheApp()
     (options, args) = a.parser.parse_args(['-v'])
-    self.failIfEqual(None, options.verbose)
+    self.assertNotEqual(None, options.verbose)
     self.assertEqual([], args)
     (options, args) = a.parser.parse_args(['--verbose'])
-    self.failIfEqual(None, options.verbose)
+    self.assertNotEqual(None, options.verbose)
     self.assertEqual([], args)
     a.Run(['-v'], {})
-    self.assertEquals(logging.INFO, a.log.getEffectiveLevel())
+    self.assertEqual(logging.INFO, a.log.getEffectiveLevel())
 
   def testParseCommandLineVerboseDebug(self):
     a = app.NssCacheApp()
     a.Run(['-v', '-d'], {})
-    self.assertEquals(logging.DEBUG, a.log.getEffectiveLevel())
+    self.assertEqual(logging.DEBUG, a.log.getEffectiveLevel())
 
   def testParseCommandLineConfigFile(self):
     a = app.NssCacheApp()
     (options, args) = a.parser.parse_args(['-c', 'file'])
-    self.failIfEqual(None, options.config_file)
+    self.assertNotEqual(None, options.config_file)
     self.assertEqual([], args)
     (options, args) = a.parser.parse_args(['--config-file', 'file'])
-    self.failIfEqual(None, options.config_file)
+    self.assertNotEqual(None, options.config_file)
     self.assertEqual([], args)
 
   def testBadOptionsCauseNoExit(self):
@@ -88,7 +88,7 @@ class TestNssCacheApp(unittest.TestCase):
     stderr_buffer = StringIO()
     old_stderr = sys.stderr
     sys.stderr = stderr_buffer
-    self.assertEquals(2, a.Run(['--invalid'], {}))
+    self.assertEqual(2, a.Run(['--invalid'], {}))
     sys.stderr = old_stderr
 
   def testHelpOptionPrintsGlobalHelp(self):
@@ -96,16 +96,16 @@ class TestNssCacheApp(unittest.TestCase):
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
-    self.assertEquals(0, a.Run(['--help'], {}))
+    self.assertEqual(0, a.Run(['--help'], {}))
     sys.stdout = old_stdout
-    self.failIfEqual(0, stdout_buffer.tell())
+    self.assertNotEqual(0, stdout_buffer.tell())
     (prelude, usage, commands, options) = stdout_buffer.getvalue().split('\n\n')
-    self.failUnless(prelude.startswith('nsscache synchronises'))
+    self.assertTrue(prelude.startswith('nsscache synchronises'))
     expected_str = 'Usage: nsscache [global options] command [command options]'
-    self.failUnlessEqual(expected_str, usage)
-    self.failUnless(commands.startswith('commands:'))
-    self.failUnless(options.startswith('Options:'))
-    self.failUnless(options.find('show this help message and exit') >= 0)
+    self.assertEqual(expected_str, usage)
+    self.assertTrue(commands.startswith('commands:'))
+    self.assertTrue(options.startswith('Options:'))
+    self.assertTrue(options.find('show this help message and exit') >= 0)
 
   def testHelpCommandOutput(self):
     # trap stdout into a StringIO
@@ -113,10 +113,10 @@ class TestNssCacheApp(unittest.TestCase):
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
-    self.assertEquals(0, a.Run(['help'], {}))
+    self.assertEqual(0, a.Run(['help'], {}))
     sys.stdout = old_stdout
-    self.failIfEqual(0, stdout_buffer.tell())
-    self.failUnless(stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
+    self.assertNotEqual(0, stdout_buffer.tell())
+    self.assertTrue(stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
 
 # TODO(jaq): app.Run() invocation of command_callable is tested by inspection
 # only.

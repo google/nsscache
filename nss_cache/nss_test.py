@@ -21,11 +21,7 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 import grp
 import pwd
 import unittest
-
-try:
-  import mox
-except ImportError:
-  import mox3
+from mox3 import mox
 
 from nss_cache import config
 from nss_cache import error
@@ -51,9 +47,9 @@ class TestNSS(mox.MoxTestBase):
 
     self.mox.ReplayAll()
 
-    self.assertEquals('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
-    self.assertEquals('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
-    self.assertEquals('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
+    self.assertEqual('TEST_PASSWORD', nss.GetMap(config.MAP_PASSWORD))
+    self.assertEqual('TEST_GROUP', nss.GetMap(config.MAP_GROUP))
+    self.assertEqual('TEST_SHADOW', nss.GetMap(config.MAP_SHADOW))
 
   def testGetMapException(self):
     """GetMap throws error.UnsupportedMap for unsupported maps."""
@@ -89,7 +85,7 @@ class TestNSS(mox.MoxTestBase):
     password_map = nss.GetPasswdMap()
 
     self.assertTrue(isinstance(password_map, passwd.PasswdMap))
-    self.assertEquals(len(password_map), 2)
+    self.assertEqual(len(password_map), 2)
     self.assertTrue(password_map.Exists(entry1))
     self.assertTrue(password_map.Exists(entry2))
 
@@ -119,18 +115,18 @@ class TestNSS(mox.MoxTestBase):
     group_map = nss.GetGroupMap()
 
     self.assertTrue(isinstance(group_map, group.GroupMap))
-    self.assertEquals(len(group_map), 2)
+    self.assertEqual(len(group_map), 2)
     self.assertTrue(group_map.Exists(entry1))
     self.assertTrue(group_map.Exists(entry2))
 
   def testGetShadowMap(self):
     """Verify we build a correct shadow map from nss calls."""
-    line1 = 'foo:!!::::::::'
-    line2 = 'bar:!!::::::::'
+    line1 = b'foo:!!::::::::'
+    line2 = b'bar:!!::::::::'
     lines = [line1, line2]
 
     mock_getent = self.mox.CreateMockAnything()
-    mock_getent.communicate().AndReturn(['\n'.join(lines),''])
+    mock_getent.communicate().AndReturn([b'\n'.join(lines),b''])
     mock_getent.returncode = 0
 
     entry1 = shadow.ShadowMapEntry()
@@ -146,7 +142,7 @@ class TestNSS(mox.MoxTestBase):
     shadow_map = nss.GetShadowMap()
 
     self.assertTrue(isinstance(shadow_map, shadow.ShadowMap))
-    self.assertEquals(len(shadow_map), 2)
+    self.assertEqual(len(shadow_map), 2)
     self.assertTrue(shadow_map.Exists(entry1))
     self.assertTrue(shadow_map.Exists(entry2))
 

@@ -92,6 +92,7 @@ def GetShadowMap():
   shadow_map = shadow.ShadowMap()
 
   for line in getent_stdout.split():
+    line = line.decode('utf-8')
     nss_entry = line.strip().split(':')
     map_entry = shadow.ShadowMapEntry()
     map_entry.name = nss_entry[0]

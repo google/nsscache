@@ -120,7 +120,7 @@ class Updater(object):
       timestamp_file = open(filename, 'r')
       timestamp_string = timestamp_file.read().strip()
     except IOError as e:
-      self.log.warn('error opening timestamp file: %s', e)
+      self.log.warning('error opening timestamp file: %s', e)
       timestamp_string = None
     else:
       timestamp_file.close()
@@ -141,8 +141,8 @@ class Updater(object):
       timestamp = None
 
     now = self._GetCurrentTime()
-    if timestamp > now:
-      self.log.warn('timestamp %r from %r is in the future, now is %r',
+    if timestamp and timestamp > now:
+      self.log.warning('timestamp %r from %r is in the future, now is %r',
                     timestamp_string, filename, now)
       if timestamp - now >= 60*60:
         self.log.info('Resetting timestamp to now.')
@@ -178,12 +178,12 @@ class Updater(object):
     time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp))
 
     try:
-      os.write(filedesc, '%s\n' % time_string)
+      os.write(filedesc, b'%s\n' % time_string.encode())
       os.fsync(filedesc)
       os.close(filedesc)
     except OSError:
       os.unlink(temp_filename)
-      self.log.warn('writing timestamp failed!')
+      self.log.warning('writing timestamp failed!')
       return False
 
     os.chmod(temp_filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)

@@ -2,8 +2,8 @@
 
 __author__ = 'alexey.pikin@gmail.com'
 
-from io import BytesIO as StringIO
 import unittest
+from io import StringIO
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd

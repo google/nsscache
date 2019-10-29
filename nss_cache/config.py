@@ -22,12 +22,9 @@ loading and parsing for the nss_cache module.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
 import logging
 import re
+from configparser import ConfigParser
 
 
 # known nss map types.
@@ -281,16 +278,16 @@ def ParseNSSwitchConf(nsswitch_filename):
     a dictionary keyed by map names and containing a list of sources
     for each map.
   """
-  nsswitch_file = open(nsswitch_filename, 'r')
+  with open (nsswitch_filename, 'r') as nsswitch_file:
 
-  nsswitch = {}
+    nsswitch = {}
 
-  map_re = re.compile('^([a-z]+): *(.*)$')
-  for line in nsswitch_file:
-    match = map_re.match(line)
-    if match:
-      sources = match.group(2).split()
-      nsswitch[match.group(1)] = sources
+    map_re = re.compile('^([a-z]+): *(.*)$')
+    for line in nsswitch_file:
+      match = map_re.match(line)
+      if match:
+        sources = match.group(2).split()
+        nsswitch[match.group(1)] = sources
 
   return nsswitch
 
@@ -333,7 +330,7 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
       nss_module_name = 'db'
 
     if nss_module_name not in nsswitch[configured_map]:
-      logging.warn(('nsscache is configured to build maps for %r, '
+      logging.warning(('nsscache is configured to build maps for %r, '
                     'but NSS is not configured (in %r) to use it'),
                    configured_map, nsswitch_filename)
       warnings += 1

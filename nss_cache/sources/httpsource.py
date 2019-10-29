@@ -24,14 +24,8 @@ import logging
 import os
 import pycurl
 import time
-try:
-  from urlparse import urljoin
-except ImportError:
-  from urllib.parse import urljoin
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from io import BytesIO as StringIO
+from io import StringIO
+from urllib.parse import urljoin
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -310,10 +304,12 @@ class UpdateGetter(object):
 
     # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
     try:
-      response = StringIO(bz2.decompress(body))
+      #response = StringIO(bz2.decompress(body))
+      response = bz2.decompress(body)
       self.log.debug('bzip encoding found')
     except IOError:
-      response = StringIO(body)
+      response = body
+      #response = StringIO(body)
 
     data_map = self.GetMap(cache_info=response)
     if http_ts_string:

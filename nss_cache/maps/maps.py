@@ -177,17 +177,19 @@ class Map(object):
           'Attempt to Merge() differently typed Maps: %r != %r' %
           (type(self), type(other)))
 
-    if other.GetModifyTimestamp() < self.GetModifyTimestamp():
-      raise error.InvalidMerge(
-          'Attempt to Merge a map with an older modify time into a newer one: '
-          'other: %s, self: %s' %
-          (other.GetModifyTimestamp(), self.GetModifyTimestamp()))
+    if other.GetModifyTimestamp() and self.GetModifyTimestamp():
+      if other.GetModifyTimestamp() < self.GetModifyTimestamp():
+        raise error.InvalidMerge(
+            'Attempt to Merge a map with an older modify time into a newer one: '
+            'other: %s, self: %s' %
+            (other.GetModifyTimestamp(), self.GetModifyTimestamp()))
 
-    if other.GetUpdateTimestamp() < self.GetUpdateTimestamp():
-      raise error.InvalidMerge(
-          'Attempt to Merge a map with an older update time into a newer one: '
-          'other: %s, self: %s' %
-          (other.GetUpdateTimestamp(), self.GetUpdateTimestamp()))
+    if other.GetUpdateTimestamp() and self.GetUpdateTimestamp():
+      if other.GetUpdateTimestamp() < self.GetUpdateTimestamp():
+        raise error.InvalidMerge(
+            'Attempt to Merge a map with an older update time into a newer one: '
+            'other: %s, self: %s' %
+            (other.GetUpdateTimestamp(), self.GetUpdateTimestamp()))
 
     self.log.info('merging from a map of %d entries', len(other))
 
