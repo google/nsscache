@@ -48,7 +48,7 @@ def ReadTimestamp(filename):
   try:
     timestamp_file = open(filename, 'r')
     timestamp_string = timestamp_file.read().strip()
-  except IOError, e:
+  except IOError as e:
     logging.warn('error opening timestamp file: %s', e)
     timestamp_string = None
   else:
@@ -62,7 +62,7 @@ def ReadTimestamp(filename):
       # Append UTC to force the timezone to parse the string in.
       timestamp = time.strptime(timestamp_string + ' UTC',
                                 '%Y-%m-%dT%H:%M:%SZ %Z')
-    except ValueError, e:
+    except ValueError as e:
       logging.error('cannot parse timestamp file %r: %s',
                      filename, e)
       timestamp = None

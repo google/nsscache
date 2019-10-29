@@ -21,9 +21,12 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 
 import time
 import unittest
-
 import ldap
-import mox
+
+try:
+  import mox
+except ImportError:
+  import mox3
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -76,18 +79,18 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
 
-    self.assertEquals(source.conf['bind_dn'],
+    self.assertEqual(source.conf['bind_dn'],
                       ldapsource.LdapSource.BIND_DN)
-    self.assertEquals(source.conf['bind_password'],
+    self.assertEqual(source.conf['bind_password'],
                       ldapsource.LdapSource.BIND_PASSWORD)
-    self.assertEquals(source.conf['retry_max'],
+    self.assertEqual(source.conf['retry_max'],
                       ldapsource.LdapSource.RETRY_MAX)
-    self.assertEquals(source.conf['retry_delay'],
+    self.assertEqual(source.conf['retry_delay'],
                       ldapsource.LdapSource.RETRY_DELAY)
-    self.assertEquals(source.conf['scope'], ldapsource.LdapSource.SCOPE)
-    self.assertEquals(source.conf['timelimit'],
+    self.assertEqual(source.conf['scope'], ldapsource.LdapSource.SCOPE)
+    self.assertEqual(source.conf['timelimit'],
                       ldapsource.LdapSource.TIMELIMIT)
-    self.assertEquals(source.conf['tls_require_cert'],
+    self.assertEqual(source.conf['tls_require_cert'],
                       ldap.OPT_X_TLS_DEMAND)
 
   def testOverrideDefaultConfiguration(self):
@@ -103,15 +106,15 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
 
-    self.assertEquals(source.conf['scope'], ldap.SCOPE_BASE)
-    self.assertEquals(source.conf['bind_dn'], 'TEST_BIND_DN')
-    self.assertEquals(source.conf['bind_password'], 'TEST_BIND_PASSWORD')
-    self.assertEquals(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
-    self.assertEquals(source.conf['retry_max'], 'TEST_RETRY_MAX')
-    self.assertEquals(source.conf['timelimit'], 'TEST_TIMELIMIT')
-    self.assertEquals(source.conf['tls_require_cert'], 0)
-    self.assertEquals(source.conf['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
-    self.assertEquals(source.conf['tls_cacertfile'],
+    self.assertEqual(source.conf['scope'], ldap.SCOPE_BASE)
+    self.assertEqual(source.conf['bind_dn'], 'TEST_BIND_DN')
+    self.assertEqual(source.conf['bind_password'], 'TEST_BIND_PASSWORD')
+    self.assertEqual(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
+    self.assertEqual(source.conf['retry_max'], 'TEST_RETRY_MAX')
+    self.assertEqual(source.conf['timelimit'], 'TEST_TIMELIMIT')
+    self.assertEqual(source.conf['tls_require_cert'], 0)
+    self.assertEqual(source.conf['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
+    self.assertEqual(source.conf['tls_cacertfile'],
                       'TEST_TLS_CACERTFILE')
 
   def testDebugLevelSet(self):
@@ -1454,7 +1457,7 @@ class TestLdapSource(mox.MoxTestBase):
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(self.config)
-    self.assertEquals(0, source.Verify(0))
+    self.assertEqual(0, source.Verify(0))
 
 
 class TestUpdateGetter(unittest.TestCase):
@@ -1477,13 +1480,13 @@ class TestUpdateGetter(unittest.TestCase):
   def testFromTimestampToLdap(self):
     ts = 1259641025
     expected_ldap_ts = '20091201041705Z'
-    self.assertEquals(expected_ldap_ts,
+    self.assertEqual(expected_ldap_ts,
                       ldapsource.UpdateGetter({}).FromTimestampToLdap(ts))
 
   def testFromLdapToTimestamp(self):
     expected_ts = 1259641025
     ldap_ts = '20091201041705Z'
-    self.assertEquals(expected_ts,
+    self.assertEqual(expected_ts,
                       ldapsource.UpdateGetter({}).FromLdapToTimestamp(ldap_ts))
 
   def testPasswdEmptySourceGetUpdates(self):

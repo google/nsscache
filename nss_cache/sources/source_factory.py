@@ -84,7 +84,7 @@ def Create(conf):
 
   source_name = conf['name']
 
-  if source_name not in _source_implementations.keys():
+  if source_name not in list(_source_implementations.keys()):
     raise RuntimeError('source not implemented: %r' % (source_name,))
 
   return _source_implementations[source_name](conf)

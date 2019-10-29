@@ -22,7 +22,10 @@ import grp
 import pwd
 import unittest
 
-import mox
+try:
+  import mox
+except ImportError:
+  import mox3
 
 from nss_cache import config
 from nss_cache import error

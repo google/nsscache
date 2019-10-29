@@ -140,7 +140,7 @@ class ConsulMapParser(object):
       entry_piece = key[-1]
       entries[name][entry_piece] = value
 
-    for name, entry in entries.iteritems():
+    for name, entry in entries.items():
       map_entry = self._ReadEntry(name, entry)
       if map_entry is None:
         self.log.warn('Could not create entry from line %r in cache, skipping',

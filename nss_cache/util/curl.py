@@ -19,7 +19,10 @@
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
 
-import cStringIO
+try:
+  from cStringIO import StringIO
+except ImportError:
+  from io import BytesIO as StringIO
 import logging
 import pycurl
 
@@ -34,13 +37,13 @@ def CurlFetch(url, conn=None, logger=None):
     conn = pycurl.Curl()
 
   conn.setopt(pycurl.URL, url)
-  conn.body = cStringIO.StringIO()
-  conn.headers = cStringIO.StringIO()
+  conn.body = StringIO()
+  conn.headers = StringIO()
   conn.setopt(pycurl.WRITEFUNCTION, conn.body.write)
   conn.setopt(pycurl.HEADERFUNCTION, conn.headers.write)
   try:
     conn.perform()
-  except pycurl.error, e:
+  except pycurl.error as e:
     HandleCurlError(e, logger)
     raise error.Error(e)
   resp_code = conn.getinfo(pycurl.RESPONSE_CODE)
