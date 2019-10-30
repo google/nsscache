@@ -23,16 +23,19 @@ import grp
 import os
 import pwd
 import shutil
-from io import BytesIO as StringIO
 import sys
 import tempfile
 import time
 import unittest
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 try:
   import mox
 except ImportError:
-  import mox3
+  from mox3 import mox
 
 from nss_cache import command
 from nss_cache import config

@@ -20,9 +20,12 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
 import os
-from io import BytesIO as StringIO
 import sys
 import unittest
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 from nss_cache import app
 
