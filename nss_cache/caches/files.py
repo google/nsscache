@@ -220,8 +220,6 @@ class FilesCache(caches.Cache):
       self._Rollback()
       raise
     
-    self.temp_cache_file.close()
-
     return written_keys
 
   def GetCacheFilename(self):

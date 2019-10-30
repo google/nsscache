@@ -241,7 +241,7 @@ class LdapSource(source.Source):
     # If the server is unavailable, we are going to find out now, as this
     # actually initiates the network connection.
     retry_count = 0
-    while retry_count < int(configuration['retry_max']):
+    while retry_count < configuration['retry_max']:
       self.log.debug('opening ldap connection and binding to %s',
                      configuration['uri'])
       try:
@@ -378,14 +378,10 @@ class LdapSource(source.Source):
       for record in data:
         # If the dn is requested, return it along with the payload,
         # otherwise ignore it.
-        #for key in record[1]:
-        #  if isinstance(record[1][key][0], bytes) and key != 'objectSid':
-        #    value = record[1][key][0].decode('utf-8')
-        #    record[1][key] = [value]
-        #for key, value in record[1].items():
-          #if isinstance(value[0], bytes) and key != 'objectSid':
-            #value = value[0].decode('utf-8')
-            #record[1][key] = [value]
+        for key in record[1]:
+          if isinstance(record[1][key][0], bytes) and key != 'objectSid':
+            value = record[1][key][0].decode('utf-8')
+            record[1][key] = [value]
         if self._dn_requested:
           merged_records = {'dn': record[0]}
           merged_records.update(record[1])
@@ -725,11 +721,6 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw = passwd.PasswdMapEntry()
 
-    for key in obj:
-      if isinstance(obj[key][0], bytes) and key != 'objectSid':
-        value = obj[key][0].decode('utf-8')
-        obj[key] = [value]
-
     if self.conf.get('ad'):
       pw.gecos = obj['displayName'][0]
     elif 'gecos' in obj:
@@ -825,11 +816,6 @@ class GroupUpdateGetter(UpdateGetter):
     """Transforms a LDAP posixGroup object into a group(5) entry."""
 
     gr = group.GroupMapEntry()
-
-    for key in obj:
-      if isinstance(obj[key][0], bytes) and key != 'objectSid':
-        value = obj[key][0].decode('utf-8')
-        obj[key] = [value]
 
     if self.conf.get('ad'):
       gr.name = obj['sAMAccountName'][0]
@@ -943,11 +929,6 @@ class ShadowUpdateGetter(UpdateGetter):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
 
     shadow_ent = shadow.ShadowMapEntry()
-
-    for key in obj:
-      if isinstance(obj[key][0], bytes) and key != 'objectSid':
-        value = obj[key][0].decode('utf-8')
-        obj[key] = [value]
 
     if self.conf.get('ad'):
       shadow_ent.name = obj['sAMAccountName'][0]

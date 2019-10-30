@@ -225,6 +225,7 @@ class Map(object):
       index_key = self._index.pop(0)
     except IndexError:
       raise KeyError # Callers expect a KeyError rather than IndexError
+    #print(self._data.pop(index_key)) # Throws the KeyError if empty.
     return self._data.pop(index_key) # Throws the KeyError if empty.
 
   def SetModifyTimestamp(self, value):
@@ -286,15 +287,9 @@ class MapEntry(object):
   """
   # Using slots saves us over 2x memory on large maps.
   __slots__ = ('_KEY', '_ATTRS', 'log')
-  # Overridden in the derived classes
-  def __init__(_KEY=None, _ATTRS=None):
-    _KEY
-    _ATTRS
-    super().__init__()
-    object.__setattr__(self, "_KEY", _KEY)
-    object.__setattr__(self, "_ATTRS", _ATTRS)
 
-  def __init__(self, data=None):
+  # Overridden in the derived classes
+  def __init__(self, data=None, _KEY=None, _ATTRS=None):
     """This is an abstract class.
 
     Args:
@@ -303,6 +298,7 @@ class MapEntry(object):
     Raises:
       TypeError:  Bad argument, or attempt to instantiate abstract class.
     """
+
     if self.__class__ is MapEntry:
       raise TypeError('MapEntry is an abstract class.')
 
