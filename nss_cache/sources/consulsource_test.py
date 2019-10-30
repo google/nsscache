@@ -46,9 +46,9 @@ class TestPasswdMapParser(unittest.TestCase):
     self.good_entry.passwd = 'x'
     self.good_entry.uid = 10
     self.good_entry.gid = 10
-    self.good_entry.gecos = 'How Now Brown Cow'
-    self.good_entry.dir = '/home/foo'
-    self.good_entry.shell = '/bin/bash'
+    self.good_entry.gecos = b'How Now Brown Cow'
+    self.good_entry.dir = b'/home/foo'
+    self.good_entry.shell = b'/bin/bash'
     self.parser = consulsource.ConsulPasswdMapParser()
 
   def testGetMap(self):
@@ -65,7 +65,7 @@ class TestPasswdMapParser(unittest.TestCase):
     self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
-    data = {'uid': '10', 'gid': '10', 'comment': 'How Now Brown Cow', 'shell': '/bin/bash', 'home': '/home/foo', 'passwd': 'x'}
+    data = {'uid': '10', 'gid': '10', 'comment': b'How Now Brown Cow', 'shell': b'/bin/bash', 'home': b'/home/foo', 'passwd': 'x'}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 
@@ -129,7 +129,7 @@ class TestConsulShadowMapParser(unittest.TestCase):
   def setUp(self):
     self.good_entry = shadow.ShadowMapEntry()
     self.good_entry.name = 'foo'
-    self.good_entry.passwd = '*'
+    self.good_entry.passwd = b'*'
     self.good_entry.lstchg = 17246
     self.good_entry.min = 0
     self.good_entry.max = 99999
@@ -149,7 +149,7 @@ class TestConsulShadowMapParser(unittest.TestCase):
     self.assertEqual(self.good_entry, shadow_map.PopItem())
 
   def testReadEntry(self):
-    data = {'passwd': '*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
+    data = {'passwd': b'*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 

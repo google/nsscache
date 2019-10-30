@@ -287,8 +287,10 @@ class MapEntry(object):
   """
   # Using slots saves us over 2x memory on large maps.
   __slots__ = ('_KEY', '_ATTRS', 'log')
-
   # Overridden in the derived classes
+  _KEY: str
+  _ATTRS: set()
+
   def __init__(self, data=None, _KEY=None, _ATTRS=None):
     """This is an abstract class.
 
