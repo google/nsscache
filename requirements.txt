@@ -1,7 +1,6 @@
 pytest
 boto3==1.7.36
 pycurl==7.43.0.2
-python-ldap
 python3-ldap
 python3-mox3
 mox==0.5.3
