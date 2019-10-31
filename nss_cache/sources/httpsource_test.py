@@ -24,7 +24,6 @@ import pycurl
 from mox3 import mox
 
 from nss_cache import error
-
 from nss_cache.maps import automount
 from nss_cache.maps import group
 from nss_cache.maps import netgroup

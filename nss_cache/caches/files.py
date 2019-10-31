@@ -30,7 +30,7 @@ import re
 import shutil
 import stat
 import sys
-import configparser
+from configparser import ConfigParser
 
 from nss_cache import config
 from nss_cache import error
@@ -43,7 +43,7 @@ def LongestLength(l):
 
 
 # Load suffix config variables
-parser = configparser.ConfigParser()
+parser = ConfigParser()
 for i in sys.argv:
   if ('nsscache.conf') in i:
     # Remove '--config-file=' from the string

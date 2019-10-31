@@ -26,7 +26,6 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 import time
 import unittest
 
-
 from nss_cache.maps import maps
 
 

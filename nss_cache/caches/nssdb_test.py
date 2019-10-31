@@ -29,9 +29,7 @@ import unittest
 from mox3 import mox
 from bsddb3 import btopen
 
-
 from nss_cache import error
-
 from nss_cache.caches import nssdb
 from nss_cache.maps import group
 from nss_cache.maps import passwd
@@ -64,7 +62,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     shutil.rmtree(self.workdir)
 
   def testConvertValueToMapEntry(self):
-    ent = b'foo:x:1000:1001:bar:/:/bin/sh'
+    ent = 'foo:x:1000:1001:bar:/:/bin/sh'
 
     updater = nssdb.NssDbPasswdHandler({})
 
@@ -85,7 +83,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     self.assertFalse(updater.IsMapPrimaryKey('00'))
 
   def testNssDbPasswdHandlerWriteData(self):
-    entry_string = b'foo:x:1000:1000:foo:/:/bin/sh'
+    entry_string = 'foo:x:1000:1000:foo:/:/bin/sh'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write(('.foo %s\n' % entry_string).encode('ascii'))
@@ -94,13 +92,13 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
     passwd_map = passwd.PasswdMap()
     passwd_map_entry = passwd.PasswdMapEntry()
-    passwd_map_entry.name = b'foo'
+    passwd_map_entry.name = 'foo'
     passwd_map_entry.uid = 1000
     passwd_map_entry.gid = 1000
-    passwd_map_entry.gecos = b'foo'
-    passwd_map_entry.dir = b'/'
-    passwd_map_entry.shell = b'/bin/sh'
-    passwd_map_entry.passwd = b'x'
+    passwd_map_entry.gecos = 'foo'
+    passwd_map_entry.dir = '/'
+    passwd_map_entry.shell = '/bin/sh'
+    passwd_map_entry.passwd = 'x'
     self.assertTrue(passwd_map.Add(passwd_map_entry))
 
     writer = nssdb.NssDbPasswdHandler({'makedb': '/bin/false',
@@ -111,7 +109,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     writer.WriteData(makedb_stdin, passwd_map_entry, 0)
 
   def testNssDbPasswdHandlerWrite(self):
-    ent = b'foo:x:1000:1000:foo:/:/bin/sh'
+    ent = 'foo:x:1000:1000:foo:/:/bin/sh'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write('.foo %s\n' % ent)
@@ -125,13 +123,13 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
     m = passwd.PasswdMap()
     pw = passwd.PasswdMapEntry()
-    pw.name = b'foo'
+    pw.name = 'foo'
     pw.uid = 1000
     pw.gid = 1000
-    pw.gecos = b'foo'
-    pw.dir = b'/'
-    pw.shell = b'/bin/sh'
-    pw.passwd = b'x'
+    pw.gecos = 'foo'
+    pw.dir = '/'
+    pw.shell = '/bin/sh'
+    pw.passwd = 'x'
     pw.Verify()
     self.assertTrue(m.Add(pw))
 
@@ -164,7 +162,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     # create a map
     m = passwd.PasswdMap()
     e = passwd.PasswdMapEntry()
-    e.name = b'foo'
+    e.name = 'foo'
     e.uid = 1000
     e.gid = 2000
     self.assertTrue(m.Add(e))
@@ -187,7 +185,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     # create a map
     m = passwd.PasswdMap()
     e = passwd.PasswdMapEntry()
-    e.name = b'foo'
+    e.name = 'foo'
     e.uid = 1000
     e.gid = 2000
     self.assertTrue(m.Add(e))
@@ -255,7 +253,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     self.assertFalse(updater.IsMapPrimaryKey('00'))
 
   def testNssDbGroupHandlerWriteData(self):
-    ent = b'foo:x:1000:bar'
+    ent = 'foo:x:1000:bar'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
@@ -264,10 +262,10 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
     m = group.GroupMap()
     g = group.GroupMapEntry()
-    g.name = b'foo'
+    g.name = 'foo'
     g.gid = 1000
-    g.passwd = b'x'
-    g.members = [b'bar']
+    g.passwd = 'x'
+    g.members = ['bar']
 
     self.assertTrue(m.Add(g))
 
@@ -279,7 +277,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     writer.WriteData(makedb_stdin, g, 0)
 
   def testNssDbGroupHandlerWrite(self):
-    ent = b'foo:x:1000:bar'
+    ent = 'foo:x:1000:bar'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write('.foo %s\n' % ent)
@@ -293,10 +291,10 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
     m = group.GroupMap()
     g = group.GroupMapEntry()
-    g.name = b'foo'
+    g.name = 'foo'
     g.gid = 1000
-    g.passwd = b'x'
-    g.members = [b'bar']
+    g.passwd = 'x'
+    g.members = ['bar']
     g.Verify()
     self.assertTrue(m.Add(g))
 
@@ -327,7 +325,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     # create a map
     m = group.GroupMap()
     e = group.GroupMapEntry()
-    e.name = b'foo'
+    e.name = 'foo'
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
@@ -348,7 +346,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     # create a map
     m = group.GroupMap()
     e = group.GroupMapEntry()
-    e.name = b'foo'
+    e.name = 'foo'
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
@@ -383,7 +381,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     shutil.rmtree(self.workdir)
 
   def testConvertValueToMapEntry(self):
-    ent = b'foo:*:::::::0'
+    ent = 'foo:*:::::::0'
 
     updater = nssdb.NssDbShadowHandler({})
 
@@ -400,7 +398,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     self.assertFalse(updater.IsMapPrimaryKey('00'))
 
   def testNssDbShadowHandlerWriteData(self):
-    ent = b'foo:!!:::::::0'
+    ent = 'foo:!!:::::::0'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
@@ -408,7 +406,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
-    s.name = b'foo'
+    s.name = 'foo'
 
     self.assertTrue(m.Add(s))
 
@@ -420,7 +418,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     writer.WriteData(makedb_stdin, s, 0)
 
   def testNssDbShadowHandlerWrite(self):
-    ent = b'foo:*:::::::0'
+    ent = 'foo:*:::::::0'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
     makedb_stdin.write('.foo %s\n' % ent)
@@ -433,8 +431,8 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
-    s.name = b'foo'
-    s.passwd = b'*'
+    s.name = 'foo'
+    s.passwd = '*'
     s.Verify()
     self.assertTrue(m.Add(s))
 
@@ -464,7 +462,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
   def testVerify(self):
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
-    s.name = b'foo'
+    s.name = 'foo'
     self.assertTrue(m.Add(s))
 
     updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
@@ -484,7 +482,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     # create a map
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
-    s.name = b'foo'
+    s.name = 'foo'
     self.assertTrue(m.Add(s))
 
     updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
@@ -520,13 +518,13 @@ class TestNssDbCache(unittest.TestCase):
   def testWriteTestBdb(self):
     data = passwd.PasswdMap()
     pw = passwd.PasswdMapEntry()
-    pw.name = b'foo'
-    pw.passwd = b'x'
+    pw.name = 'foo'
+    pw.passwd = 'x'
     pw.uid = 1000
     pw.gid = 1000
-    pw.gecos = b'doody'
-    pw.dir = b'/'
-    pw.shell = b'/bin/sh'
+    pw.gecos = 'doody'
+    pw.dir = '/'
+    pw.shell = '/bin/sh'
     self.assertTrue(data.Add(pw))
 
     # instantiate object under test
@@ -534,23 +532,23 @@ class TestNssDbCache(unittest.TestCase):
     cache = nssdb.NssDbPasswdHandler(dummy_config)
 
     written = cache.Write(data)
-    self.assertTrue(b'.foo' in written)
-    self.assertTrue(b'=1000' in written)
+    self.assertTrue('.foo' in written)
+    self.assertTrue('=1000' in written)
 
     # perform test
     db = btopen(cache.temp_cache_filename, 'r')
 
     self.assertEqual(3, len(list(db.keys())))
-    self.assertTrue(b'.foo' in list(db.keys()))
-    self.assertTrue(b'=1000' in list(db.keys()))
-    self.assertTrue(b'00' in list(db.keys()))
+    self.assertTrue('.foo' in list(db.keys()))
+    self.assertTrue('=1000' in list(db.keys()))
+    self.assertTrue('00' in list(db.keys()))
 
     # convert data to pwent
     d = ('%s:x:%s:%s:%s:%s:%s\x00' % (pw.name, pw.uid, pw.gid, pw.gecos,
                                      pw.dir, pw.shell)).encode('ascii')
-    self.assertEqual(db[b'00'], d)
-    self.assertEqual(db[b'.foo'], d)
-    self.assertEqual(db[b'=1000'], d)
+    self.assertEqual(db['00'], d)
+    self.assertEqual(db['.foo'], d)
+    self.assertEqual(db['=1000'], d)
 
     # tear down
     os.unlink(cache.temp_cache_filename)
@@ -558,7 +556,7 @@ class TestNssDbCache(unittest.TestCase):
   def testLoadBdbCacheFile(self):
     pass_file = os.path.join(self.workdir, 'passwd.db')
     db = btopen(pass_file, 'c')
-    ent = b'foo:x:1000:500:bar:/:/bin/sh'
+    ent = 'foo:x:1000:500:bar:/:/bin/sh'
     db[b'00'] = ent
     db[b'=1000'] = ent
     db[b'.foo'] = ent

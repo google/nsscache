@@ -22,16 +22,12 @@ import grp
 import os
 import pwd
 import shutil
-import io
+from io import StringIO
 import sys
 import tempfile
 import time
 import unittest
-
-try:
-  from mox3 import mox
-except ImportError:
-  import mox
+from mox3 import mox
 
 from nss_cache import command
 from nss_cache import config
@@ -174,7 +170,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = io.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEqual(2, c.Run(None, ['--invalid']))
@@ -484,7 +480,7 @@ class TestVerifyCommand(mox.MoxTestBase):
     c = command.Verify()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = io.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEqual(2, c.Run(None, ['--invalid']))
@@ -678,7 +674,7 @@ class TestRepairCommand(unittest.TestCase):
     c = command.Repair()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = io.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEqual(2, c.Run(None, ['--invalid']))
@@ -702,7 +698,7 @@ class TestHelpCommand(unittest.TestCase):
 
   def setUp(self):
     self.stdout = sys.stdout
-    sys.stdout = io.StringIO()
+    sys.stdout = StringIO()
 
   def tearDown(self):
     sys.stdout = self.stdout
@@ -783,7 +779,7 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = io.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEqual(2, c.Run(None, ['--invalid']))
@@ -796,7 +792,7 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertEqual([], args)
 
   def testObeysMapsFlag(self):
-    stdout_buffer = io.StringIO()
+    stdout_buffer = StringIO()
 
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer

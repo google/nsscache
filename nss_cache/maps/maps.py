@@ -225,7 +225,6 @@ class Map(object):
       index_key = self._index.pop(0)
     except IndexError:
       raise KeyError # Callers expect a KeyError rather than IndexError
-    #print(self._data.pop(index_key)) # Throws the KeyError if empty.
     return self._data.pop(index_key) # Throws the KeyError if empty.
 
   def SetModifyTimestamp(self, value):

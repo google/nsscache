@@ -21,10 +21,7 @@ loading and parsing for the nss_cache module.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-try:
-  import configparser
-except ImportError:
-  import configparser as ConfigParser
+from configparser import ConfigParser
 import logging
 import re
 
@@ -141,7 +138,7 @@ def LoadConfig(configuration):
   Raises:
     error.NoConfigFound: no configuration file was found
   """
-  parser = configparser.ConfigParser()
+  parser = ConfigParser()
 
   # load config file
   configuration.log.debug('Attempting to parse configuration file: %s',

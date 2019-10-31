@@ -49,7 +49,7 @@ def is_valid_unix_name(name):
    name: name to test
   Returns: True if the name is OK, False if it contains bad characters.
   """
-  if any(c in name for c in map(lambda x: x.encode('ascii'), [' ', ':', '\n'])):
+  if any(c in name for c in map(lambda x: x, [' ', ':', '\n'])):
     return False
   else:
     return True
@@ -338,7 +338,10 @@ class NssDbPasswdHandler(NssDbCache):
     """
     # only take values keyed with username, known in nss_db land as the
     # one starting with a dot
-    return key.startswith(b'.')
+    try:
+      return key.startswith(b'.')
+    except TypeError:
+      return key.startswith('.')
 
   def ConvertValueToMapEntry(self, entry):
     """Convert a pwent-like string into a PasswdMapEntry.
@@ -349,10 +352,12 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       a PasswdMapEntry instance
     """
-    if entry.endswith(b'\x00'):
+    if isinstance(entry, bytes):
+      entry = entry.decode('ascii')
+    elif entry.endswith('\x00'):
       entry = entry[:-1]
 
-    entry = entry.split(b':')
+    entry = entry.split(':')
     map_entry = passwd.PasswdMapEntry()
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = entry[0]
@@ -438,7 +443,9 @@ class NssDbGroupHandler(NssDbCache):
     Returns:
       A GroupMapEntry instance
     """
-    if entry.endswith('\x00'):
+    if isinstance(entry, bytes):
+      entry = entry.decode('ascii')
+    elif entry.endswith('\x00'):
       entry = entry[:-1]
 
     entry = entry.split(':')
@@ -527,7 +534,9 @@ class NssDbShadowHandler(NssDbCache):
     Returns:
       A ShadowMapEntry instance
     """
-    if entry.endswith('\x00'):
+    if isinstance(entry, bytes):
+      entry = entry.decode('ascii')
+    elif entry.endswith('\x00'):
       entry = entry[:-1]
 
     entry = entry.split(':')

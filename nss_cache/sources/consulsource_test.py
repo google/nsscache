@@ -129,7 +129,7 @@ class TestConsulShadowMapParser(unittest.TestCase):
   def setUp(self):
     self.good_entry = shadow.ShadowMapEntry()
     self.good_entry.name = 'foo'
-    self.good_entry.passwd = b'*'
+    self.good_entry.passwd = '*'
     self.good_entry.lstchg = 17246
     self.good_entry.min = 0
     self.good_entry.max = 99999
@@ -149,7 +149,7 @@ class TestConsulShadowMapParser(unittest.TestCase):
     self.assertEqual(self.good_entry, shadow_map.PopItem())
 
   def testReadEntry(self):
-    data = {'passwd': b'*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
+    data = {'passwd': '*', 'lstchg': 17246, 'min': 0, 'max': 99999, 'warn': 7}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 

@@ -17,7 +17,7 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
 import inspect
-import io
+from io import StringIO
 import logging
 import optparse
 import os
@@ -157,7 +157,7 @@ class Command(object):
     else:
       # lose the short summary first line
       help_text = '\n'.join(help_text.split('\n')[2:])
-      help_buffer = io.StringIO()
+      help_buffer = StringIO()
       self.parser.print_help(file=help_buffer)
       # lose the first line, which is the usage line
       help_text += '\n'.join(help_buffer.getvalue().split('\n')[1:])
