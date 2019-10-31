@@ -31,6 +31,10 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import ldapsource
 
+TEST_RETRY_MAX = 1
+TEST_RETRY_DELAY = 0
+TEST_URI = 'TEST_URI'
+
 
 class TestLdapSource(mox.MoxTestBase):
 
@@ -42,8 +46,8 @@ class TestLdapSource(mox.MoxTestBase):
                    'filter': 'TEST_FILTER',
                    'bind_dn': 'TEST_BIND_DN',
                    'bind_password': 'TEST_BIND_PASSWORD',
-                   'retry_delay': 'TEST_RETRY_DELAY',
-                   'retry_max': 'TEST_RETRY_MAX',
+                   'retry_delay': TEST_RETRY_DELAY,
+                   'retry_max': TEST_RETRY_MAX,
                    'timelimit': 'TEST_TIMELIMIT',
                    'tls_require_cert': 0,
                    'tls_cacertdir': 'TEST_TLS_CACERTDIR',
@@ -96,8 +100,8 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY',
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY,
         uri='TEST_URI').AndReturn(mock_rlo)
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
@@ -105,8 +109,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.assertEqual(source.conf['scope'], ldap.SCOPE_BASE)
     self.assertEqual(source.conf['bind_dn'], 'TEST_BIND_DN')
     self.assertEqual(source.conf['bind_password'], 'TEST_BIND_PASSWORD')
-    self.assertEqual(source.conf['retry_delay'], 'TEST_RETRY_DELAY')
-    self.assertEqual(source.conf['retry_max'], 'TEST_RETRY_MAX')
+    self.assertEqual(source.conf['retry_delay'], TEST_RETRY_DELAY)
+    self.assertEqual(source.conf['retry_max'], TEST_RETRY_MAX)
     self.assertEqual(source.conf['timelimit'], 'TEST_TIMELIMIT')
     self.assertEqual(source.conf['tls_require_cert'], 0)
     self.assertEqual(source.conf['tls_cacertdir'], 'TEST_TLS_CACERTDIR')
@@ -121,8 +125,8 @@ class TestLdapSource(mox.MoxTestBase):
     mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY',
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY,
         uri='TEST_URI').AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
@@ -182,8 +186,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -284,8 +288,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -340,8 +344,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -395,8 +399,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -450,8 +454,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -502,8 +506,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -555,8 +559,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -603,8 +607,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -652,8 +656,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -705,8 +709,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -756,8 +760,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -807,8 +811,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -868,8 +872,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
@@ -930,8 +934,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
@@ -1001,8 +1005,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(config)
@@ -1077,8 +1081,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1132,8 +1136,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1189,8 +1193,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1238,8 +1242,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1287,8 +1291,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1335,8 +1339,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1409,8 +1413,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
 
@@ -1448,8 +1452,8 @@ class TestLdapSource(mox.MoxTestBase):
     self.mox.StubOutWithMock(ldap, 'ldapobject')
     ldap.ldapobject.ReconnectLDAPObject(
         uri='TEST_URI',
-        retry_max='TEST_RETRY_MAX',
-        retry_delay='TEST_RETRY_DELAY').AndReturn(mock_rlo)
+        retry_max=TEST_RETRY_MAX,
+        retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
 
     self.mox.ReplayAll()
     source = ldapsource.LdapSource(self.config)
