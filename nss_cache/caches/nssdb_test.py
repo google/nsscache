@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Unit tests for nss_cache/caches/nssdb.py."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
@@ -25,27 +26,16 @@ import sys
 import tempfile
 import time
 import unittest
+from mox3 import mox
+from bsddb3 import btopen
 
-try:
-  import bsddb3
-except ImportError:
-  raise unittest.SkipTest('bsddb3 import failed')
-
-try:
-  from mox3 import mox
-except ImportError:
-  import mox
 
 from nss_cache import error
 
+from nss_cache.caches import nssdb
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-
-try:
-  from nss_cache.caches import nssdb
-except ImportError:
-  raise unittest.SkipTest('nssdb import failed')
 
 
 def NoMakeDB():
@@ -53,8 +43,8 @@ def NoMakeDB():
 
 
 class MakeDbDummy(object):
-  allout = ''
-
+  allout = ""
+      
   def wait(self):
     return 0
 
@@ -113,7 +103,8 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     passwd_map_entry.passwd = 'x'
     self.assertTrue(passwd_map.Add(passwd_map_entry))
 
-    writer = nssdb.NssDbPasswdHandler({'makedb': '/bin/false', 'dir': '/tmp'})
+    writer = nssdb.NssDbPasswdHandler({'makedb': '/bin/false',
+                                       'dir': '/tmp'})
 
     self.mox.ReplayAll()
 
@@ -154,10 +145,8 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
       makedb.stdout = makedb_stdout
       return makedb
 
-    writer = nssdb.NssDbPasswdHandler({
-        'makedb': '/usr/bin/makedb',
-        'dir': self.workdir
-    })
+    writer = nssdb.NssDbPasswdHandler({'makedb': '/usr/bin/makedb',
+                                       'dir': self.workdir})
 
     writer._SpawnMakeDb = SpawnMakeDb
 
@@ -180,15 +169,12 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
-    updater = nssdb.NssDbPasswdHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbPasswdHandler({'dir': self.workdir,
+                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
@@ -198,15 +184,6 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-
-    class TestFilter(logging.Filter):
-
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbPasswdHandler').addFilter(fltr)
     # create a map
     m = passwd.PasswdMap()
     e = passwd.PasswdMapEntry()
@@ -215,18 +192,15 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
-    updater = nssdb.NssDbPasswdHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbPasswdHandler({'dir': self.workdir,
+                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.temp_cache_filename)
+    db = btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -235,17 +209,15 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
     self.assertEqual(False, retval)
     self.assertFalse(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbPasswdHandler').removeFilter(fltr)
 
   def testVerifyEmptyMap(self):
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     # create a temp file, clag it into the updater object
-    (_, temp_filename) = tempfile.mkstemp(
-        prefix='nsscache-nssdb_test', dir=self.workdir)
+    (_, temp_filename) = tempfile.mkstemp(prefix='nsscache-nssdb_test',
+                                          dir=self.workdir)
     updater.temp_cache_filename = temp_filename
     # make it empty
-    db = bsddb.btopen(temp_filename, 'w')
+    db = btopen(temp_filename, 'w')
     self.assertEqual(0, len(db))
     db.close()
     # TODO(jaq): raising an exception is probably the wrong behaviour
@@ -299,7 +271,8 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
     self.assertTrue(m.Add(g))
 
-    writer = nssdb.NssDbGroupHandler({'makedb': '/bin/false', 'dir': '/tmp'})
+    writer = nssdb.NssDbGroupHandler({'makedb': '/bin/false',
+                                      'dir': '/tmp'})
 
     self.mox.ReplayAll()
 
@@ -330,17 +303,15 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     self.mox.StubOutWithMock(select, 'select')
     select.select([makedb_stdout], (), (), 0).AndReturn(([37], [], []))
     select.select([makedb_stdout], (), (), 0).AndReturn(([], [], []))
-
+    
     def SpawnMakeDb():
       makedb = MakeDbDummy()
       makedb.stdin = makedb_stdin
       makedb.stdout = makedb_stdout
       return makedb
 
-    writer = nssdb.NssDbGroupHandler({
-        'makedb': '/usr/bin/makedb',
-        'dir': self.workdir
-    })
+    writer = nssdb.NssDbGroupHandler({'makedb': '/usr/bin/makedb',
+                                      'dir': self.workdir})
     writer._SpawnMakeDb = SpawnMakeDb
     self.mox.ReplayAll()
 
@@ -360,15 +331,12 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
-    updater = nssdb.NssDbGroupHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbGroupHandler({'dir': self.workdir,
+                                       'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
@@ -377,16 +345,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-
-    class TestFilter(logging.Filter):
-
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbGroupHandler').addFilter(fltr)
-
     # create a map
     m = group.GroupMap()
     e = group.GroupMapEntry()
@@ -394,18 +352,15 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     e.gid = 2000
     self.assertTrue(m.Add(e))
 
-    updater = nssdb.NssDbGroupHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbGroupHandler({'dir': self.workdir,
+                                       'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.temp_cache_filename)
+    db = btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -414,8 +369,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
     self.assertEqual(False, retval)
     self.assertFalse(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbGroupHandler').removeFilter(fltr)
 
 
 class TestNssDbShadowHandler(mox.MoxTestBase):
@@ -459,7 +412,8 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
     self.assertTrue(m.Add(s))
 
-    writer = nssdb.NssDbShadowHandler({'makedb': '/bin/false', 'dir': '/tmp'})
+    writer = nssdb.NssDbShadowHandler({'makedb': '/bin/false',
+                                       'dir': '/tmp'})
 
     self.mox.ReplayAll()
 
@@ -494,10 +448,8 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
       makedb.stdout = makedb_stdout
       return makedb
 
-    writer = nssdb.NssDbShadowHandler({
-        'makedb': '/usr/bin/makedb',
-        'dir': self.workdir
-    })
+    writer = nssdb.NssDbShadowHandler({'makedb': '/usr/bin/makedb',
+                                       'dir': self.workdir})
     writer._SpawnMakeDb = SpawnMakeDb
     self.mox.ReplayAll()
 
@@ -515,15 +467,12 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     s.name = 'foo'
     self.assertTrue(m.Add(s))
 
-    updater = nssdb.NssDbShadowHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
+                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     retval = updater.Verify(written)
 
@@ -532,33 +481,21 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-    class TestFilter(logging.Filter):
-
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbShadowHandler').addFilter(fltr)
-
     # create a map
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
     s.name = 'foo'
     self.assertTrue(m.Add(s))
 
-    updater = nssdb.NssDbShadowHandler({
-        'dir': self.workdir,
-        'makedb': '/usr/bin/makedb'
-    })
+    updater = nssdb.NssDbShadowHandler({'dir': self.workdir,
+                                        'makedb': '/usr/bin/makedb'})
     written = updater.Write(m)
 
-    self.assertTrue(
-        os.path.exists(updater.temp_cache_filename),
-        'updater.Write() did not create a file')
+    self.assertTrue(os.path.exists(updater.temp_cache_filename),
+                    'updater.Write() did not create a file')
 
     # change the cache
-    db = bsddb.btopen(updater.temp_cache_filename)
+    db = btopen(updater.temp_cache_filename)
     del db[db.first()[0]]
     db.sync()
     db.close()
@@ -567,8 +504,6 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
     self.assertEqual(False, retval)
     self.assertFalse(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbShadowHandler').removeFilter(fltr)
 
 
 class TestNssDbCache(unittest.TestCase):
@@ -603,7 +538,7 @@ class TestNssDbCache(unittest.TestCase):
     self.assertTrue('=1000' in written)
 
     # perform test
-    db = bsddb.btopen(cache.temp_cache_filename, 'r')
+    db = btopen(cache.temp_cache_filename, 'r')
 
     self.assertEqual(3, len(list(db.keys())))
     self.assertTrue('.foo' in list(db.keys()))
@@ -611,8 +546,8 @@ class TestNssDbCache(unittest.TestCase):
     self.assertTrue('00' in list(db.keys()))
 
     # convert data to pwent
-    d = '%s:x:%s:%s:%s:%s:%s\x00' % (pw.name, pw.uid, pw.gid, pw.gecos, pw.dir,
-                                     pw.shell)
+    d = '%s:x:%s:%s:%s:%s:%s\x00' % (pw.name, pw.uid, pw.gid, pw.gecos,
+                                     pw.dir, pw.shell)
     self.assertEqual(db['00'], d)
     self.assertEqual(db['.foo'], d)
     self.assertEqual(db['=1000'], d)
@@ -622,11 +557,11 @@ class TestNssDbCache(unittest.TestCase):
 
   def testLoadBdbCacheFile(self):
     pass_file = os.path.join(self.workdir, 'passwd.db')
-    db = bsddb.btopen(pass_file, 'c')
+    db = btopen(pass_file, 'c')
     ent = 'foo:x:1000:500:bar:/:/bin/sh'
-    db['00'] = ent
-    db['=1000'] = ent
-    db['.foo'] = ent
+    db[b'00'] = ent
+    db[b'=1000'] = ent
+    db[b'.foo'] = ent
     db.sync()
     self.assertTrue(os.path.exists(pass_file))
 
@@ -657,11 +592,11 @@ class TestNssDbCache(unittest.TestCase):
     update_ts_filename = os.path.join(self.workdir,
                                       'passwd.db.nsscache-update-timestamp')
     update_ts_file = open(update_ts_filename, 'w')
-    update_ts_file.write(
-        '%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp)))
+    update_ts_file.write('%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ',
+                                                time.gmtime(timestamp)))
     update_ts_file.close()
     db_filename = os.path.join(self.workdir, 'passwd.db')
-    db = bsddb.btopen(db_filename)
+    db = btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     cache_map = cache.GetMap()
@@ -674,11 +609,11 @@ class TestNssDbCache(unittest.TestCase):
     update_ts_filename = os.path.join(self.workdir,
                                       'passwd.db.nsscache-update-timestamp')
     update_ts_file = open(update_ts_filename, 'w')
-    update_ts_file.write(
-        '%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp)))
+    update_ts_file.write('%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ',
+                                                time.gmtime(timestamp)))
     update_ts_file.close()
     db_filename = os.path.join(self.workdir, 'passwd.db')
-    db = bsddb.btopen(db_filename)
+    db = btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     cache_map = cache.GetMap()
@@ -691,11 +626,11 @@ class TestNssDbCache(unittest.TestCase):
     update_ts_filename = os.path.join(self.workdir,
                                       'passwd.db.nsscache-update-timestamp')
     update_ts_file = open(update_ts_filename, 'w')
-    update_ts_file.write(
-        '%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp)))
+    update_ts_file.write('%s\n' % time.strftime('%Y-%m-%dT%H:%M:%SZ',
+                                                time.gmtime(timestamp)))
     update_ts_file.close()
     db_filename = os.path.join(self.workdir, 'passwd.db')
-    db = bsddb.btopen(db_filename)
+    db = btopen(db_filename)
     db.close()
     cache = nssdb.NssDbPasswdHandler({'dir': self.workdir})
     cache_map = cache.GetMap()

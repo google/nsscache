@@ -117,7 +117,7 @@ class ConsulMapParser(object):
   """A base class for parsing nss_files module cache."""
 
   def __init__(self):
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def GetMap(self, cache_info, data):
     """Returns a map from a cache.

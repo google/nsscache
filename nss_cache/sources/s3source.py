@@ -102,7 +102,7 @@ class S3UpdateGetter(object):
   """Base class that gets updates from s3."""
 
   def __init__(self):
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def FromTimestampToDateTime(self, ts):
     """Converts internal nss_cache timestamp to datetime object.
@@ -218,7 +218,7 @@ class S3MapParser(object):
   """A base class for parsing nss_files module cache."""
 
   def __init__(self):
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def GetMap(self, cache_info, data):
     """Returns a map from a cache.

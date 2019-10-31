@@ -94,7 +94,7 @@ class Config(object):
     self.options = {}
     self.lockfile = None
     self.timestamp_dir = None
-    self.log = logging.getLogger('config')
+    self.log = logging.getLogger(__name__)
 
   def __repr__(self):
     """String representation of this object."""

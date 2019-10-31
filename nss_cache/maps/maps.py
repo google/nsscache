@@ -78,7 +78,7 @@ class Map(object):
     self._last_modification_timestamp = modify_time
     self._last_update_timestamp = update_time
 
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
     # Seed with iterable, should raise TypeError for bad items.
     if iterable is not None:
@@ -311,7 +311,7 @@ class MapEntry(object):
       for key in data:
         setattr(self, key, data[key])
 
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def __eq__(self, other):
     """Deep comparison of two MapEntry objects."""

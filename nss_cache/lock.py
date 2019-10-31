@@ -69,7 +69,7 @@ class PidFile(object):
     self.pid = pid
 
     # Setup logging.
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
     if self.pid is None:
       self.pid = os.getpid()
