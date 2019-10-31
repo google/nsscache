@@ -112,13 +112,13 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     ent = 'foo:x:1000:1000:foo:/:/bin/sh'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % ent)
-    makedb_stdin.write('=1000 %s\n' % ent)
-    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.read().AndReturn('')
+    makedb_stdout.read(-1).AndReturn('')
     makedb_stdout.close()
 
     m = passwd.PasswdMap()
@@ -280,13 +280,13 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     ent = 'foo:x:1000:bar'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % ent)
-    makedb_stdin.write('=1000 %s\n' % ent)
-    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.read().AndReturn('')
+    makedb_stdout.read(-1).AndReturn('')
     makedb_stdout.close()
 
     m = group.GroupMap()
@@ -421,12 +421,12 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     ent = 'foo:*:::::::0'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % ent)
-    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
     makedb_stdin.close()
 
     makedb_stdout = self.mox.CreateMock(sys.stdout)
-    makedb_stdout.read().AndReturn('')
+    makedb_stdout.read(-1).AndReturn('')
     makedb_stdout.close()
 
     m = shadow.ShadowMap()
