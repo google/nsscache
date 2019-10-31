@@ -27,6 +27,8 @@ from nss_cache import error
 class Source(object):
   """Abstract base class for map data sources."""
 
+  UPDATER = None
+
   def __init__(self, conf):
     """Initialise the Source object.
 
