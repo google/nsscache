@@ -173,7 +173,7 @@ class TestLdapSource(mox.MoxTestBase):
                         attrlist='TEST_ATTRLIST',
                         serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    dataset = [('dn', 'payload')]
+    dataset = [('dn', {'uid': [0]})]
     mock_rlo.result3('TEST_RES',
                      all=0,
                      timeout='TEST_TIMELIMIT').AndReturn(
@@ -220,7 +220,7 @@ class TestLdapSource(mox.MoxTestBase):
                         attrlist='TEST_ATTRLIST',
                         serverctrls=mox.Func(self.compareSPRC())).AndReturn('TEST_RES')
 
-    dataset = [('dn', 'payload')]
+    dataset = [('dn', {'uid': [0]})]
     mock_rlo.result3('TEST_RES',
                      all=0,
                      timeout='TEST_TIMELIMIT').MultipleTimes().AndRaise(ldap.TIMELIMIT_EXCEEDED)
