@@ -13,16 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/app.py."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+import logging
+import io
 import os
 import sys
-import logging
 import unittest
-from io import StringIO
 
 from nss_cache import app
 
@@ -31,7 +30,7 @@ class TestNssCacheApp(unittest.TestCase):
   """Unit tests for NssCacheApp class."""
 
   def setUp(self):
-    dev_null = StringIO()
+    dev_null = io.StringIO()
     self.stdout = sys.stdout
     sys.stdout = dev_null
 
@@ -85,14 +84,14 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testBadOptionsCauseNoExit(self):
     a = app.NssCacheApp()
-    stderr_buffer = StringIO()
+    stderr_buffer = io.StringIO()
     old_stderr = sys.stderr
     sys.stderr = stderr_buffer
     self.assertEqual(2, a.Run(['--invalid'], {}))
     sys.stderr = old_stderr
 
   def testHelpOptionPrintsGlobalHelp(self):
-    stdout_buffer = StringIO()
+    stdout_buffer = io.StringIO()
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -109,7 +108,7 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testHelpCommandOutput(self):
     # trap stdout into a StringIO
-    stdout_buffer = StringIO()
+    stdout_buffer = io.StringIO()
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -117,6 +116,7 @@ class TestNssCacheApp(unittest.TestCase):
     sys.stdout = old_stdout
     self.assertNotEqual(0, stdout_buffer.tell())
     self.assertTrue(stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
+
 
 # TODO(jaq): app.Run() invocation of command_callable is tested by inspection
 # only.
@@ -127,7 +127,7 @@ class TestNssCacheApp(unittest.TestCase):
 #     # This will fail when run under 'nosetests -s' because nose will
 #     # also intercept sys.stdout :(  (Recommend refactoring NssCacheApp
 #     # to take in an output stream for help and usage?
-#     output = StringIO()
+#     output = cStringIO.StringIO()
 #     stdout = sys.stdout
 #     sys.stdout = output
 
@@ -138,35 +138,34 @@ class TestNssCacheApp(unittest.TestCase):
 #     self.assertTrue(output.getvalue().find('enable debugging') >= 0,
 #                     msg='Bad argument failed to output expected help text')
 
-  # TODO(jaq):  test terminal logging (syslog versus stdout)
+# TODO(jaq):  test terminal logging (syslog versus stdout)
 
-  # TODO(jaq): these two tests fail because logging is being imported at the
-  # top of this file before nss_cache.app and thus the logger class is not
-  # set correctly
-  # def testDebug2LoggingLevel(self):
-  #   class test_handler(logging.Handler):
-  #     def __init__(self):
-  #       logging.Handler.__init__(self)
-  #       #self.setLevel(logging.DEBUG)
-  #       self.levels = []
+# TODO(jaq): these two tests fail because logging is being imported at the
+# top of this file before nss_cache.app and thus the logger class is not
+# set correctly
+# def testDebug2LoggingLevel(self):
+#   class test_handler(logging.Handler):
+#     def __init__(self):
+#       logging.Handler.__init__(self)
+#       #self.setLevel(logging.DEBUG)
+#       self.levels = []
 
-  #     def emit(self, record):
-  #       print(record)
-  #       self.levels.append(record.levelno)
-  #       print(self.levels)
+#     def emit(self, record):
+#       print record
+#       self.levels.append(record.levelno)
+#       print self.levels
 
-  #   handler = test_handler()
-  #   a = app.NssCacheApp()
-  #   print("log:", a.log)
-  #   a.log.addHandler(handler)
-  #   a.log.debug2('logged at level debug2')
-  #   print(handler.levels)
-  #   self.failUnless(5 in handler.levels)
+#   handler = test_handler()
+#   a = app.NssCacheApp()
+#   print "log:", a.log
+#   a.log.addHandler(handler)
+#   a.log.debug2('logged at level debug2')
+#   print handler.levels
+#   self.failUnless(5 in handler.levels)
 
-  # def testVerboseLoggingLevel(self):
-  #   a = app.NssCacheApp()
-  #   a.log.verbose('logged at level verbose')
-
+# def testVerboseLoggingLevel(self):
+#   a = app.NssCacheApp()
+#   a.log.verbose('logged at level verbose')
 
 if __name__ == '__main__':
   unittest.main()

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of a netgroup map for nsscache.
 
 NetgroupMap:  An implementation of NSS netgroup maps based on the Map
@@ -52,7 +51,7 @@ class NetgroupMap(maps.Map):
   def __init__(self, iterable=None):
     """Construct a NetgroupMap object using optional iterable."""
     super(NetgroupMap, self).__init__(iterable)
-    
+
   def Add(self, entry):
     """Add a new object, verify it is a NetgroupMapEntry object."""
     if not isinstance(entry, NetgroupMapEntry):
@@ -77,8 +76,9 @@ class NetgroupMapEntry(maps.MapEntry):
     """Construct a NetgroupMapEntry."""
     self.name = None
     self.entries = None
-    
+
     super(NetgroupMapEntry, self).__init__(data)
 
     # Seed data with defaults if needed
-    if self.entries is None: self.entries = ''
+    if self.entries is None:
+      self.entries = ''

@@ -127,7 +127,7 @@ class TestPidFile(mox.MoxTestBase):
   def testLockLocksWithFcntl(self):
     locker = lock.PidFile(pid='PID')
 
-    self.mox.StubOutWithMock(locker, '_file')
+    self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
     locker._file.truncate()
     locker._file.write('PID\n')
     locker._file.flush()
@@ -188,7 +188,7 @@ class TestPidFile(mox.MoxTestBase):
 
   def testSendTermMatchesCommandAndSendsTerm(self):
     locker = lock.PidFile()
-    self.mox.StubOutWithMock(locker, '_file')
+    self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
     locker._file.read().AndReturn('1234')
     locker._file.seek(0)
 
@@ -221,7 +221,7 @@ class TestPidFile(mox.MoxTestBase):
 
   def testSendTermNoPid(self):
     locker = lock.PidFile()
-    self.mox.StubOutWithMock(locker, '_file')
+    self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
     locker._file.read().AndReturn('\n')
     locker.PROC = self.workdir
 
@@ -231,7 +231,7 @@ class TestPidFile(mox.MoxTestBase):
 
   def testSendTermNonePid(self):
     locker = lock.PidFile()
-    self.mox.StubOutWithMock(locker, '_file')
+    self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
     locker._file.read().AndReturn(None)
     locker.PROC = self.workdir
 
@@ -241,13 +241,13 @@ class TestPidFile(mox.MoxTestBase):
 
   def testSendTermTrapsENOENT(self):
     locker = lock.PidFile()
-    self.mox.StubOutWithMock(locker, '_file')
+    self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
     locker._file.read().AndReturn('1234\n')
     locker._file.seek(0)
     locker.PROC = self.workdir
 
-    self.mox.StubOutWithMock(__builtin__, 'open')
-    __builtin__.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
+    self.mox.StubOutWithMock(builtins, 'open', use_mock_anything=True)
+    builtins.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
 
     self.mox.ReplayAll()
 

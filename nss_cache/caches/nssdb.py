@@ -13,15 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of nss_db local cache for nsscache."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-try:
-  from bsddb import btopen
-except ImportError:
-  from bsddb3 import btopen
+import bsddb3
 import fcntl
 import os
 import select
@@ -30,9 +26,10 @@ import subprocess
 from nss_cache import config
 from nss_cache import error
 from nss_cache.caches import caches
-from nss_cache.maps import group 
+from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+
 
 def RegisterAllImplementations(register_callback):
   """Register our cache classes independently from the import scheme."""
@@ -43,19 +40,16 @@ def RegisterAllImplementations(register_callback):
 
 # TODO: Move this function and the use below it can be used for all caches.
 def is_valid_unix_name(name):
-  """
-  Return False if name has characters that are not OK for Unix usernames,
-  True otherwise.
+  """Return False if name has characters that are not OK for Unix usernames, True otherwise.
 
   Unix has certain naming restrictions for user names in passwd, shadow, etc.
   Here we take a conservative approach and only blacklist a few characters.
 
   Args:
    name: name to test
-
   Returns: True if the name is OK, False if it contains bad characters.
   """
-  if any(c in name for c in [" ", ":", "\n"]):
+  if any(c in name for c in map(lambda x: x.encode('ascii'), [' ', ':', '\n'])):
     return False
   else:
     return True
@@ -85,8 +79,8 @@ class NssDbCache(caches.Cache):
 
     Returns: A CacheMapHandler instance.
     """
-    super(NssDbCache, self).__init__(conf, map_name,
-                                     automount_mountpoint=automount_mountpoint)
+    super(NssDbCache, self).__init__(
+        conf, map_name, automount_mountpoint=automount_mountpoint)
     self.makedb = conf.get('makedb', '/usr/bin/makedb')
 
   def GetMap(self, cache_filename=None):
@@ -118,7 +112,7 @@ class NssDbCache(caches.Cache):
       self.log.debug('cache file does not exist: %r', db_file)
       raise error.CacheNotFound('cache file does not exist: %r' % db_file)
 
-    db = btopen(db_file, 'r')
+    db = bsddb3.btopen(db_file, 'r')
     for k in db:
       if self.IsMapPrimaryKey(k):
         password_entry = self.ConvertValueToMapEntry(db[k])
@@ -140,27 +134,29 @@ class NssDbCache(caches.Cache):
                     self.makedb)
       return None
     else:
-      self.log.debug('executing makedb: %s - %s',
-                     self.makedb, self.temp_cache_filename)
+      self.log.debug('executing makedb: %s - %s', self.makedb,
+                     self.temp_cache_filename)
       # This is a race condition on the tempfile now, but db-4.8 is braindead
       # and refuses to open zero length files with:
       # fop_read_meta: foo: unexpected file type or format
       # foo: Invalid type 5 specified
       # makedb: cannot open output file `foo': Invalid argument
       os.unlink(self.temp_cache_filename)
-      makedb = subprocess.Popen([self.makedb, '-', self.temp_cache_filename],
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                close_fds=True)
+      makedb = subprocess.Popen(
+          [self.makedb, '-', self.temp_cache_filename],
+          stdin=subprocess.PIPE,
+          stdout=subprocess.PIPE,
+          stderr=subprocess.STDOUT,
+          close_fds=True)
       fcntl.fcntl(makedb.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
-      makedb.allout = ""
+      makedb.allout = ''
       return makedb
 
   def _Read(self, proc):
-    while len(select.select([proc.stdout],(),(),0)[0]) > 0:
+    while len(select.select([proc.stdout], (), (), 0)[0]) > 0:
       data = proc.stdout.read()
-      if len(data) == 0: break # sigh... select() says there's data.
+      if len(data) == 0:
+        break  # sigh... select() says there's data.
       proc.allout += data
 
   def Write(self, map_data):
@@ -206,7 +202,8 @@ class NssDbCache(caches.Cache):
         # expected when PopItem() is done, and breaks our loop for us.
         pass
 
-      if makedb: makedb.stdin.close()
+      if makedb:
+        makedb.stdin.close()
       self.log.debug('%d entries written, %d keys', enumeration_index,
                      len(written_keys))
 
@@ -223,10 +220,11 @@ class NssDbCache(caches.Cache):
           return written_keys
         return None
       else:
-          return written_keys
+        return written_keys
 
     except Exception as e:
-      self.log.debug('Wrote %d entries before exception %s', enumeration_index, e)
+      self.log.debug('Wrote %d entries before exception %s', enumeration_index,
+                     e)
       if makedb:
         self.log.debug('makedb output: %s', makedb.allout)
         # wait for subprocess to commit data before we roll back.
@@ -256,7 +254,7 @@ class NssDbCache(caches.Cache):
       EmptyMap: The cache being verified is empty.
     """
     self.log.debug('verification started %s', self.temp_cache_filename)
-    db = btopen(self.temp_cache_filename, 'r')
+    db = bsddb3.btopen(self.temp_cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
     cache_keys = set(db)
@@ -293,7 +291,8 @@ class NssDbPasswdHandler(NssDbCache):
   CACHE_FILENAME = 'passwd.db'
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_PASSWORD
+    if map_name is None:
+      map_name = config.MAP_PASSWORD
     super(NssDbPasswdHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
 
@@ -315,15 +314,14 @@ class NssDbPasswdHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return
-    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
-                                               entry.uid, entry.gid,
-                                               entry.gecos, entry.dir,
-                                               entry.shell)
+    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.uid, entry.gid, entry.gecos, entry.dir,
+        entry.shell)
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, password_entry))
-      target.write('=%d %s\n' % (entry.uid, password_entry))
-      target.write('0%d %s\n' % (enumeration_index, password_entry))
+      target.write(('.%s %s\n' % (entry.name, password_entry)).encode('ascii'))
+      target.write(('=%d %s\n' % (entry.uid, password_entry)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, password_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for this map.
@@ -340,7 +338,7 @@ class NssDbPasswdHandler(NssDbCache):
     """
     # only take values keyed with username, known in nss_db land as the
     # one starting with a dot
-    return key.startswith('.')
+    return key.startswith(b'.')
 
   def ConvertValueToMapEntry(self, entry):
     """Convert a pwent-like string into a PasswdMapEntry.
@@ -351,10 +349,10 @@ class NssDbPasswdHandler(NssDbCache):
     Returns:
       a PasswdMapEntry instance
     """
-    if entry.endswith('\x00'):
+    if entry.endswith(b'\x00'):
       entry = entry[:-1]
 
-    entry = entry.split(':')
+    entry = entry.split(b':')
     map_entry = passwd.PasswdMapEntry()
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = entry[0]
@@ -378,8 +376,7 @@ class NssDbPasswdHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name,
-            '=%d' % entry.uid]
+    return [('.%s' % entry.name).encode('ascii'), ('=%d' % entry.uid).encode('ascii')]
 
 
 class NssDbGroupHandler(NssDbCache):
@@ -387,7 +384,8 @@ class NssDbGroupHandler(NssDbCache):
   CACHE_FILENAME = 'group.db'
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_GROUP
+    if map_name is None:
+      map_name = config.MAP_GROUP
     super(NssDbGroupHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
 
@@ -409,13 +407,13 @@ class NssDbGroupHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return
-    grent = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
-                             ','.join(entry.members))
+    grent = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid, ','.join(
+        entry.members))
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, grent))
-      target.write('=%d %s\n' % (entry.gid, grent))
-      target.write('0%d %s\n' % (enumeration_index, grent))
+      target.write(('.%s %s\n' % (entry.name, grent)).encode('ascii'))
+      target.write(('=%d %s\n' % (entry.gid, grent)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, grent)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db group.db map.
@@ -464,8 +462,7 @@ class NssDbGroupHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name,
-            '=%d' % entry.gid]
+    return map(lambda x: x.encode('ascii'), ['.%s' % entry.name, '=%d' % entry.gid])
 
 
 class NssDbShadowHandler(NssDbCache):
@@ -473,7 +470,8 @@ class NssDbShadowHandler(NssDbCache):
   CACHE_FILENAME = 'shadow.db'
 
   def __init__(self, conf, map_name=None, automount_mountpoint=None):
-    if map_name is None: map_name = config.MAP_SHADOW
+    if map_name is None:
+      map_name = config.MAP_SHADOW
     super(NssDbShadowHandler, self).__init__(
         conf, map_name, automount_mountpoint=automount_mountpoint)
 
@@ -497,19 +495,14 @@ class NssDbShadowHandler(NssDbCache):
     if not is_valid_unix_name(entry.name):
       return
     # If the field is None, then set to empty string
-    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
-                                                   entry.passwd,
-                                                   entry.lstchg or '',
-                                                   entry.min or '',
-                                                   entry.max or '',
-                                                   entry.warn or '',
-                                                   entry.inact or '',
-                                                   entry.expire or '',
-                                                   entry.flag or 0)
+    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.lstchg or '', entry.min or '',
+        entry.max or '', entry.warn or '', entry.inact or '', entry.expire or
+        '', entry.flag or 0)
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, shadow_entry))
-      target.write('0%d %s\n' % (enumeration_index, shadow_entry))
+      target.write(('.%s %s\n' % (entry.name, shadow_entry)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, shadow_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db shadow.db map.
@@ -569,4 +562,4 @@ class NssDbShadowHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name]
+    return [('.%s' % entry.name).encode('ascii')]

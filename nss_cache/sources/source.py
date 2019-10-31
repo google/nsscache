@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Base class of data source object for nss_cache."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -27,6 +26,8 @@ from nss_cache import error
 
 class Source(object):
   """Abstract base class for map data sources."""
+
+  UPDATER = None
 
   def __init__(self, conf):
     """Initialise the Source object.

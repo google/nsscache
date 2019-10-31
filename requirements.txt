@@ -5,3 +5,5 @@ python3-ldap
 mox3
 bsddb3
 mox==0.5.3
+bsddb3
+mox3

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Update class, used for manipulating source and cache data.
 
 These classes contains all the business logic for updating cache objects.
@@ -34,8 +33,12 @@ from nss_cache.update import updater
 class MapUpdater(updater.Updater):
   """Updates simple maps like passwd, group, shadow, and netgroup."""
 
-  def UpdateCacheFromSource(self, cache, source, incremental=False,
-                            force_write=False, location=None):
+  def UpdateCacheFromSource(self,
+                            cache,
+                            source,
+                            incremental=False,
+                            force_write=False,
+                            location=None):
     """Update a single cache, from a given source.
 
     Args:
@@ -59,9 +62,8 @@ class MapUpdater(updater.Updater):
       incremental = False
 
     if incremental:
-      source_map = source.GetMap(self.map_name,
-                                 since=timestamp,
-                                 location=location)
+      source_map = source.GetMap(
+          self.map_name, since=timestamp, location=location)
       try:
         return_val += self._IncrementalUpdateFromMap(cache, source_map)
       except (error.CacheNotFound, error.EmptyMap):
@@ -71,8 +73,7 @@ class MapUpdater(updater.Updater):
     # We don't use an if/else, because we give the incremental a chance to
     # fail through to a full sync.
     if not incremental:
-      source_map = source.GetMap(self.map_name,
-                                 location=location)
+      source_map = source.GetMap(self.map_name, location=location)
       return_val += self.FullUpdateFromMap(cache, source_map, force_write)
 
     return return_val
@@ -162,7 +163,10 @@ class AutomountUpdater(updater.Updater):
   # automount-specific options
   OPT_LOCAL_MASTER = 'local_automount_master'
 
-  def __init__(self, map_name, timestamp_dir, cache_options,
+  def __init__(self,
+               map_name,
+               timestamp_dir,
+               cache_options,
                automount_mountpoint=None):
     """Initialize automount-specific updater options.
 
@@ -224,8 +228,8 @@ class AutomountUpdater(updater.Updater):
     if self.local_master:
       self.log.info('Using local master map to determine maps to update.')
       # we need the local map to determine which of the other maps to update
-      cache = cache_factory.Create(self.cache_options, self.map_name,
-                                   automount_mountpoint=None)
+      cache = cache_factory.Create(
+          self.cache_options, self.map_name, automount_mountpoint=None)
       try:
         local_master = cache.GetMap()
       except error.CacheNotFound:
@@ -236,13 +240,14 @@ class AutomountUpdater(updater.Updater):
     # update specific maps, e.g. auto.home and auto.auto
     for map_entry in master_map:
       source_location = map_entry.location  # e.g. ou=auto.auto in ldap
-      automount_mountpoint = map_entry.key        # e.g. /auto mountpoint
+      automount_mountpoint = map_entry.key  # e.g. /auto mountpoint
       self.log.debug('looking at %s mount.', automount_mountpoint)
 
       # create the cache to update
-      cache = cache_factory.Create(self.cache_options,
-                                   self.map_name,
-                                   automount_mountpoint=automount_mountpoint)
+      cache = cache_factory.Create(
+          self.cache_options,
+          self.map_name,
+          automount_mountpoint=automount_mountpoint)
 
       # update the master map with the location of the map in the cache
       # e.g. /etc/auto.auto replaces ou=auto.auto
@@ -256,21 +261,20 @@ class AutomountUpdater(updater.Updater):
 
       self.log.info('Updating %s mount.', map_entry.key)
       # update this map (e.g. /etc/auto.auto)
-      update_obj = MapUpdater(self.map_name,
-                                 self.timestamp_dir,
-                                 self.cache_options,
-                                 automount_mountpoint=automount_mountpoint)
-      return_val += update_obj.UpdateCacheFromSource(cache, source, incremental,
-                                                     force_write, source_location)
+      update_obj = MapUpdater(
+          self.map_name,
+          self.timestamp_dir,
+          self.cache_options,
+          automount_mountpoint=automount_mountpoint)
+      return_val += update_obj.UpdateCacheFromSource(
+          cache, source, incremental, force_write, source_location)
     # with sub-maps updated, write modified master map to disk if configured to
     if not self.local_master:
       # automount_mountpoint=None defaults to master
-      cache = cache_factory.Create(self.cache_options,
-                                   self.map_name,
-                                   automount_mountpoint=None)
-      update_obj = MapUpdater(self.map_name,
-                           self.timestamp_dir,
-                           self.cache_options)
+      cache = cache_factory.Create(
+          self.cache_options, self.map_name, automount_mountpoint=None)
+      update_obj = MapUpdater(self.map_name, self.timestamp_dir,
+                              self.cache_options)
       return_val += update_obj.FullUpdateFromMap(cache, master_map)
 
     return return_val

@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Run ALL the nss_cache tests."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
@@ -24,7 +23,6 @@ import logging
 import os
 import sys
 import unittest
-
 
 # pylint: disable-msg=W0401
 from nss_cache.app_test import *
@@ -45,7 +43,6 @@ from nss_cache.maps.group_test import *
 from nss_cache.maps.netgroup_test import *
 from nss_cache.maps.passwd_test import *
 from nss_cache.maps.shadow_test import *
-
 
 from nss_cache.sources.source_test import *
 from nss_cache.sources.source_factory_test import *
@@ -72,14 +69,14 @@ class NsscacheTestProgram(unittest.TestProgram):
   Wraps the TestProgram class to set the logging output based on the
   test verbosity.
   """
+
   def __init__(self, *args, **kwargs):
     super(NsscacheTestProgram, self).__init__(*args, **kwargs)
     if self.verbosity >= 2:
       format_str = ('\n%(pathname)s:%(lineno)d:\n'
                     '  %(levelname)-8s %(module)s.%(funcName)s: '
                     '%(message)s')
-      logging.basicConfig(stream=sys.stderr,
-                          format=format_str)
+      logging.basicConfig(stream=sys.stderr, format=format_str)
       logging.getLogger().setLevel(logging.DEBUG)
     else:
       logging.disable(logging.CRITICAL)

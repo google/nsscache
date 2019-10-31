@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/error.py."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
@@ -28,8 +27,10 @@ class TestError(unittest.TestCase):
 
   def testError(self):
     """We can throw an error.Error"""
+
     class Ooops(object):
       """Raises error.Error"""
+
       def __init__(self):
         raise error.Error
 
@@ -37,8 +38,10 @@ class TestError(unittest.TestCase):
 
   def testCacheNotFound(self):
     """We can throw an error.CacheNotFound"""
+
     class Ooops(object):
       """Raises error.CacheNotFound"""
+
       def __init__(self):
         raise error.CacheNotFound
 
@@ -46,8 +49,10 @@ class TestError(unittest.TestCase):
 
   def testCommandParseError(self):
     """We can throw an error.CommandParseError"""
+
     class Ooops(object):
       """Raises error.CommandParseError"""
+
       def __init__(self):
         raise error.CommandParseError
 
@@ -55,8 +60,10 @@ class TestError(unittest.TestCase):
 
   def testConfigurationError(self):
     """We can throw an error.ConfigurationError"""
+
     class Ooops(object):
       """Raises error.ConfigurationError"""
+
       def __init__(self):
         raise error.ConfigurationError
 
@@ -64,6 +71,7 @@ class TestError(unittest.TestCase):
 
   def testEmptyMap(self):
     """error.EmptyMap is raisable"""
+
     def Kaboom():
       raise error.EmptyMap
 
@@ -71,8 +79,10 @@ class TestError(unittest.TestCase):
 
   def testNoConfigFound(self):
     """We can throw an error.NoConfigFound"""
+
     class Ooops(object):
       """Raises error.NoConfigFound"""
+
       def __init__(self):
         raise error.NoConfigFound
 
@@ -80,6 +90,7 @@ class TestError(unittest.TestCase):
 
   def testPermissionDenied(self):
     """error.PermissionDenied is raisable"""
+
     def Kaboom():
       raise error.PermissionDenied
 
@@ -87,8 +98,10 @@ class TestError(unittest.TestCase):
 
   def testUnsupportedMap(self):
     """We can throw an error.UnsupportedMap"""
+
     class Ooops(object):
       """Raises error.UnsupportedMap"""
+
       def __init__(self):
         raise error.UnsupportedMap
 
@@ -96,8 +109,10 @@ class TestError(unittest.TestCase):
 
   def testSourceUnavailable(self):
     """We can throw an error.SourceUnavailable"""
+
     class Ooops(object):
       """Raises error.SourceUnavailable"""
+
       def __init__(self):
         raise error.SourceUnavailable
 

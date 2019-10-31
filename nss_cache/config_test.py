@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/config.py."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
@@ -33,8 +32,10 @@ class TestConfig(unittest.TestCase):
     env = {'NSSCACHE_CONFIG': 'test.conf'}
     conf = config.Config(env)
 
-    self.assertEqual(conf.config_file, env['NSSCACHE_CONFIG'],
-                      msg='Failed to override NSSCACHE_CONFIG.')
+    self.assertEqual(
+        conf.config_file,
+        env['NSSCACHE_CONFIG'],
+        msg='Failed to override NSSCACHE_CONFIG.')
 
 
 class TestMapOptions(unittest.TestCase):
@@ -134,15 +135,11 @@ class TestClassMethods(unittest.TestCase):
     self.assertEqual(shadow.cache['name'], 'files')
     self.assertEqual(automount.cache['name'], 'files')
 
-    self.assertEqual(passwd.source['base'],
-                      'ou=people,dc=example,dc=com')
-    self.assertEqual(passwd.source['filter'],
-                      '(objectclass=posixAccount)')
+    self.assertEqual(passwd.source['base'], 'ou=people,dc=example,dc=com')
+    self.assertEqual(passwd.source['filter'], '(objectclass=posixAccount)')
 
-    self.assertEqual(group.source['base'],
-                      'ou=group,dc=example,dc=com')
-    self.assertEqual(group.source['filter'],
-                      '(objectclass=posixGroup)')
+    self.assertEqual(group.source['base'], 'ou=group,dc=example,dc=com')
+    self.assertEqual(group.source['filter'], '(objectclass=posixGroup)')
 
   def testLoadConfigOptionalDefaults(self):
     conf_file = open(self.conf_filename, 'w')
@@ -173,9 +170,9 @@ class TestClassMethods(unittest.TestCase):
     self.assertEqual('ldap', self.conf.options['quux'].source['name'])
     self.assertEqual('b\'ar', self.conf.options['quux'].cache['name'])
     self.assertEqual('blah',
-                      self.conf.options['quux'].source['tls_require_cert'])
+                     self.conf.options['quux'].source['tls_require_cert'])
     self.assertEqual('qep\'a\' wa\'maH loS\'DIch',
-                      self.conf.options['quux'].source['klingon'])
+                     self.conf.options['quux'].source['klingon'])
 
   def testLoadConfigConvertsNumbers(self):
     conf_file = open(self.conf_filename, 'w')
@@ -205,13 +202,9 @@ class TestClassMethods(unittest.TestCase):
     self.assertEqual(options, {})
 
     # create a list like from ConfigParser.items()
-    items = [('maps', 'foo, bar, foobar'),
-             ('nssdb_dir', '/path/to/dir'),
-             ('ldap_uri', 'TEST_URI'),
-             ('source', 'foo'),
-             ('cache', 'bar'),
-             ('ldap_base', 'TEST_BASE'),
-             ('ldap_filter', 'TEST_FILTER')]
+    items = [('maps', 'foo, bar, foobar'), ('nssdb_dir', '/path/to/dir'),
+             ('ldap_uri', 'TEST_URI'), ('source', 'foo'), ('cache', 'bar'),
+             ('ldap_base', 'TEST_BASE'), ('ldap_filter', 'TEST_FILTER')]
 
     options = config.Options(items, 'ldap')
 
@@ -230,11 +223,13 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('group: files db\n')
     nsswitch_file.write('shadow: files db\n')
     nsswitch_file.close()
-    expected_switch = {'passwd': ['files', 'db'],
-                       'group': ['files', 'db'],
-                       'shadow': ['files', 'db']}
+    expected_switch = {
+        'passwd': ['files', 'db'],
+        'group': ['files', 'db'],
+        'shadow': ['files', 'db']
+    }
     self.assertEqual(expected_switch,
-                      config.ParseNSSwitchConf(nsswitch_filename))
+                     config.ParseNSSwitchConf(nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyConfiguration(self):
@@ -253,8 +248,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('shadow: files db\n')
     nsswitch_file.close()
     self.assertEqual((0, 0),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyConfigurationWithCache(self):
@@ -274,8 +268,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('shadow: cache\n')
     nsswitch_file.close()
     self.assertEqual((0, 0),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyConfigurationWithFiles(self):
@@ -294,8 +287,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('shadow: files\n')
     nsswitch_file.close()
     self.assertEqual((0, 0),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyBadConfigurationWithCache(self):
@@ -315,8 +307,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('shadow: files\n')
     nsswitch_file.close()
     self.assertEqual((3, 0),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyBadConfigurationIncrementsWarningCount(self):
@@ -335,8 +326,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('shadow: files db\n')
     nsswitch_file.close()
     self.assertEqual((1, 0),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
   def testVerifyNoMapConfigurationIsError(self):
@@ -353,8 +343,7 @@ class TestClassMethods(unittest.TestCase):
     nsswitch_file.write('passwd: files ldap\n')
     nsswitch_file.close()
     self.assertEqual((0, 1),
-                      config.VerifyConfiguration(self.conf,
-                                                 nsswitch_filename))
+                     config.VerifyConfiguration(self.conf, nsswitch_filename))
     os.unlink(nsswitch_filename)
 
 

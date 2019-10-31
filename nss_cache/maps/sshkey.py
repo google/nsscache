@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of a sshkey map for nsscache.
 
 SshkeyMap:  An implementation of NSS sshkey maps based on the Map
@@ -65,4 +64,5 @@ class SshkeyMapEntry(maps.MapEntry):
 
     super(SshkeyMapEntry, self).__init__(data)
     # Seed data with defaults if still empty
-    if self.sshkey is None: self.sshkey = ''
+    if self.sshkey is None:
+      self.sshkey = ''
