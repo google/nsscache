@@ -44,7 +44,7 @@ class TestMap(unittest.TestCase):
     foo = StubMap()
     now = int(time.time())
     foo.SetModifyTimestamp(now)
-    self.assertEquals(now,
+    self.assertEqual(now,
                       foo.GetModifyTimestamp())
     self.assertRaises(TypeError,
                       foo.SetModifyTimestamp,
@@ -59,7 +59,7 @@ class TestMap(unittest.TestCase):
     foo = StubMap()
     now = int(time.time())
     foo.SetUpdateTimestamp(now)
-    self.assertEquals(now,
+    self.assertEqual(now,
                       foo.GetUpdateTimestamp())
     self.assertRaises(TypeError,
                       foo.SetUpdateTimestamp,

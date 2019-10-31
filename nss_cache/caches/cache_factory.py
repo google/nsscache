@@ -83,6 +83,3 @@ def Create(conf, map_name, automount_mountpoint=None):
   
 files.RegisterAllImplementations(RegisterImplementation)
 nssdb.RegisterAllImplementations(RegisterImplementation)
-
-
-

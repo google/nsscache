@@ -18,9 +18,9 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+import pwd
 import grp
 import logging
-import pwd
 import subprocess
 
 from nss_cache import config

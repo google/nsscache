@@ -31,7 +31,10 @@ import sys
 import tempfile
 import unittest
 
-import mox
+try:
+  import mox
+except ImportError:
+  from mox3 import mox
 
 from nss_cache import lock
 
@@ -174,10 +177,10 @@ class TestPidFile(mox.MoxTestBase):
     self.mox.StubOutWithMock(fcntl, 'lockf')
     fcntl.lockf(locker._file,
                 fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-                    IOError(fcntl.F_GETSIG, ''))
+                    IOError(errno.EAGAIN, ''))
     fcntl.lockf(locker._file,
                 fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-                    IOError(fcntl.F_GETSIG, ''))
+                    IOError(errno.EAGAIN, ''))
     self.mox.ReplayAll()
 
     # This is a little weird due to recursion.

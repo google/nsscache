@@ -1,5 +1,8 @@
+pytest
 boto3==1.7.36
 pycurl==7.43.0.2
-python-ldap==3.1.0
+python-ldap
+python3-ldap
+mox3
+bsddb3
 mox==0.5.3
-

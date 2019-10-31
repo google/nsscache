@@ -24,9 +24,13 @@ import logging
 import time
 import ldap
 import ldap.sasl
-import urllib
 import re
+from binascii import b2a_hex
 from distutils.version import StrictVersion
+try:
+  from urllib import quote
+except ImportError:
+  from urllib.parse import quote
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -36,6 +40,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
+
 
 IS_LDAP24_OR_NEWER = StrictVersion(ldap.__version__) >= StrictVersion('2.4')
 
@@ -66,6 +71,46 @@ def setCookieOnControl(control, cookie, page_size):
     control.controlValue = (page_size, cookie)
 
   return cookie
+
+def sidToStr(sid):
+  """ Converts an objectSid hexadecimal string returned from the LDAP query to the
+  objectSid string version in format of S-1-5-21-1270288957-3800934213-3019856503-500
+  For more information about the objectSid binary structure:
+  https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/78eb9013-1c3a-4970-ad1f-2b1dad588a25
+  https://devblogs.microsoft.com/oldnewthing/?p=40253
+  This function was based from:
+  https://ldap3.readthedocs.io/_modules/ldap3/protocol/formatters/formatters.html#format_sid
+  """
+  try:
+    if sid.startswith(b'S-1') or sid.startswith('S-1'):
+      return sid
+  except Exception:
+    pass
+  try:
+    if str is not bytes:
+      revision = int(sid[0])
+      sub_authorities = int(sid[1])
+      identifier_authority = int.from_bytes(sid[2:8], byteorder='big')
+      if identifier_authority >= 2 ** 32:
+        identifier_authority = hex(identifier_authority)
+
+      sub_authority = '-' + '-'.join([str(int.from_bytes(sid[8 + (i * 4): 12 + (i * 4)], byteorder='little')) for i in range(sub_authorities)])
+    else:
+      revision = int(b2a_hex(sid[0]))
+      sub_authorities = int(b2a_hex(sid[1]))
+      identifier_authority = int(b2a_hex(sid[2:8]), 16)
+      if identifier_authority >= 2 ** 32:
+        identifier_authority = hex(identifier_authority)
+
+      sub_authority = '-' + '-'.join([str(int(b2a_hex(sid[11 + (i * 4): 7 + (i * 4): -1]), 16)) for i in range(sub_authorities)])
+    objectSid = 'S-' + str(revision) + '-' + str(identifier_authority) + sub_authority
+
+    return objectSid
+  except Exception:
+    pass
+
+  return sid
+
 
 class LdapSource(source.Source):
   """Source for data in LDAP.
@@ -133,7 +178,7 @@ class LdapSource(source.Source):
     # LDAPI URLs must be url escaped socket filenames; rewrite if necessary.
     if 'uri' in configuration:
       if configuration['uri'].startswith('ldapi://'):
-        configuration['uri'] = 'ldapi://' + urllib.quote(configuration['uri'][8:], '')
+        configuration['uri'] = 'ldapi://' + quote(configuration['uri'][8:], '')
     if not 'bind_dn' in configuration:
       configuration['bind_dn'] = self.BIND_DN
     if not 'bind_password' in configuration:
@@ -180,6 +225,7 @@ class LdapSource(source.Source):
     # Setting global ldap defaults.
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
                     configuration['tls_require_cert'])
+    ldap.set_option(ldap.OPT_REFERRALS, 0)
     if 'tls_cacertdir' in configuration:
         ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, configuration['tls_cacertdir'])
     if 'tls_cacertfile' in configuration:
@@ -216,7 +262,7 @@ class LdapSource(source.Source):
           self.conn.simple_bind_s(who=configuration['bind_dn'],
                                 cred=str(configuration['bind_password']))
         break
-      except ldap.SERVER_DOWN, e:
+      except ldap.SERVER_DOWN as e:
         retry_count += 1
         self.log.warning('Failed LDAP connection: attempt #%s.', retry_count)
         self.log.debug('ldap error is %r', e)
@@ -278,6 +324,9 @@ class LdapSource(source.Source):
         try:
           result_type, data, _, serverctrls = self.conn.result3(
             self.message_id, all=0, timeout=self.conf['timelimit'])
+          # we need to filter out AD referrals
+          if data and not data[0][0]:
+            continue
 
           # Paged requests return a new cookie in serverctrls at the end of a page,
           # so we search for the cookie and perform another search if needed.
@@ -494,7 +543,11 @@ class LdapSource(source.Source):
     if since is None:
       # one minute in the future
       since = int(time.time() + 60)
-    results = self.GetPasswdMap(since=since)
+    try:
+      results = self.GetPasswdMap(since=since)
+    except KeyError:
+      # AD groups don't have all attributes of AD users
+      results = self.GetGroupMap(since=since)
     return len(results)
 
 
@@ -514,13 +567,20 @@ class UpdateGetter(object):
       number of seconds since epoch.
     """
     try:
-      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+      if self.conf.get('ad'):
+        # AD timestamp has different format
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%S.0Z')
+      else:
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
     except ValueError:
       # Some systems add a decimal component; try to filter it:
       m = re.match('([0-9]*)(\.[0-9]*)?(Z)', ldap_ts_string)
       if m:
         ldap_ts_string = m.group(1) + m.group(3)
-      t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
+      if self.conf.get('ad'):
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%S.0Z')
+      else:
+        t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
     return int(calendar.timegm(t))
 
   def FromTimestampToLdap(self, ts):
@@ -532,7 +592,10 @@ class UpdateGetter(object):
     Returns:
       LDAP format timestamp string.
     """
-    t = time.strftime('%Y%m%d%H%M%SZ', time.gmtime(ts))
+    if self.conf.get('ad'):
+      t = time.strftime('%Y%m%d%H%M%S.0Z', time.gmtime(ts))
+    else:
+      t = time.strftime('%Y%m%d%H%M%SZ', time.gmtime(ts))
     return t
 
   def GetUpdates(self, source, search_base, search_filter,
@@ -553,15 +616,24 @@ class UpdateGetter(object):
       error.ConfigurationError: scope is invalid
       ValueError: an object in the source map is malformed
     """
-    self.attrs.append('modifyTimestamp')
+    if self.conf.get('ad'):
+      # AD attribute for modifyTimestamp is whenChanged
+      self.attrs.append('whenChanged')
+    else:
+      self.attrs.append('modifyTimestamp')
 
     if since is not None:
       ts = self.FromTimestampToLdap(since)
       # since openldap disallows modifyTimestamp "greater than" we have to
       # increment by one second.
-      ts = int(ts.rstrip('Z')) + 1
-      ts = '%sZ' % ts
-      search_filter = ('(&%s(modifyTimestamp>=%s))' % (search_filter, ts))
+      if self.conf.get('ad'):
+        ts = int(ts.rstrip('.0Z')) + 1
+        ts = '%s.0Z' % ts
+        search_filter = ('(&%s(whenChanged>=%s))' % (search_filter, ts))
+      else:
+        ts = int(ts.rstrip('Z')) + 1
+        ts = '%sZ' % ts
+        search_filter = ('(&%s(modifyTimestamp>=%s))' % (search_filter, ts))
 
     if search_scope == 'base':
       search_scope = ldap.SCOPE_BASE
@@ -588,10 +660,13 @@ class UpdateGetter(object):
           logging.warn('invalid object passed: %r not in %r', field, obj)
           raise ValueError('Invalid object passed: %r', obj)
 
-      try:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
-      except KeyError:
-        obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
+      if self.conf.get('ad'):
+        obj_ts = self.FromLdapToTimestamp(obj['whenChanged'][0])
+      else:
+        try:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimestamp'][0])
+        except KeyError:
+          obj_ts = self.FromLdapToTimestamp(obj['modifyTimeStamp'][0])
 
       if max_ts is None or obj_ts > max_ts:
         max_ts = obj_ts
@@ -599,7 +674,7 @@ class UpdateGetter(object):
       try:
         if not data_map.Add(self.Transform(obj)):
           logging.info('could not add obj: %r', obj)
-      except AttributeError, e:
+      except AttributeError as e:
         logging.warning('error %r, discarding malformed obj: %r',
                         str(e), obj)
     # Perform some post processing on the data_map.
@@ -619,13 +694,20 @@ class PasswdUpdateGetter(UpdateGetter):
 
   def __init__(self, conf):
     super(PasswdUpdateGetter, self).__init__(conf)
-    self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
-                  'homeDirectory', 'loginShell', 'fullName']
-    if 'uidattr' in self.conf:
-      self.attrs.append(self.conf['uidattr'])
-    if 'uidregex' in self.conf:
-      self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
+    if self.conf.get('ad'):
+      # attributes of AD user to be returned 
+      self.attrs = ['sAMAccountName', 'objectSid', 'displayName',
+                    'unixHomeDirectory', 'pwdLastSet', 'loginShell']
+      self.essential_fields = ['sAMAccountName', 'objectSid']
+    else:
+      self.attrs = ['uid', 'uidNumber', 'gidNumber', 'gecos', 'cn',
+                    'homeDirectory', 'loginShell', 'fullName', 'sambaSID']
+      if 'uidattr' in self.conf:
+        self.attrs.append(self.conf['uidattr'])
+      if 'uidregex' in self.conf:
+        self.uidregex = re.compile(self.conf['uidregex'])
+      self.essential_fields = ['uid', 'uidNumber', 'gidNumber', 'sambaSID']
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
     """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
@@ -636,7 +718,9 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw = passwd.PasswdMapEntry()
 
-    if 'gecos' in obj:
+    if self.conf.get('ad'):
+      pw.gecos = obj['displayName'][0]
+    elif 'gecos' in obj:
       pw.gecos = obj['gecos'][0]
     elif 'cn' in obj:
       pw.gecos = obj['cn'][0]
@@ -647,7 +731,9 @@ class PasswdUpdateGetter(UpdateGetter):
 
     pw.gecos = pw.gecos.replace('\n','')
 
-    if 'uidattr' in self.conf:
+    if self.conf.get('ad'):
+      pw.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
       pw.name = obj[self.conf['uidattr']][0]
     else:
       pw.name = obj['uid'][0]
@@ -662,11 +748,33 @@ class PasswdUpdateGetter(UpdateGetter):
     else:
       pw.shell = ''
 
-    pw.uid = int(obj['uidNumber'][0])
-    pw.gid = int(obj['gidNumber'][0])
-    try:
+    if self.conf.get('ad'):
+      # use the user's RID for uid and gid to have
+      # the correspondant group with the same name
+      pw.uid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+      pw.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+    elif self.conf.get('use_rid'):
+      # use the user's RID for uid and gid to have
+      # the correspondant group with the same name
+      pw.uid = int(sidToStr(obj['sambaSID'][0]).split('-')[-1])
+      pw.gid = int(sidToStr(obj['sambaSID'][0]).split('-')[-1])
+    else:
+      pw.uid = int(obj['uidNumber'][0])
+      pw.gid = int(obj['gidNumber'][0])
+
+    if 'offset' in self.conf:
+      # map uid and gid to higher number
+      # to avoid conflict with local accounts
+      pw.uid = int(pw.uid + self.conf['offset'])
+      pw.gid = int(pw.gid + self.conf['offset'])
+
+    if self.conf.get('home_dir'):
+      pw.dir = '/home/%s' % pw.name
+    elif 'unixHomeDirectory' in obj:
+      pw.dir = obj['unixHomeDirectory'][0]
+    elif 'homeDirectory' in obj:
       pw.dir = obj['homeDirectory'][0]
-    except KeyError:
+    else:
       pw.dir = ''
 
     # hack
@@ -681,15 +789,20 @@ class GroupUpdateGetter(UpdateGetter):
   def __init__(self, conf):
     super(GroupUpdateGetter, self).__init__(conf)
     # TODO: Merge multiple rcf2307bis[_alt] options into a single option.
-    if conf.get('rfc2307bis'):
-      self.attrs = ['cn', 'gidNumber', 'member']
-    elif conf.get('rfc2307bis_alt'):
-      self.attrs = ['cn', 'gidNumber', 'uniqueMember']
+    if self.conf.get('ad'):
+      # attributes of AD group to be returned 
+      self.attrs = ['sAMAccountName', 'member', 'objectSid']
+      self.essential_fields = ['sAMAccountName', 'objectSid']
     else:
-      self.attrs = ['cn', 'gidNumber', 'memberUid']
-    if 'groupregex' in conf:
-      self.groupregex = re.compile(self.conf['groupregex'])
-    self.essential_fields = ['cn']
+      if conf.get('rfc2307bis'):
+        self.attrs = ['cn', 'gidNumber', 'member', 'uid', 'sambaSID']
+      elif conf.get('rfc2307bis_alt'):
+        self.attrs = ['cn', 'gidNumber', 'uniqueMember', 'uid', 'sambaSID']
+      else:
+        self.attrs = ['cn', 'gidNumber', 'memberUid', 'uid', 'sambaSID']
+      if 'groupregex' in conf:
+        self.groupregex = re.compile(self.conf['groupregex'])
+      self.essential_fields = ['cn', 'sambaSID']
     self.log = logging.getLogger(__name__)
 
   def CreateMap(self):
@@ -701,7 +814,13 @@ class GroupUpdateGetter(UpdateGetter):
 
     gr = group.GroupMapEntry()
 
-    gr.name = obj['cn'][0]
+    if self.conf.get('ad'):
+      gr.name = obj['sAMAccountName'][0]
+    # hack to map the users as the corresponding group with the same name
+    elif 'uid' in obj:
+      gr.name = obj['uid'][0]
+    else:
+      gr.name = obj['cn'][0]
     # group passwords are deferred to gshadow
     gr.passwd = '*'
     base = self.conf.get("base")
@@ -727,7 +846,16 @@ class GroupUpdateGetter(UpdateGetter):
       members.extend(obj['uniqueMember'])
     members.sort()
 
-    gr.gid = int(obj['gidNumber'][0])
+    if self.conf.get('ad'):
+      gr.gid = int(sidToStr(obj['objectSid'][0]).split('-')[-1])
+    elif self.conf.get('use_rid'):
+      gr.gid = int(sidToStr(obj['sambaSID'][0]).split('-')[-1])
+    else:
+      gr.gid = int(obj['gidNumber'][0])
+
+    if 'offset' in self.conf:
+      gr.gid = int(gr.gid + self.conf['offset'])
+
     gr.members = members
     gr.groupmembers = group_members
 
@@ -748,7 +876,7 @@ class GroupUpdateGetter(UpdateGetter):
               uidmembers.extend(obj['uid'])
         del gr.members[:]
         gr.members.extend(uidmembers)
-    
+
     _group_map = {i.name: i for i in data_map}
     
     def _expand_members(obj, visited=None):
@@ -778,11 +906,17 @@ class ShadowUpdateGetter(UpdateGetter):
     self.attrs = ['uid', 'shadowLastChange', 'shadowMin',
                   'shadowMax', 'shadowWarning', 'shadowInactive',
                   'shadowExpire', 'shadowFlag', 'userPassword']
-    if 'uidattr' in self.conf:
-      self.attrs.append(self.conf['uidattr'])
-    if 'uidregex' in self.conf:
-      self.uidregex = re.compile(self.conf['uidregex'])
-    self.essential_fields = ['uid']
+    if self.conf.get('ad'):  
+      # attributes of AD user to be returned for shadow
+      self.attrs.extend(('sAMAccountName', 'pwdLastSet'))
+      self.essential_fields = ['sAMAccountName', 'pwdLastSet']
+    else:
+      if 'uidattr' in self.conf:
+        self.attrs.append(self.conf['uidattr'])
+      if 'uidregex' in self.conf:
+        self.uidregex = re.compile(self.conf['uidregex'])
+      self.essential_fields = ['uid']
+    self.log = logging.getLogger(self.__class__.__name__)
 
   def CreateMap(self):
     """Return a ShadowMap instance."""
@@ -791,8 +925,10 @@ class ShadowUpdateGetter(UpdateGetter):
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
     shadow_ent = shadow.ShadowMapEntry()
-    if 'uidattr' in self.conf:
-      shadow_ent.name = obj[uidattr][0]
+    if self.conf.get('ad'):
+      shadow_ent.name = obj['sAMAccountName'][0]
+    elif 'uidattr' in self.conf:
+      shadow_ent.name = obj[self.conf['uidattr']][0]
     else:
       shadow_ent.name = obj['uid'][0]
 
@@ -802,7 +938,14 @@ class ShadowUpdateGetter(UpdateGetter):
     # TODO(jaq): does nss_ldap check the contents of the userPassword
     # attribute?
     shadow_ent.passwd = '*'
-    if 'shadowLastChange' in obj:
+    if self.conf.get('ad'):
+      # Time attributes of AD objects use interval date/time format with a value
+      # that represents the number of 100-nanosecond intervals since January 1, 1601.
+      # We need to calculate the difference between 1970-01-01 and 1601-01-01 in seconds wich is 11644473600
+      # then abstract it from the pwdLastChange value in seconds, then devide it by 86400 to get the 
+      # days since Jan 1, 1970 the password wa changed.
+      shadow_ent.lstchg = int((int(obj['pwdLastSet'][0])/10000000 - 11644473600) / 86400 )
+    elif 'shadowLastChange' in obj:
       shadow_ent.lstchg = int(obj['shadowLastChange'][0])
     if 'shadowMin' in obj:
       shadow_ent.min = int(obj['shadowMin'][0])
@@ -908,7 +1051,7 @@ class SshkeyUpdateGetter(UpdateGetter):
     skey = sshkey.SshkeyMapEntry()
 
     if 'uidattr' in self.conf:
-      skey.name = obj[uidattr][0]
+      skey.name = obj[self.conf['uidattr']][0]
     else:
       skey.name = obj['uid'][0]
 

@@ -56,8 +56,6 @@ try:
   from nss_cache.sources.s3source_test import *
 except ImportError:
   pass
-# Unsupported and deprecated.
-#from nss_cache.sources.zsyncsource_test import *
 
 from nss_cache.update.updater_test import *
 from nss_cache.update.map_updater_test import *
@@ -97,5 +95,5 @@ class NsscacheTestProgram(unittest.TestProgram):
 
 
 if __name__ == '__main__':
-  os.chdir(os.path.dirname(sys.argv[0]))
+  os.chdir(sys.path[0])
   NsscacheTestProgram()

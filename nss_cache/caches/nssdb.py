@@ -18,7 +18,10 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
-import bsddb
+try:
+  from bsddb import btopen
+except ImportError:
+  from bsddb3 import btopen
 import fcntl
 import os
 import select
@@ -115,7 +118,7 @@ class NssDbCache(caches.Cache):
       self.log.debug('cache file does not exist: %r', db_file)
       raise error.CacheNotFound('cache file does not exist: %r' % db_file)
 
-    db = bsddb.btopen(db_file, 'r')
+    db = btopen(db_file, 'r')
     for k in db:
       if self.IsMapPrimaryKey(k):
         password_entry = self.ConvertValueToMapEntry(db[k])
@@ -253,7 +256,7 @@ class NssDbCache(caches.Cache):
       EmptyMap: The cache being verified is empty.
     """
     self.log.debug('verification started %s', self.temp_cache_filename)
-    db = bsddb.btopen(self.temp_cache_filename, 'r')
+    db = btopen(self.temp_cache_filename, 'r')
     # cast keys to a set for fast __contains__ lookup in the loop
     # following
     cache_keys = set(db)

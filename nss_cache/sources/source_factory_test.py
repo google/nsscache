@@ -35,9 +35,9 @@ class TestSourceFactory(unittest.TestCase):
       name = 'dummy'
     source_factory.RegisterImplementation(DummySource)
 
-    self.failUnlessEqual(number_of_sources + 1,
+    self.assertEqual(number_of_sources + 1,
                          len(source_factory._source_implementations))
-    self.failUnlessEqual(DummySource,
+    self.assertEqual(DummySource,
                          source_factory._source_implementations['dummy'])
 
   def testRegisterWithoutName(self):

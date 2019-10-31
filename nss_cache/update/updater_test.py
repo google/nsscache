@@ -26,7 +26,10 @@ import tempfile
 import time
 import unittest
 
-import mox
+try:
+  import mox
+except ImportError:
+  from mox3 import mox
 
 from nss_cache import config
 from nss_cache.update import updater

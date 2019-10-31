@@ -42,10 +42,10 @@ class TestPasswdMap(unittest.TestCase):
 
   def testInit(self):
     """Construct an empty or seeded PasswdMap."""
-    self.assertEquals(passwd.PasswdMap, type(passwd.PasswdMap()),
+    self.assertEqual(passwd.PasswdMap, type(passwd.PasswdMap()),
                       msg='failed to create emtpy PasswdMap')
     pmap = passwd.PasswdMap([self._good_entry])
-    self.assertEquals(self._good_entry, pmap.PopItem(),
+    self.assertEqual(self._good_entry, pmap.PopItem(),
                       msg='failed to seed PasswdMap with list')
     self.assertRaises(TypeError, passwd.PasswdMap, ['string'])
 
@@ -53,14 +53,14 @@ class TestPasswdMap(unittest.TestCase):
     """Add raises exceptions for objects it can't add or verify."""
     pmap = passwd.PasswdMap()
     entry = self._good_entry
-    self.assert_(pmap.Add(entry),
+    self.assertTrue(pmap.Add(entry),
                  msg='failed to add new entry.')
 
-    self.assertEquals(1, len(pmap),
+    self.assertEqual(1, len(pmap),
                       msg='unexpected size for Map.')
 
     ret_entry = pmap.PopItem()
-    self.assertEquals(ret_entry, entry,
+    self.assertEqual(ret_entry, entry,
                       msg='failed to pop existing entry.')
 
     gentry = group.GroupMapEntry()
@@ -92,18 +92,18 @@ class TestPasswdMap(unittest.TestCase):
     ret_entries = []
     for entry in pmap:
       ret_entries.append(entry)
-    self.assertEquals(len(ret_entries), 1,
+    self.assertEqual(len(ret_entries), 1,
                       msg='iterated over wrong count')
-    self.assertEquals(ret_entries[0], self._good_entry,
+    self.assertEqual(ret_entries[0], self._good_entry,
                       msg='got the wrong entry back')
 
   def testLen(self):
     """Verify we have correctly overridden __len__ in MapEntry."""
     pmap = passwd.PasswdMap()
-    self.assertEquals(len(pmap), 0,
+    self.assertEqual(len(pmap), 0,
                       msg='expected len(pmap) to be 0')
     pmap.Add(self._good_entry)
-    self.assertEquals(len(pmap), 1,
+    self.assertEqual(len(pmap), 1,
                       msg='expected len(pmap) to be 1')
 
   def testExists(self):
@@ -161,7 +161,7 @@ class TestPasswdMap(unittest.TestCase):
   def testPopItem(self):
     """Verify you can retrieve MapEntry with PopItem."""
     pmap = passwd.PasswdMap([self._good_entry])
-    self.assertEquals(pmap.PopItem(), self._good_entry)
+    self.assertEqual(pmap.PopItem(), self._good_entry)
 
   def testLastModificationTimestamp(self):
     """Test setting/getting of timestamps on maps."""
@@ -182,51 +182,51 @@ class TestPasswdMapEntry(unittest.TestCase):
   def testInit(self):
     """Construct empty and seeded PasswdMapEntry."""
     entry = passwd.PasswdMapEntry()
-    self.assertEquals(type(entry), passwd.PasswdMapEntry,
+    self.assertEqual(type(entry), passwd.PasswdMapEntry,
                       msg='Could not create empty PasswdMapEntry')
     seed = {'name': 'foo', 'passwd': 'x', 'uid': 10, 'gid': 10, 'gecos': '',
             'dir': '', 'shell': ''}
     entry = passwd.PasswdMapEntry(seed)
-    self.assert_(entry.Verify(),
+    self.assertTrue(entry.Verify(),
                  msg='Could not verify seeded PasswdMapEntry')
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Entry returned wrong value for name')
-    self.assertEquals(entry.passwd, 'x',
+    self.assertEqual(entry.passwd, 'x',
                       msg='Entry returned wrong value for passwd')
-    self.assertEquals(entry.uid, 10,
+    self.assertEqual(entry.uid, 10,
                       msg='Entry returned wrong value for uid')
-    self.assertEquals(entry.gid, 10,
+    self.assertEqual(entry.gid, 10,
                       msg='Entry returned wrong value for gid')
-    self.assertEquals(entry.gecos, '',
+    self.assertEqual(entry.gecos, '',
                       msg='Entry returned wrong value for gecos')
-    self.assertEquals(entry.dir, '',
+    self.assertEqual(entry.dir, '',
                       msg='Entry returned wrong value for dir')
-    self.assertEquals(entry.shell, '',
+    self.assertEqual(entry.shell, '',
                       msg='Entry returned wrong value for shell')
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
     entry = passwd.PasswdMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.name, 'foo',
+    self.assertEqual(entry.name, 'foo',
                       msg='Could not set attribute: name')
     entry.passwd = 'x'
-    self.assertEquals(entry.passwd, 'x',
+    self.assertEqual(entry.passwd, 'x',
                       msg='Could not set attribute: passwd')
     entry.uid = 10
-    self.assertEquals(entry.uid, 10,
+    self.assertEqual(entry.uid, 10,
                       msg='Could not set attribute: uid')
     entry.gid = 10
-    self.assertEquals(entry.gid, 10,
+    self.assertEqual(entry.gid, 10,
                       msg='Could not set attribute: gid')
     entry.gecos = 'How Now Brown Cow'
-    self.assertEquals(entry.gecos, 'How Now Brown Cow',
+    self.assertEqual(entry.gecos, 'How Now Brown Cow',
                       msg='Could not set attribute: gecos')
     entry.dir = '/home/foo'
-    self.assertEquals(entry.dir, '/home/foo',
+    self.assertEqual(entry.dir, '/home/foo',
                       msg='Could not set attribute: dir')
     entry.shell = '/bin/bash'
-    self.assertEquals(entry.shell, '/bin/bash',
+    self.assertEqual(entry.shell, '/bin/bash',
                       msg='Could not set attribute: shell')
 
   def testEq(self):
@@ -242,9 +242,9 @@ class TestPasswdMapEntry(unittest.TestCase):
     entry_bad = passwd.PasswdMapEntry()
     entry_bad.name = 'bar'
     
-    self.assertEquals(entry_good, entry_good,
+    self.assertEqual(entry_good, entry_good,
                       msg='entry_good not equal to itself')
-    self.assertEquals(entry_good, entry_same_as_good,
+    self.assertEqual(entry_good, entry_same_as_good,
                       msg='__eq__ not doing deep compare')
     self.assertNotEqual(entry_good, entry_like_good,
                         msg='__eq__ not doing deep compare')
@@ -256,13 +256,13 @@ class TestPasswdMapEntry(unittest.TestCase):
     entry = passwd.PasswdMapEntry()
 
     # by leaving _KEY unset, we should bomb.
-    self.failIf(entry.Verify())
+    self.assertFalse(entry.Verify())
 
   def testKey(self):
     """Key() should return the value of the 'name' attribute."""
     entry = passwd.PasswdMapEntry()
     entry.name = 'foo'
-    self.assertEquals(entry.Key(), entry.name)
+    self.assertEqual(entry.Key(), entry.name)
 
 
 if __name__ == '__main__':

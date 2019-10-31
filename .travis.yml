@@ -2,37 +2,23 @@ language: python
 
 install:
  - travis_retry sudo apt-get update -qq
- - travis_retry sudo apt-get install -y python-ldap python-mox libnss-db
+ - travis_retry sudo apt-get install -y libnss-db libcurl4-gnutls-dev python-ldap python-mox python-pycurl
  - |-
-    if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
-      travis_retry pip install -r requirements.txt
+    if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then
+      travis_retry sudo apt-get install -y python3-mox3 python3-ldap python3-bsddb3
     fi
+ - pip install .
+ - travis_retry pip install -r requirements.txt
 
 script:
- - |-
-    if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
-      # see discussion https://github.com/travis-ci/travis-ci/issues/4260
-      ln -s /usr/lib/python2.7/lib-dynload/_bsddb.x86_64-linux-gnu.so /opt/python/2.7/lib/python2.7/lib-dynload/_bsddb.so
-    fi
- - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python ./runtests.py; else ./runtests.py; fi
+ - python runtests.py
  - python setup.py install --root=/tmp/nsscache
 
 python:
- - "2.6"
  - "2.7"
- - "3.2"
- - "3.3"
- - "3.4"
- - "3.5"
- - "3.5-dev" # 3.5 development branch
- - "nightly" # currently points to 3.6-dev
+ - "3.8"
+ - "nightly"
 matrix:
  fast_finish: true
  allow_failures:
   - python: nightly
-  - python: 3.5-dev
-  - python: 3.5
-  - python: 3.4
-  - python: 3.3
-  - python: 3.2
-

@@ -57,13 +57,6 @@ httpsource.RegisterImplementation(RegisterImplementation)
 ldapsource.RegisterImplementation(RegisterImplementation)
 consulsource.RegisterImplementation(RegisterImplementation)
 
-# Don't load the zsync source if zsync python module isn't there.
-try:
-  from nss_cache.sources import zsyncsource
-  zsyncsource.RegisterImplementation(RegisterImplementation)
-except ImportError:
-  pass
-
 # Don't load the s3 source if boto3/botocore python modules aren't there.
 try:
   from nss_cache.sources import s3source
@@ -91,7 +84,7 @@ def Create(conf):
 
   source_name = conf['name']
 
-  if source_name not in _source_implementations.keys():
+  if source_name not in list(_source_implementations.keys()):
     raise RuntimeError('source not implemented: %r' % (source_name,))
 
   return _source_implementations[source_name](conf)

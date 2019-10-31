@@ -20,9 +20,12 @@ __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
 import logging
 import os
-import StringIO
 import sys
 import unittest
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 from nss_cache import app
 
@@ -31,7 +34,7 @@ class TestNssCacheApp(unittest.TestCase):
   """Unit tests for NssCacheApp class."""
 
   def setUp(self):
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     self.stdout = sys.stdout
     sys.stdout = dev_null
 
@@ -85,14 +88,14 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testBadOptionsCauseNoExit(self):
     a = app.NssCacheApp()
-    stderr_buffer = StringIO.StringIO()
+    stderr_buffer = StringIO()
     old_stderr = sys.stderr
     sys.stderr = stderr_buffer
     self.assertEquals(2, a.Run(['--invalid'], {}))
     sys.stderr = old_stderr
 
   def testHelpOptionPrintsGlobalHelp(self):
-    stdout_buffer = StringIO.StringIO()
+    stdout_buffer = StringIO()
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -109,7 +112,7 @@ class TestNssCacheApp(unittest.TestCase):
 
   def testHelpCommandOutput(self):
     # trap stdout into a StringIO
-    stdout_buffer = StringIO.StringIO()
+    stdout_buffer = StringIO()
     a = app.NssCacheApp()
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -127,7 +130,7 @@ class TestNssCacheApp(unittest.TestCase):
 #     # This will fail when run under 'nosetests -s' because nose will
 #     # also intercept sys.stdout :(  (Recommend refactoring NssCacheApp
 #     # to take in an output stream for help and usage?
-#     output = cStringIO.StringIO()
+#     output = StringIO()
 #     stdout = sys.stdout
 #     sys.stdout = output
 
@@ -151,16 +154,16 @@ class TestNssCacheApp(unittest.TestCase):
   #       self.levels = []
 
   #     def emit(self, record):
-  #       print record
+  #       print(record)
   #       self.levels.append(record.levelno)
-  #       print self.levels
+  #       print(self.levels)
 
   #   handler = test_handler()
   #   a = app.NssCacheApp()
-  #   print "log:", a.log
+  #   print("log:", a.log)
   #   a.log.addHandler(handler)
   #   a.log.debug2('logged at level debug2')
-  #   print handler.levels
+  #   print(handler.levels)
   #   self.failUnless(5 in handler.levels)
 
   # def testVerboseLoggingLevel(self):

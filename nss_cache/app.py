@@ -92,7 +92,7 @@ class NssCacheApp(object):
         handler = logging.handlers.SysLogHandler(address='/dev/log',
                                                  facility=facility)
       except socket.error:
-        print '/dev/log could not be opened; falling back on stderr.'
+        print('/dev/log could not be opened; falling back on stderr.')
         # Omitting an argument to StreamHandler results in sys.stderr being
         # used.
         handler = logging.StreamHandler()
@@ -188,7 +188,7 @@ class NssCacheApp(object):
     # Parse the commandline.
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       # OptionParser objects raise SystemExit (error() calls exit()
       # calls sys.exit()) upon a parser error.
       # This can be handled better by overriding error or monkeypatching
@@ -213,7 +213,7 @@ class NssCacheApp(object):
 
     # Identify the command to dispatch.
     if not args:
-      print 'No command given'
+      print('No command given')
       self.parser.print_help()
       return os.EX_USAGE
     # print global help if command is 'help' with no argument
@@ -232,13 +232,13 @@ class NssCacheApp(object):
       command_callable = getattr(command, command_name.capitalize())
     except AttributeError:
       self.log.warn('%s is not implemented', command_name)
-      print 'command %r is not implemented' % command_name
+      print('command %r is not implemented' % command_name)
       self.parser.print_help()
       return os.EX_SOFTWARE
 
     try:
       retval = command_callable().Run(conf=conf, args=args)
-    except error.SourceUnavailable, e:
+    except error.SourceUnavailable as e:
       self.log.error('Problem with configured data source: %s', e)
       return os.EX_TEMPFAIL
 

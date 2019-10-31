@@ -23,13 +23,19 @@ import grp
 import os
 import pwd
 import shutil
-import StringIO
 import sys
 import tempfile
 import time
 import unittest
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
-import mox
+try:
+  import mox
+except ImportError:
+  from mox3 import mox
 
 from nss_cache import command
 from nss_cache import config
@@ -166,7 +172,7 @@ class TestUpdateCommand(mox.MoxTestBase):
     c = command.Update()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -446,7 +452,7 @@ class TestVerifyCommand(mox.MoxTestBase):
     c = command.Verify()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -638,7 +644,7 @@ class TestRepairCommand(unittest.TestCase):
     c = command.Repair()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -663,7 +669,7 @@ class TestHelpCommand(unittest.TestCase):
 
   def setUp(self):
     self.stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
+    sys.stdout = StringIO()
 
   def tearDown(self):
     sys.stdout = self.stdout
@@ -741,7 +747,7 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     # Trap stderr so the unit test runs clean,
     # since unit test status is printed on stderr.
-    dev_null = StringIO.StringIO()
+    dev_null = StringIO()
     stderr = sys.stderr
     sys.stderr = dev_null
     self.assertEquals(2, c.Run(None, ['--invalid']))
@@ -754,7 +760,7 @@ class TestStatusCommand(mox.MoxTestBase):
     self.assertEqual([], args)
 
   def testObeysMapsFlag(self):
-    stdout_buffer = StringIO.StringIO()
+    stdout_buffer = StringIO()
 
     old_stdout = sys.stdout
     sys.stdout = stdout_buffer
@@ -813,8 +819,8 @@ class TestStatusCommand(mox.MoxTestBase):
     c = command.Status()
     values = c.GetSingleMapMetadata(config.MAP_PASSWORD, self.conf,
                                     epoch=False)
-    self.failUnlessEqual('Wed Dec 31 16:00:02 1969',
-                         values[1]['value'])
+    self.failUnless(values[1]['value'] in ['Wed Dec 31 16:00:02 1969',
+                                        'Thu Jan  1 00:00:02 1970'])
 
   def testGetAutomountMapMetadata(self):
     # need to stub out GetSingleMapMetadata (tested above) and then

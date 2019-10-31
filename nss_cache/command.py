@@ -23,7 +23,11 @@ import logging
 import optparse
 import os
 import shutil
-import StringIO
+from io import BytesIO as StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import tempfile
 import time
 
@@ -155,7 +159,7 @@ class Command(object):
     else:
       # lose the short summary first line
       help_text = '\n'.join(help_text.split('\n')[2:])
-      help_buffer = StringIO.StringIO()
+      help_buffer = StringIO()
       self.parser.print_help(file=help_buffer)
       # lose the first line, which is the usage line
       help_text += '\n'.join(help_buffer.getvalue().split('\n')[1:])
@@ -208,7 +212,7 @@ class Update(Command):
     """
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       return e.code
 
     if options.maps:
@@ -305,10 +309,10 @@ class Update(Command):
           self.log.error('Permission denied: could not update map %r.  Aborting',
                        map_name)
           retval += 1
-        except (error.EmptyMap, error.InvalidMap), e:
+        except (error.EmptyMap, error.InvalidMap) as e:
           self.log.error(e)
           retval += 1
-        except error.InvalidMerge, e:
+        except error.InvalidMerge as e:
           self.log.warn('Could not merge map %r: %s.  Skipping.',
                          map_name, e)
       finally:
@@ -363,7 +367,7 @@ class Verify(Command):
     """
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       return e.code
 
     if options.maps:
@@ -480,7 +484,7 @@ class Verify(Command):
         source_options = conf.options[map_name].source
         try:
           source = source_factory.Create(source_options)
-        except error.SourceUnavailable, e:
+        except error.SourceUnavailable as e:
           self.log.debug('map %s dumps source error %s', map_name, e)
           self.log.error('Map %s is unvavailable!', map_name)
           retval +=1
@@ -518,17 +522,17 @@ class Help(Command):
       help_text = self.Help()
     else:
       help_command = args.pop()
-      print 'Usage: nsscache [global options] %s [options]' % help_command
-      print
+      print('Usage: nsscache [global options] %s [options]' % help_command)
+      print()
       try:
         callable_action = getattr(inspect.getmodule(self),
                                   help_command.capitalize())
         help_text = callable_action().Help()
       except AttributeError:
-        print 'command %r is not implemented' % help_command
+        print('command %r is not implemented' % help_command)
         return 1
 
-    print help_text
+    print(help_text)
     return 0
 
 
@@ -553,7 +557,7 @@ class Repair(Command):
     """
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       return e.code
 
     if options.maps:
@@ -623,7 +627,7 @@ class Status(Command):
     """
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       # See app.NssCacheApp.Run()
       return e.code
 
@@ -639,13 +643,13 @@ class Status(Command):
         for value_dict in value_list:
           self.log.debug('Value dict: %r', value_dict)
           output = options.automount_template % value_dict
-          print output
+          print(output)
       else:
         for value_dict in self.GetSingleMapMetadata(map_name, conf,
                                                     epoch=options.epoch):
           self.log.debug('Value dict: %r', value_dict)
           output = options.template % value_dict
-          print output
+          print(output)
 
     return os.EX_OK
 
