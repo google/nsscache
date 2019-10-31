@@ -43,7 +43,7 @@ class Source(object):
     self.conf = conf
 
     # create a logger for our children
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def GetMap(self, map_name, since=None, location=None):
     """Get a specific map from this source.
@@ -109,7 +109,7 @@ class FileSource(object):
     self.conf = conf
 
     # create a logger for our children
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def GetFile(self, map_name, dst_file, current_file, location=None):
     """Retrieve a file from this source.

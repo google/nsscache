@@ -184,15 +184,6 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-
-    class TestFilter(logging.Filter):
-
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbPasswdHandler').addFilter(fltr)
     # create a map
     m = passwd.PasswdMap()
     e = passwd.PasswdMapEntry()
@@ -218,8 +209,6 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbPasswdHandler').removeFilter(fltr)
 
   def testVerifyEmptyMap(self):
     updater = nssdb.NssDbPasswdHandler({'dir': self.workdir})
@@ -356,15 +345,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-
-    class TestFilter(logging.Filter):
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbGroupHandler').addFilter(fltr)
-
     # create a map
     m = group.GroupMap()
     e = group.GroupMapEntry()
@@ -389,8 +369,6 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbGroupHandler').removeFilter(fltr)
 
 
 class TestNssDbShadowHandler(mox.MoxTestBase):
@@ -503,14 +481,6 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
   @unittest.skipIf(NoMakeDB(), 'no /usr/bin/makedb')
   def testVerifyFailure(self):
-    # Hide the warning that we expect to get
-    class TestFilter(logging.Filter):
-      def filter(self, record):
-        return not record.msg.startswith('verify failed: %d keys missing')
-
-    fltr = TestFilter()
-    logging.getLogger('NssDbShadowHandler').addFilter(fltr)
-
     # create a map
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
@@ -534,8 +504,6 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
 
     self.failUnlessEqual(False, retval)
     self.failIf(os.path.exists(os.path.join(updater.temp_cache_filename)))
-    # no longer hide this message
-    logging.getLogger('NssDbShadowHandler').removeFilter(fltr)
 
 
 class TestNssDbCache(unittest.TestCase):

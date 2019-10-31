@@ -101,9 +101,9 @@ class NssCacheApp(object):
       fmt = logging.Formatter(format_str)
       handler.setFormatter(fmt)
       handler.setLevel(level=logging.INFO)
-      logging.getLogger('').addHandler(handler)
+      logging.getLogger().addHandler(handler)
 
-    self.log = logging.getLogger('NSSCacheApp')
+    self.log = logging.getLogger(__name__)
     self.parser = self._GetParser()
 
   def _GetParser(self):
