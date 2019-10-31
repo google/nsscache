@@ -32,7 +32,7 @@ Future improvements:
     - support multiple inputs for conditions
     - add an advanced conditional filter language
 """
-from __future__ import print_function
+
 from ast import literal_eval
 import sys
 import errno
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     d = copy.copy(vars(args))
     for k in ['cache_file', 'strict', 'username']:
       d.pop(k, None)
-    if not any(v is not None for v in d.values()):
+    if not any(v is not None for v in list(d.values())):
       parser.error('At least one condition must be specified with --strict')
 
   if args.key_comment_re is not None:

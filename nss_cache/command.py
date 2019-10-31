@@ -534,14 +534,14 @@ class Help(Command):
       help_text = self.Help()
     else:
       help_command = args.pop()
-      print('Usage: nsscache [global options] %s [options]' % help_command)
+      print(('Usage: nsscache [global options] %s [options]' % help_command))
       print()
       try:
         callable_action = getattr(
             inspect.getmodule(self), help_command.capitalize())
         help_text = callable_action().Help()
       except AttributeError:
-        print('command %r is not implemented' % help_command)
+        print(('command %r is not implemented' % help_command))
         return 1
 
     print(help_text)
