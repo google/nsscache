@@ -68,7 +68,7 @@ class Updater(object):
     """
 
     # Set up a logger
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
     # Used to fetch the right maps later on
     self.map_name = map_name
     # Used for tempfile writing

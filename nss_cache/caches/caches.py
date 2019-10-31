@@ -67,7 +67,7 @@ class Cache(object):
     """
     super(Cache, self).__init__()
     # Set up a logger for our children
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
     # Store config info
     self.conf = conf
     self.output_dir = conf.get('dir', '.')
