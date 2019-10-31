@@ -121,7 +121,7 @@ class NssCacheApp(object):
              '\n'
              'commands:\n')
     command_descriptions = []
-    for (name, cls) in command.__dict__.items():
+    for (name, cls) in list(command.__dict__.items()):
       # skip the command base object
       if name == 'Command':
         continue
@@ -232,7 +232,7 @@ class NssCacheApp(object):
       command_callable = getattr(command, command_name.capitalize())
     except AttributeError:
       self.log.warn('%s is not implemented', command_name)
-      print('command %r is not implemented' % command_name)
+      print(('command %r is not implemented' % command_name))
       self.parser.print_help()
       return os.EX_SOFTWARE
 

@@ -19,12 +19,9 @@
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
 
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from io import StringIO
 import logging
 import pycurl
+from io import StringIO
 
 from nss_cache import error
 

@@ -26,11 +26,8 @@ import ldap
 import ldap.sasl
 import re
 from binascii import b2a_hex
+from urllib.parse import quote
 from distutils.version import StrictVersion
-try:
-  from urllib import quote
-except ImportError:
-  from urllib.parse import quote
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -320,7 +317,7 @@ class LdapSource(source.Source):
       result_type, data = None, None
 
       timeout_retries = 0
-      while timeout_retries < self._conf['retry_max']:
+      while timeout_retries < int(self._conf['retry_max']):
         try:
           result_type, data, _, serverctrls = self.conn.result3(
             self.message_id, all=0, timeout=self.conf['timelimit'])
@@ -381,6 +378,10 @@ class LdapSource(source.Source):
       for record in data:
         # If the dn is requested, return it along with the payload,
         # otherwise ignore it.
+        for key in record[1]:
+          if isinstance(record[1][key][0], bytes) and key != 'objectSid':
+            value = record[1][key][0].decode('utf-8')
+            record[1][key] = [value]
         if self._dn_requested:
           merged_records = {'dn': record[0]}
           merged_records.update(record[1])
@@ -566,6 +567,8 @@ class UpdateGetter(object):
     Returns:
       number of seconds since epoch.
     """
+    if isinstance(ldap_ts_string, bytes):
+        ldap_ts_string = ldap_ts_string.decode('utf-8')
     try:
       if self.conf.get('ad'):
         # AD timestamp has different format
@@ -729,7 +732,7 @@ class PasswdUpdateGetter(UpdateGetter):
     else:
       raise ValueError('Neither gecos nor cn found')
 
-    pw.gecos = pw.gecos.replace('\n','')
+    pw.gecos = pw.gecos.replace('\n', '')
 
     if self.conf.get('ad'):
       pw.name = obj['sAMAccountName'][0]
@@ -924,7 +927,9 @@ class ShadowUpdateGetter(UpdateGetter):
 
   def Transform(self, obj):
     """Transforms an LDAP shadowAccont object into a shadow(5) entry."""
+
     shadow_ent = shadow.ShadowMapEntry()
+
     if self.conf.get('ad'):
       shadow_ent.name = obj['sAMAccountName'][0]
     elif 'uidattr' in self.conf:

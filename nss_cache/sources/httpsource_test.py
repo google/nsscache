@@ -21,11 +21,7 @@ __author__ = 'blaedd@google.com (David MacKinnon)'
 import time
 import unittest
 import pycurl
-
-try:
-  import mox
-except ImportError:
-  from mox3 import mox
+from mox3 import mox
 
 from nss_cache import error
 

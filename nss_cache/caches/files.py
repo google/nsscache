@@ -31,10 +31,7 @@ import re
 import shutil
 import stat
 import sys
-try:
-    from ConfigParser import SafeConfigParser as ConfigParser
-except ImportError:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 
 from nss_cache import config
 from nss_cache import error
@@ -222,7 +219,7 @@ class FilesCache(caches.Cache):
     except:
       self._Rollback()
       raise
-
+    
     return written_keys
 
   def GetCacheFilename(self):
@@ -343,7 +340,7 @@ class FilesPasswdMapHandler(FilesCache):
                                                entry.uid, entry.gid,
                                                entry.gecos, entry.dir,
                                                entry.shell)
-    target.write(password_entry + '\n')
+    target.write(password_entry.encode() + b'\n')
     return len(password_entry) + 1
 
 
@@ -373,7 +370,7 @@ class FilesGroupMapHandler(FilesCache):
     """Write a GroupMapEntry to the target cache."""
     group_entry = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                                    ','.join(entry.members))
-    target.write(group_entry + '\n')
+    target.write(group_entry.encode() + b'\n')
     return len(group_entry) + 1
 
 
@@ -410,7 +407,7 @@ class FilesShadowMapHandler(FilesCache):
                                                    entry.inact or '',
                                                    entry.expire or '',
                                                    entry.flag or '')
-    target.write(shadow_entry + '\n')
+    target.write(shadow_entry.encode() + b'\n')
     return len(shadow_entry) + 1
 
 

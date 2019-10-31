@@ -49,7 +49,7 @@ def ReadTimestamp(filename):
     timestamp_file = open(filename, 'r')
     timestamp_string = timestamp_file.read().strip()
   except IOError as e:
-    logging.warn('error opening timestamp file: %s', e)
+    logging.warning('error opening timestamp file: %s', e)
     timestamp_string = None
   else:
     timestamp_file.close()
@@ -73,7 +73,7 @@ def ReadTimestamp(filename):
   now = time.gmtime()
   logging.debug('      Now is: %r', now)
   if timestamp > now:
-    logging.warn('timestamp %r (%r) from %r is in the future, now is %r',
+    logging.warning('timestamp %r (%r) from %r is in the future, now is %r',
                  timestamp_string, time.mktime(timestamp),
                  filename, time.mktime(now))
     if time.mktime(timestamp) - time.mktime(now) >= 60*60:
@@ -108,12 +108,12 @@ def WriteTimestamp(timestamp, filename):
   time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', timestamp)
 
   try:
-    os.write(filedesc, '%s\n' % time_string)
+    os.write(filedesc, b'%s\n' % time_string.encode())
     os.fsync(filedesc)
     os.close(filedesc)
   except OSError:
     os.unlink(temp_filename)
-    logging.warn('writing timestamp failed!')
+    logging.warning('writing timestamp failed!')
     return False
 
   os.chmod(temp_filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)

@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM python:3.7
 RUN apt-get update
 RUN apt-get install -y libnss-db libsasl2-dev libldap2-dev libssl-dev
 RUN mkdir /code

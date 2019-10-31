@@ -23,13 +23,9 @@ import logging
 import optparse
 import os
 import shutil
-from io import BytesIO as StringIO
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 import tempfile
 import time
+from io import StringIO
 
 from nss_cache import config
 from nss_cache import error
@@ -69,7 +65,7 @@ class Command(object):
     # Setup logging.
     self.log = logging.getLogger(self.__class__.__name__)
     if self.__doc__ == Command.__doc__:
-      self.log.warn('No help message set for %r', self)
+      self.log.warning('No help message set for %r', self)
     # Setup command parser.
     self.parser = self._GetParser()
     # Attribute used to hold optional lock object.
@@ -313,7 +309,7 @@ class Update(Command):
           self.log.error(e)
           retval += 1
         except error.InvalidMerge as e:
-          self.log.warn('Could not merge map %r: %s.  Skipping.',
+          self.log.warning('Could not merge map %r: %s.  Skipping.',
                          map_name, e)
       finally:
         # Start chdir cleanup
@@ -522,14 +518,14 @@ class Help(Command):
       help_text = self.Help()
     else:
       help_command = args.pop()
-      print('Usage: nsscache [global options] %s [options]' % help_command)
+      print(('Usage: nsscache [global options] %s [options]' % help_command))
       print()
       try:
         callable_action = getattr(inspect.getmodule(self),
                                   help_command.capitalize())
         help_text = callable_action().Help()
       except AttributeError:
-        print('command %r is not implemented' % help_command)
+        print(('command %r is not implemented' % help_command))
         return 1
 
     print(help_text)
