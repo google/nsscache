@@ -104,6 +104,7 @@ class TestUpdater(mox.MoxTestBase):
     update_time = 3601
     update_file = open(update_obj.update_file, 'w')
     update_obj.WriteUpdateTimestamp(update_time)
+    update_file.close()
     self.mox.StubOutWithMock(update_obj, '_GetCurrentTime')
     update_obj._GetCurrentTime().AndReturn(expected_time)
     self.mox.ReplayAll()

@@ -151,6 +151,8 @@ class TestPidFile(mox.MoxTestBase):
 
     self.assertEqual(pid_file.read(), 'PID\n')
 
+    pid_file.close()
+
     os.remove(self.filename)
 
   def testLockTrapsPermissionDeniedOnly(self):

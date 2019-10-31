@@ -27,6 +27,10 @@ import signal
 import stat
 import sys
 
+import tracemalloc
+
+tracemalloc.start()
+
 
 # It would be interesting to subclass mutex, but we don't need the
 # queueing functionality.
