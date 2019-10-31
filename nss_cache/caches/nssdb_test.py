@@ -88,9 +88,9 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     entry_string = 'foo:x:1000:1000:foo:/:/bin/sh'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % entry_string)
-    makedb_stdin.write('=1000 %s\n' % entry_string)
-    makedb_stdin.write('00 %s\n' % entry_string)
+    makedb_stdin.write(('.foo %s\n' % entry_string).encode('ascii'))
+    makedb_stdin.write(('=1000 %s\n' % entry_string).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % entry_string).encode('ascii'))
 
     passwd_map = passwd.PasswdMap()
     passwd_map_entry = passwd.PasswdMapEntry()
@@ -258,9 +258,9 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     ent = 'foo:x:1000:bar'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % ent)
-    makedb_stdin.write('=1000 %s\n' % ent)
-    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
 
     m = group.GroupMap()
     g = group.GroupMapEntry()
@@ -403,8 +403,8 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     ent = 'foo:!!:::::::0'
 
     makedb_stdin = self.mox.CreateMock(sys.stdin)
-    makedb_stdin.write('.foo %s\n' % ent)
-    makedb_stdin.write('00 %s\n' % ent)
+    makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
+    makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
 
     m = shadow.ShadowMap()
     s = shadow.ShadowMapEntry()
