@@ -32,9 +32,6 @@ from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
-import tracemalloc
-
-tracemalloc.start()
 
 
 class Cache(object):
