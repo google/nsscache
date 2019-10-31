@@ -319,9 +319,9 @@ class NssDbPasswdHandler(NssDbCache):
         entry.shell)
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, password_entry))
-      target.write('=%d %s\n' % (entry.uid, password_entry))
-      target.write('0%d %s\n' % (enumeration_index, password_entry))
+      target.write(('.%s %s\n' % (entry.name, password_entry)).encode('ascii'))
+      target.write(('=%d %s\n' % (entry.uid, password_entry)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, password_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for this map.
@@ -376,7 +376,7 @@ class NssDbPasswdHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name, '=%d' % entry.uid]
+    return [('.%s' % entry.name).encode('ascii'), ('=%d' % entry.uid).encode('ascii')]
 
 
 class NssDbGroupHandler(NssDbCache):
@@ -411,9 +411,9 @@ class NssDbGroupHandler(NssDbCache):
         entry.members))
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, grent))
-      target.write('=%d %s\n' % (entry.gid, grent))
-      target.write('0%d %s\n' % (enumeration_index, grent))
+      target.write(('.%s %s\n' % (entry.name, grent)).encode('ascii'))
+      target.write(('=%d %s\n' % (entry.gid, grent)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, grent)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db group.db map.
@@ -462,7 +462,7 @@ class NssDbGroupHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name, '=%d' % entry.gid]
+    return map(lambda x: x.encode('ascii'), ['.%s' % entry.name, '=%d' % entry.gid])
 
 
 class NssDbShadowHandler(NssDbCache):
@@ -501,8 +501,8 @@ class NssDbShadowHandler(NssDbCache):
         '', entry.flag or 0)
     # Write to makedb with each key
     if target:
-      target.write('.%s %s\n' % (entry.name, shadow_entry))
-      target.write('0%d %s\n' % (enumeration_index, shadow_entry))
+      target.write(('.%s %s\n' % (entry.name, shadow_entry)).encode('ascii'))
+      target.write(('0%d %s\n' % (enumeration_index, shadow_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db shadow.db map.
@@ -562,4 +562,4 @@ class NssDbShadowHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return ['.%s' % entry.name]
+    return [('.%s' % entry.name).encode('ascii')]
