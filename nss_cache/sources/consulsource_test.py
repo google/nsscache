@@ -2,7 +2,10 @@
 
 __author__ = 'hexedpackets@gmail.com (William Huba)'
 
-from io import BytesIO as StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import unittest
 
 from nss_cache.maps import group

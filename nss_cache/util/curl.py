@@ -22,7 +22,7 @@ __author__ = 'blaedd@google.com (David MacKinnon)'
 try:
   from cStringIO import StringIO
 except ImportError:
-  from io import BytesIO as StringIO
+  from io import StringIO
 import logging
 import pycurl
 

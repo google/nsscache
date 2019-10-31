@@ -26,7 +26,7 @@ import ldap
 try:
   import mox
 except ImportError:
-  import mox3
+  from mox3 import mox
 
 from nss_cache import error
 from nss_cache.maps import automount
