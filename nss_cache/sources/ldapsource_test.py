@@ -250,16 +250,16 @@ class TestLdapSource(mox.MoxTestBase):
     self.assertEqual(0, count)
 
   def testGetPasswdMap(self):
-    test_posix_account = (b'cn=test,ou=People,dc=example,dc=com',
-                          {'sambaSID': [b'S-1-5-21-2127521184-1604012920-1887927527-72713'],
-                           'uidNumber': [b'1000'],
-                           'gidNumber': [b'1000'],
-                           'uid': [b'test'],
-                           'cn': [b'Testguy McTest'],
+    test_posix_account = ('cn=test,ou=People,dc=example,dc=com',
+                          {'sambaSID': ['S-1-5-21-2127521184-1604012920-1887927527-72713'],
+                           'uidNumber': ['1000'],
+                           'gidNumber': ['1000'],
+                           'uid': ['test'],
+                           'cn': ['Testguy McTest'],
                            'homeDirectory': ['/home/test'],
                            'loginShell': ['/bin/sh'],
-                           'userPassword': [b'p4ssw0rd'],
-                           'modifyTimestamp': [b'20070227012807Z']})
+                           'userPassword': ['p4ssw0rd'],
+                           'modifyTimestamp': ['20070227012807Z']})
 
     config = dict(self.config)
     attrlist = ['uid', 'uidNumber', 'gidNumber',
