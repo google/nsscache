@@ -63,7 +63,7 @@ class Command(object):
 
   def __init__(self):
     # Setup logging.
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
     if self.__doc__ == Command.__doc__:
       self.log.warning('No help message set for %r', self)
     # Setup command parser.

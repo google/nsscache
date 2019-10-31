@@ -806,7 +806,7 @@ class GroupUpdateGetter(UpdateGetter):
       if 'groupregex' in conf:
         self.groupregex = re.compile(self.conf['groupregex'])
       self.essential_fields = ['cn', 'sambaSID']
-    self.log = logging.getLogger(self.__class__.__name__)
+    self.log = logging.getLogger(__name__)
 
   def CreateMap(self):
     """Return a GroupMap instance."""
