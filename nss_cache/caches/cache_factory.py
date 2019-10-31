@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Package level factory implementation for cache implementations.
 
 We use a factory instead of relying on the __init__.py module to register cache
@@ -21,7 +22,11 @@ implementations at import time.  This is much more reliable.
 
 __author__ = 'springer@google.com (Matthew Springer)'
 
+
 import logging
+
+from nss_cache.caches import files
+from nss_cache.caches import nssdb
 
 _cache_implementations = {}
 
@@ -70,18 +75,11 @@ def Create(conf, map_name, automount_mountpoint=None):
   if cache_name not in _cache_implementations:
     raise RuntimeError('cache not implemented: %r' % (cache_name,))
   if map_name not in _cache_implementations[cache_name]:
-    raise RuntimeError(
-        'map %r not supported by cache %r' % (map_name, cache_name))
+    raise RuntimeError('map %r not supported by cache %r' % (map_name,
+                                                             cache_name))
 
   return _cache_implementations[cache_name][map_name](
       conf, map_name, automount_mountpoint=automount_mountpoint)
-
-
-from nss_cache.caches import files
+  
 files.RegisterAllImplementations(RegisterImplementation)
-
-try:
-  from nss_cache.caches import nssdb
-  nssdb.RegisterAllImplementations(RegisterImplementation)
-except ImportError:
-  pass
+nssdb.RegisterAllImplementations(RegisterImplementation)

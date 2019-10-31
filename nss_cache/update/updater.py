@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Update class, used for manipulating source and cache data.
 
 These classes contains all the business logic for updating cache objects.
@@ -53,12 +54,8 @@ class Updater(object):
     update_file: A string with our last updated timestamp filename.
   """
 
-  def __init__(self,
-               map_name,
-               timestamp_dir,
-               cache_options,
-               automount_mountpoint=None,
-               can_do_incremental=False):
+  def __init__(self, map_name, timestamp_dir, cache_options,
+               automount_mountpoint=None, can_do_incremental=False):
     """Construct an updater object.
 
     Args:
@@ -123,31 +120,31 @@ class Updater(object):
       timestamp_file = open(filename, 'r')
       timestamp_string = timestamp_file.read().strip()
     except IOError as e:
-      self.log.warn('error opening timestamp file: %s', e)
+      self.log.warning('error opening timestamp file: %s', e)
       timestamp_string = None
     else:
       timestamp_file.close()
 
-    self.log.debug('read timestamp %s from file %r', timestamp_string, filename)
+    self.log.debug('read timestamp %s from file %r',
+                   timestamp_string, filename)
 
     if timestamp_string is not None:
       try:
         # Append UTC to force the timezone to parse the string in.
-        timestamp = int(
-            calendar.timegm(
-                time.strptime(timestamp_string + ' UTC',
-                              '%Y-%m-%dT%H:%M:%SZ %Z')))
+        timestamp = int(calendar.timegm(time.strptime(timestamp_string + ' UTC',
+                                                      '%Y-%m-%dT%H:%M:%SZ %Z')))
       except ValueError as e:
-        self.log.error('cannot parse timestamp file %r: %s', filename, e)
+        self.log.error('cannot parse timestamp file %r: %s',
+                       filename, e)
         timestamp = None
     else:
       timestamp = None
 
     now = self._GetCurrentTime()
-    if timestamp > now:
-      self.log.warn('timestamp %r from %r is in the future, now is %r',
+    if timestamp and timestamp > now:
+      self.log.warning('timestamp %r from %r is in the future, now is %r',
                     timestamp_string, filename, now)
-      if timestamp - now >= 60 * 60:
+      if timestamp - now >= 60*60:
         self.log.info('Resetting timestamp to now.')
         timestamp = now
 
@@ -169,30 +166,30 @@ class Updater(object):
     """
     # Make sure self.timestamp_dir exists before calling tempfile.mkstemp
     try:
-      os.makedirs(self.timestamp_dir)
+        os.makedirs(self.timestamp_dir)
     except OSError as e:
-      if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
-        pass  # Directory already exists; squelch error
-      else:
-        raise
+        if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
+            pass  # Directory already exists; squelch error
+        else:
+          raise
 
-    (filedesc, temp_filename) = tempfile.mkstemp(
-        prefix='nsscache-update-', dir=self.timestamp_dir)
+    (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
+                                                 dir=self.timestamp_dir)
     time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp))
 
     try:
-      os.write(filedesc, '%s\n' % time_string)
+      os.write(filedesc, b'%s\n' % time_string.encode())
       os.fsync(filedesc)
       os.close(filedesc)
     except OSError:
       os.unlink(temp_filename)
-      self.log.warn('writing timestamp failed!')
+      self.log.warning('writing timestamp failed!')
       return False
 
-    os.chmod(temp_filename,
-             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+    os.chmod(temp_filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
     os.rename(temp_filename, filename)
-    self.log.debug('wrote timestamp %s to file %r', time_string, filename)
+    self.log.debug('wrote timestamp %s to file %r',
+                   time_string, filename)
     return True
 
   def GetUpdateTimestamp(self):
@@ -274,5 +271,6 @@ class Updater(object):
     # Create the single cache we write to
     cache = cache_factory.Create(self.cache_options, self.map_name)
 
-    return self.UpdateCacheFromSource(
-        cache, source, incremental, force_write, location=None)
+    return self.UpdateCacheFromSource(cache, source, incremental,
+                                      force_write, location=None)
+

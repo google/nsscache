@@ -13,18 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """An implementation of a mock http data source for nsscache."""
 
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
 import time
 import unittest
-
-try:
-  from mox3 import mox
-except ImportError:
-  import mox
 import pycurl
+from mox3 import mox
 
 from nss_cache import error
 
@@ -34,12 +31,9 @@ from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
-from nss_cache.util import file_formats
 
-try:
-  from nss_cache.sources import httpsource
-except ImportError:
-  raise unittest.SkipTest('httpsource import failed')
+from nss_cache.sources import httpsource
+from nss_cache.util import file_formats
 
 
 class TestHttpSource(unittest.TestCase):
@@ -47,33 +41,32 @@ class TestHttpSource(unittest.TestCase):
   def setUp(self):
     """Initialize a basic config dict."""
     super(TestHttpSource, self).setUp()
-    self.config = {
-        'passwd_url': 'PASSWD_URL',
-        'shadow_url': 'SHADOW_URL',
-        'group_url': 'GROUP_URL',
-        'sshkey_url': 'SSHKEY_URL',
-        'retry_delay': 'TEST_RETRY_DELAY',
-        'retry_max': 'TEST_RETRY_MAX',
-        'tls_cacertfile': 'TEST_TLS_CACERTFILE',
-        'http_proxy': 'HTTP_PROXY',
-    }
+    self.config = {'passwd_url': 'PASSWD_URL',
+                   'shadow_url': 'SHADOW_URL',
+                   'group_url': 'GROUP_URL',
+                   'sshkey_url': 'SSHKEY_URL',
+                   'retry_delay': 'TEST_RETRY_DELAY',
+                   'retry_max': 'TEST_RETRY_MAX',
+                   'tls_cacertfile': 'TEST_TLS_CACERTFILE',
+                   'http_proxy': 'HTTP_PROXY',
+                  }
 
   def testDefaultConfiguration(self):
     source = httpsource.HttpFilesSource({})
     self.assertEqual(source.conf['passwd_url'],
-                     httpsource.HttpFilesSource.PASSWD_URL)
+                      httpsource.HttpFilesSource.PASSWD_URL)
     self.assertEqual(source.conf['shadow_url'],
-                     httpsource.HttpFilesSource.SHADOW_URL)
+                      httpsource.HttpFilesSource.SHADOW_URL)
     self.assertEqual(source.conf['group_url'],
-                     httpsource.HttpFilesSource.GROUP_URL)
+                      httpsource.HttpFilesSource.GROUP_URL)
     self.assertEqual(source.conf['sshkey_url'],
-                     httpsource.HttpFilesSource.SSHKEY_URL)
+                      httpsource.HttpFilesSource.SSHKEY_URL)
     self.assertEqual(source.conf['retry_max'],
-                     httpsource.HttpFilesSource.RETRY_MAX)
+                      httpsource.HttpFilesSource.RETRY_MAX)
     self.assertEqual(source.conf['retry_delay'],
-                     httpsource.HttpFilesSource.RETRY_DELAY)
+                      httpsource.HttpFilesSource.RETRY_DELAY)
     self.assertEqual(source.conf['tls_cacertfile'],
-                     httpsource.HttpFilesSource.TLS_CACERTFILE)
+                      httpsource.HttpFilesSource.TLS_CACERTFILE)
     self.assertEqual(source.conf['http_proxy'], None)
 
   def testOverrideDefaultConfiguration(self):
@@ -94,13 +87,13 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     ts = 1259641025
     expected_http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
     self.assertEqual(expected_http_ts,
-                     httpsource.UpdateGetter().FromTimestampToHttp(ts))
+                      httpsource.UpdateGetter().FromTimestampToHttp(ts))
 
   def testFromHttpToTimestamp(self):
     expected_ts = 1259641025
     http_ts = 'Tue, 01 Dec 2009 04:17:05 GMT'
     self.assertEqual(expected_ts,
-                     httpsource.UpdateGetter().FromHttpToTimestamp(http_ts))
+                      httpsource.UpdateGetter().FromHttpToTimestamp(http_ts))
 
   def testAcceptHttpProtocol(self):
     mock_conn = self.mox.CreateMockAnything()
@@ -115,8 +108,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.mox.ReplayAll()
     config = {}
     source = httpsource.HttpFilesSource(config)
-    result = httpsource.UpdateGetter().GetUpdates(source, 'http://TEST_URL',
-                                                  None)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'http://TEST_URL', None)
     self.assertEqual([], result)
 
   def testAcceptHttpsProtocol(self):
@@ -132,8 +125,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.mox.ReplayAll()
     config = {}
     source = httpsource.HttpFilesSource(config)
-    result = httpsource.UpdateGetter().GetUpdates(source, 'https://TEST_URL',
-                                                  None)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'https://TEST_URL', None)
     self.assertEqual([], result)
 
   def testRaiseConfigurationErrorOnUnsupportedProtocol(self):
@@ -147,8 +140,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.mox.ReplayAll()
     source = httpsource.HttpFilesSource({})
     self.assertRaises(error.ConfigurationError,
-                      httpsource.UpdateGetter().GetUpdates, source,
-                      'ftp://test_url', None)
+                      httpsource.UpdateGetter().GetUpdates,
+                      source, 'ftp://test_url', None)
 
   def testNoUpdatesForTemporaryFailure(self):
     mock_conn = self.mox.CreateMockAnything()
@@ -162,8 +155,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.mox.ReplayAll()
     config = {}
     source = httpsource.HttpFilesSource(config)
-    result = httpsource.UpdateGetter().GetUpdates(source, 'https://TEST_URL',
-                                                  37)
+    result = httpsource.UpdateGetter().GetUpdates(
+        source, 'https://TEST_URL', 37)
     self.assertEqual(result, [])
 
   def testGetUpdatesIfTimestampNotMatch(self):
@@ -214,7 +207,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.assertEqual(mock_map, result)
 
   def testRetryOnErrorCodeResponse(self):
-    config = {'retry_delay': 5, 'retry_max': 3}
+    config = {'retry_delay': 5,
+              'retry_max': 3}
     mock_conn = self.mox.CreateMockAnything()
     mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
     mock_conn.perform().MultipleTimes()
@@ -230,12 +224,9 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
     self.mox.ReplayAll()
     source = httpsource.HttpFilesSource(config)
 
-    self.assertRaises(
-        error.SourceUnavailable,
-        httpsource.UpdateGetter().GetUpdates,
-        source,
-        url='https://TEST_URL',
-        since=None)
+    self.assertRaises(error.SourceUnavailable,
+                      httpsource.UpdateGetter().GetUpdates,
+                      source, url='https://TEST_URL', since=None)
 
 
 class TestPasswdUpdateGetter(unittest.TestCase):
@@ -246,11 +237,12 @@ class TestPasswdUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(), file_formats.FilesPasswdMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesPasswdMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(isinstance(self.updater.CreateMap(), passwd.PasswdMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               passwd.PasswdMap))
 
 
 class TestShadowUpdateGetter(unittest.TestCase):
@@ -261,11 +253,12 @@ class TestShadowUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(), file_formats.FilesShadowMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesShadowMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(isinstance(self.updater.CreateMap(), shadow.ShadowMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               shadow.ShadowMap))
 
 
 class TestGroupUpdateGetter(unittest.TestCase):
@@ -276,11 +269,12 @@ class TestGroupUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(), file_formats.FilesGroupMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesGroupMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(isinstance(self.updater.CreateMap(), group.GroupMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               group.GroupMap))
 
 
 class TestNetgroupUpdateGetter(unittest.TestCase):
@@ -291,12 +285,12 @@ class TestNetgroupUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(),
-                   file_formats.FilesNetgroupMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesNetgroupMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(isinstance(self.updater.CreateMap(), netgroup.NetgroupMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               netgroup.NetgroupMap))
 
 
 class TestAutomountUpdateGetter(unittest.TestCase):
@@ -307,13 +301,12 @@ class TestAutomountUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(),
-                   file_formats.FilesAutomountMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesAutomountMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(
-        isinstance(self.updater.CreateMap(), automount.AutomountMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               automount.AutomountMap))
 
 
 class TestSshkeyUpdateGetter(unittest.TestCase):
@@ -324,11 +317,12 @@ class TestSshkeyUpdateGetter(unittest.TestCase):
 
   def testGetParser(self):
     parser = self.updater.GetParser()
-    self.assertTrue(
-        isinstance(self.updater.GetParser(), file_formats.FilesSshkeyMapParser))
+    self.assertTrue(isinstance(self.updater.GetParser(),
+                               file_formats.FilesSshkeyMapParser))
 
   def testCreateMap(self):
-    self.assertTrue(isinstance(self.updater.CreateMap(), sshkey.SshkeyMap))
+    self.assertTrue(isinstance(self.updater.CreateMap(),
+                               sshkey.SshkeyMap))
 
 
 if __name__ == '__main__':

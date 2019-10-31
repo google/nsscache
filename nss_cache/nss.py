@@ -17,9 +17,9 @@
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+import pwd
 import grp
 import logging
-import pwd
 import subprocess
 
 from nss_cache import config
@@ -91,6 +91,7 @@ def GetShadowMap():
   shadow_map = shadow.ShadowMap()
 
   for line in getent_stdout.split():
+    line = line.decode('utf-8')
     nss_entry = line.strip().split(':')
     map_entry = shadow.ShadowMapEntry()
     map_entry.name = nss_entry[0]

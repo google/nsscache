@@ -13,27 +13,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
 """Minor curl methods."""
 
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
-import io
+
 import logging
 import pycurl
+from io import StringIO
 
 from nss_cache import error
 
 
 def CurlFetch(url, conn=None, logger=None):
   if not logger:
-    logger = logging
+    logger=logging
 
   if not conn:
     conn = pycurl.Curl()
 
   conn.setopt(pycurl.URL, url)
-  conn.body = io.StringIO()
-  conn.headers = io.StringIO()
+  conn.body = StringIO()
+  conn.headers = StringIO()
   conn.setopt(pycurl.WRITEFUNCTION, conn.body.write)
   conn.setopt(pycurl.HEADERFUNCTION, conn.headers.write)
   try:
@@ -67,16 +69,23 @@ def HandleCurlError(e, logger=None):
   msg = e[1]
 
   # Config errors
-  if code in (pycurl.E_UNSUPPORTED_PROTOCOL, pycurl.E_URL_MALFORMAT,
-              pycurl.E_SSL_ENGINE_NOTFOUND, pycurl.E_SSL_ENGINE_SETFAILED,
+  if code in (pycurl.E_UNSUPPORTED_PROTOCOL,
+              pycurl.E_URL_MALFORMAT,
+              pycurl.E_SSL_ENGINE_NOTFOUND,
+              pycurl.E_SSL_ENGINE_SETFAILED,
               pycurl.E_SSL_CACERT_BADFILE):
     raise error.ConfigurationError(msg)
 
   # Possibly transient errors, try again
-  if code in (pycurl.E_FAILED_INIT, pycurl.E_COULDNT_CONNECT,
-              pycurl.E_PARTIAL_FILE, pycurl.E_WRITE_ERROR, pycurl.E_READ_ERROR,
-              pycurl.E_OPERATION_TIMEOUTED, pycurl.E_SSL_CONNECT_ERROR,
-              pycurl.E_COULDNT_RESOLVE_PROXY, pycurl.E_COULDNT_RESOLVE_HOST,
+  if code in (pycurl.E_FAILED_INIT,
+              pycurl.E_COULDNT_CONNECT,
+              pycurl.E_PARTIAL_FILE,
+              pycurl.E_WRITE_ERROR,
+              pycurl.E_READ_ERROR,
+              pycurl.E_OPERATION_TIMEOUTED,
+              pycurl.E_SSL_CONNECT_ERROR,
+              pycurl.E_COULDNT_RESOLVE_PROXY,
+              pycurl.E_COULDNT_RESOLVE_HOST,
               pycurl.E_GOT_NOTHING):
     logger.debug('Possibly transient error: %s', msg)
     return

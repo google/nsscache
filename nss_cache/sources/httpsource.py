@@ -13,18 +13,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """An implementation of an http data source for nsscache."""
 
 __author__ = ('blaedd@google.com (David MacKinnon',)
 
 import bz2
 import calendar
-import io
 import logging
 import os
 import pycurl
 import time
-import urllib.parse
+from io import StringIO
+from urllib.parse import urljoin
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -102,6 +103,7 @@ class HttpFilesSource(source.Source):
     if not 'http_proxy' in configuration:
       configuration['http_proxy'] = None
 
+
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
 
@@ -124,7 +126,8 @@ class HttpFilesSource(source.Source):
     Returns:
       instance of shadow.ShadowMap
     """
-    return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'], since)
+    return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'],
+                                           since)
 
   def GetGroupMap(self, since=None):
     """Return the group map from this source.
@@ -137,6 +140,7 @@ class HttpFilesSource(source.Source):
       instance of group.GroupMap
     """
     return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'], since)
+
 
   def GetNetgroupMap(self, since=None):
     """Return the netgroup map from this source.
@@ -173,9 +177,10 @@ class HttpFilesSource(source.Source):
     if location is None:
       self.log.error('A location is required to retrieve an automount map!')
       raise error.EmptyMap
-    automount_url = urllib.parse.urljoin(self.conf['automount_base_url'],
-                                         location)
+    automount_url = urljoin(self.conf['automount_base_url'],
+                                     location)
     return AutomountUpdateGetter().GetUpdates(self, automount_url, since)
+
 
   def GetAutomountMasterMap(self):
     """Return the autmount master map from this source.
@@ -188,6 +193,7 @@ class HttpFilesSource(source.Source):
       map_entry.location = os.path.split(map_entry.location)[1]
       self.log.debug('master map has: %s' % map_entry.location)
     return master_map
+
 
   def GetSshkeyMap(self, since=None):
     """Return the sshkey map from this source.
@@ -286,7 +292,7 @@ class UpdateGetter(object):
       for header in headers:
         if header.lower().startswith('last-modified'):
           self.log.debug('%s', header)
-          http_ts_string = header[header.find(':') + 1:].strip()
+          http_ts_string = header[header.find(':')+1:].strip()
           last_modified = self.FromHttpToTimestamp(http_ts_string)
           break
       else:
@@ -298,10 +304,12 @@ class UpdateGetter(object):
 
     # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
     try:
-      response = io.StringIO(bz2.decompress(body))
+      #response = StringIO(bz2.decompress(body))
+      response = bz2.decompress(body)
       self.log.debug('bzip encoding found')
     except IOError:
-      response = io.StringIO(body)
+      response = body
+      #response = StringIO(body)
 
     data_map = self.GetMap(cache_info=response)
     if http_ts_string:
@@ -374,7 +382,6 @@ class GroupUpdateGetter(UpdateGetter):
     """Returns a new GroupMap instance to have GroupMapEntries added to it."""
     return group.GroupMap()
 
-
 class NetgroupUpdateGetter(UpdateGetter):
   """Get netgroup updates."""
 
@@ -385,7 +392,6 @@ class NetgroupUpdateGetter(UpdateGetter):
   def CreateMap(self):
     """Returns a new NetgroupMap instance to have GroupMapEntries added to it."""
     return netgroup.NetgroupMap()
-
 
 class SshkeyUpdateGetter(UpdateGetter):
   """Get sshkey updates."""

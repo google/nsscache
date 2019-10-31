@@ -13,21 +13,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Unit tests for nss_cache/update/base.py."""
 
 __author__ = ('vasilios@google.com (V Hoffman)',
               'jaq@google.com (Jamie Wilkinson)')
+
 
 import os
 import shutil
 import tempfile
 import time
 import unittest
-
-try:
-  from mox3 import mox
-except ImportError:
-  import mox
+from mox3 import mox
 
 from nss_cache import config
 from nss_cache.update import updater
@@ -57,16 +55,14 @@ class TestUpdater(mox.MoxTestBase):
     update_stamp = update_obj.GetUpdateTimestamp()
     modify_stamp = update_obj.GetModifyTimestamp()
 
-    self.assertEqual(
-        update_time,
-        update_stamp,
-        msg=('retrieved a different update time than we stored: '
-             'Expected: %r, observed: %r' % (update_time, update_stamp)))
-    self.assertEqual(
-        modify_time,
-        modify_stamp,
-        msg=('retrieved a different modify time than we stored: '
-             'Expected %r, observed: %r' % (modify_time, modify_stamp)))
+    self.assertEqual(update_time, update_stamp,
+                     msg=('retrieved a different update time than we stored: '
+                          'Expected: %r, observed: %r' %
+                          (update_time, update_stamp)))
+    self.assertEqual(modify_time, modify_stamp,
+                     msg=('retrieved a different modify time than we stored: '
+                          'Expected %r, observed: %r' %
+                          (modify_time, modify_stamp)))
 
   def testWriteWhenTimestampIsNone(self):
     update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
@@ -80,10 +76,10 @@ class TestUpdater(mox.MoxTestBase):
     update_stamp = update_obj.GetUpdateTimestamp()
     modify_stamp = update_obj.GetModifyTimestamp()
 
-    self.assertEqual(
-        None, update_stamp, msg='update time did not default to None')
-    self.assertEqual(
-        None, modify_stamp, msg='modify time did not default to None')
+    self.assertEqual(None, update_stamp,
+                     msg='update time did not default to None')
+    self.assertEqual(None, modify_stamp,
+                     msg='modify time did not default to None')
 
     # touch a file, make it unreadable
     update_file = open(update_obj.update_file, 'w')
@@ -96,14 +92,10 @@ class TestUpdater(mox.MoxTestBase):
     update_stamp = update_obj.GetUpdateTimestamp()
     modify_stamp = update_obj.GetModifyTimestamp()
 
-    self.assertEqual(
-        None,
-        update_stamp,
-        msg='unreadable update time did not default to None')
-    self.assertEqual(
-        None,
-        modify_stamp,
-        msg='unreadable modify time did not default to None')
+    self.assertEqual(None, update_stamp,
+                     msg='unreadable update time did not default to None')
+    self.assertEqual(None, modify_stamp,
+                     msg='unreadable modify time did not default to None')
 
   def testTimestampInTheFuture(self):
     """Timestamps in the future are turned into now."""

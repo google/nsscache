@@ -2,17 +2,13 @@
 
 __author__ = 'alexey.pikin@gmail.com'
 
-import io
 import unittest
+from io import StringIO
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-try:
-  from nss_cache.sources import s3source
-except:
-  raise unittest.SkipTest('s3source import failed')
-
+from nss_cache.sources import s3source
 
 class TestS3Source(unittest.TestCase):
 
@@ -20,16 +16,15 @@ class TestS3Source(unittest.TestCase):
     """Initialize a basic config dict."""
     super(TestS3Source, self).setUp()
     self.config = {
-        'passwd_object': 'PASSWD_OBJ',
-        'group_object': 'GROUP_OBJ',
-        'bucket': 'TEST_BUCKET'
+      'passwd_object': 'PASSWD_OBJ',
+      'group_object': 'GROUP_OBJ',
+      'bucket': 'TEST_BUCKET'
     }
 
   def testDefaultConfiguration(self):
     source = s3source.S3FilesSource({})
     self.assertEqual(source.conf['bucket'], s3source.S3FilesSource.BUCKET)
-    self.assertEqual(source.conf['passwd_object'],
-                     s3source.S3FilesSource.PASSWD_OBJECT)
+    self.assertEqual(source.conf['passwd_object'], s3source.S3FilesSource.PASSWD_OBJECT)
 
   def testOverrideDefaultConfiguration(self):
     source = s3source.S3FilesSource(self.config)
@@ -39,7 +34,6 @@ class TestS3Source(unittest.TestCase):
 
 
 class TestPasswdMapParser(unittest.TestCase):
-
   def setUp(self):
     """Set some default avalible data for testing."""
     self.good_entry = passwd.PasswdMapEntry()
@@ -54,27 +48,20 @@ class TestPasswdMapParser(unittest.TestCase):
 
   def testGetMap(self):
     passwd_map = passwd.PasswdMap()
-    cache_info = io.StringIO("""[
-                                     { "Key": "foo",
-                                       "Value": {
-                                        "uid": 10, "gid": 10, "home": "/home/foo",
-                                        "shell": "/bin/bash", "comment": "How Now Brown Cow",
-                                        "irrelevant_key":"bacon"
-                                       }
-                                     }
-                                   ]""")
+    cache_info = StringIO('''[
+                            { "Key": "foo",
+                              "Value": {
+                               "uid": 10, "gid": 10, "home": "/home/foo",
+                               "shell": "/bin/bash", "comment": "How Now Brown Cow",
+                               "irrelevant_key":"bacon"
+                              }
+                            }
+                          ]''')
     self.parser.GetMap(cache_info, passwd_map)
     self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
-    data = {
-        'uid': '10',
-        'gid': '10',
-        'comment': 'How Now Brown Cow',
-        'shell': '/bin/bash',
-        'home': '/home/foo',
-        'passwd': 'x'
-    }
+    data = {'uid': '10', 'gid': '10', 'comment': 'How Now Brown Cow', 'shell': '/bin/bash', 'home': '/home/foo', 'passwd': 'x'}
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 
@@ -104,15 +91,15 @@ class TestS3GroupMapParser(unittest.TestCase):
 
   def testGetMap(self):
     group_map = group.GroupMap()
-    cache_info = io.StringIO("""[
-                                     { "Key": "foo",
-                                       "Value": {
-                                        "gid": 10,
-                                        "members": "foo\\nbar",
-                                        "irrelevant_key": "bacon"
-                                       }
-                                     }
-                                   ]""")
+    cache_info = StringIO('''[
+                            { "Key": "foo",
+                              "Value": {
+                               "gid": 10,
+                               "members": "foo\\nbar",
+                               "irrelevant_key": "bacon"
+                              }
+                            }
+                          ]''')
     self.parser.GetMap(cache_info, group_map)
     self.assertEqual(self.good_entry, group_map.PopItem())
 
@@ -151,14 +138,14 @@ class TestS3ShadowMapParser(unittest.TestCase):
 
   def testGetMap(self):
     shadow_map = shadow.ShadowMap()
-    cache_info = io.StringIO("""[
-                                     { "Key": "foo",
-                                       "Value": {
-                                        "passwd": "*", "lstchg": 17246, "min": 0,
-                                        "max": 99999, "warn": 7
-                                       }
-                                     }
-                                   ]""")
+    cache_info = StringIO('''[
+                            { "Key": "foo",
+                              "Value": {
+                               "passwd": "*", "lstchg": 17246, "min": 0,
+                               "max": 99999, "warn": 7
+                              }
+                            }
+                          ]''')
     self.parser.GetMap(cache_info, shadow_map)
     self.assertEqual(self.good_entry, shadow_map.PopItem())
 

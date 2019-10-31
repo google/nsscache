@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Unit tests for group.py.
 
 We only test what is overridden in the group subclasses, most
@@ -30,7 +31,7 @@ from nss_cache.maps import passwd
 
 class TestGroupMap(unittest.TestCase):
   """Tests for the GroupMap class."""
-
+  
   def __init__(self, obj):
     """Set some default avalible data for testing."""
     super(TestGroupMap, self).__init__(obj)
@@ -39,18 +40,14 @@ class TestGroupMap(unittest.TestCase):
     self._good_entry.passwd = 'x'
     self._good_entry.gid = 10
     self._good_entry.members = ['foo', 'bar']
-
+    
   def testInit(self):
     """Construct an empty or seeded GroupMap."""
-    self.assertEqual(
-        group.GroupMap,
-        type(group.GroupMap()),
-        msg='failed to create an empty GroupMap')
+    self.assertEqual(group.GroupMap, type(group.GroupMap()),
+                      msg='failed to create an empty GroupMap')
     gmap = group.GroupMap([self._good_entry])
-    self.assertEqual(
-        self._good_entry,
-        gmap.PopItem(),
-        msg='failed to seed GroupMap with list')
+    self.assertEqual(self._good_entry, gmap.PopItem(),
+                      msg='failed to seed GroupMap with list')
     self.assertRaises(TypeError, group.GroupMap, ['string'])
 
   def testAdd(self):
@@ -60,7 +57,7 @@ class TestGroupMap(unittest.TestCase):
     self.assertTrue(gmap.Add(entry), msg='failed to append new entry.')
 
     self.assertEqual(1, len(gmap), msg='unexpected size for Map.')
-
+        
     ret_entry = gmap.PopItem()
     self.assertEqual(ret_entry, entry, msg='failed to pop correct entry.')
 
@@ -73,41 +70,45 @@ class TestGroupMap(unittest.TestCase):
 
 class TestGroupMapEntry(unittest.TestCase):
   """Tests for the GroupMapEntry class."""
-
+    
   def testInit(self):
     """Construct an empty and seeded GroupMapEntry."""
-    self.assertTrue(
-        group.GroupMapEntry(), msg='Could not create empty GroupMapEntry')
+    self.assertTrue(group.GroupMapEntry(),
+                 msg='Could not create empty GroupMapEntry')
     seed = {'name': 'foo', 'gid': 10}
     entry = group.GroupMapEntry(seed)
-    self.assertTrue(
-        entry.Verify(), msg='Could not verify seeded PasswdMapEntry')
-    self.assertEqual(
-        entry.name, 'foo', msg='Entry returned wrong value for name')
-    self.assertEqual(
-        entry.passwd, 'x', msg='Entry returned wrong value for passwd')
-    self.assertEqual(entry.gid, 10, msg='Entry returned wrong value for gid')
-    self.assertEqual(
-        entry.members, [], msg='Entry returned wrong value for members')
+    self.assertTrue(entry.Verify(),
+                 msg='Could not verify seeded PasswdMapEntry')
+    self.assertEqual(entry.name, 'foo',
+                      msg='Entry returned wrong value for name')
+    self.assertEqual(entry.passwd, 'x',
+                      msg='Entry returned wrong value for passwd')
+    self.assertEqual(entry.gid, 10,
+                      msg='Entry returned wrong value for gid')
+    self.assertEqual(entry.members, [],
+                      msg='Entry returned wrong value for members')
 
   def testAttributes(self):
     """Test that we can get and set all expected attributes."""
     entry = group.GroupMapEntry()
     entry.name = 'foo'
-    self.assertEqual(entry.name, 'foo', msg='Could not set attribute: name')
+    self.assertEqual(entry.name, 'foo',
+                      msg='Could not set attribute: name')
     entry.passwd = 'x'
-    self.assertEqual(entry.passwd, 'x', msg='Could not set attribute: passwd')
+    self.assertEqual(entry.passwd, 'x',
+                      msg='Could not set attribute: passwd')
     entry.gid = 10
-    self.assertEqual(entry.gid, 10, msg='Could not set attribute: gid')
+    self.assertEqual(entry.gid, 10,
+                      msg='Could not set attribute: gid')
     members = ['foo', 'bar']
     entry.members = members
-    self.assertEqual(
-        entry.members, members, msg='Could not set attribute: members')
+    self.assertEqual(entry.members, members,
+                      msg='Could not set attribute: members')
 
   def testVerify(self):
     """Test that the object can verify it's attributes and itself."""
     entry = group.GroupMapEntry()
-
+    
     # Empty object should bomb
     self.assertFalse(entry.Verify())
 

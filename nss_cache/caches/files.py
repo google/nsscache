@@ -50,6 +50,8 @@ for i in sys.argv:
     if ('--config-file') in i:
       i = i[14:]
     parser.read(i)
+  elif os.path.isfile('/etc/nsscache.conf'):
+    parser.read('/etc/nsscache.conf')
   else:
     # Config in nsscache folder
     parser.read('nsscache.conf')
@@ -219,7 +221,7 @@ class FilesCache(caches.Cache):
     except:
       self._Rollback()
       raise
-
+    
     return written_keys
 
   def GetCacheFilename(self):
@@ -232,33 +234,39 @@ class FilesCache(caches.Cache):
   def WriteIndex(self):
     """Generate an index for libnss-cache from this map."""
     for index_name in self._indices:
-      # magic string ".ix"
-      index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
-      self.log.debug('Writing index %s', index_filename)
+      # index file write to tmp file first, magic string ".ix"
+      tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(), index_name)
+      self.log.debug('Writing index %s', tmp_index_filename)
 
       index = self._indices[index_name]
       key_length = LongestLength(list(index.keys()))
       pos_length = LongestLength(list(index.values()))
       max_length = key_length + pos_length
       # Open for write/truncate
-      index_file = open(index_filename, 'w')
+      index_file = open(tmp_index_filename, 'w')
       # setup permissions
       try:
-        shutil.copymode(self.GetCompatFilename(), index_filename)
+        shutil.copymode(self.GetCompatFilename(), tmp_index_filename)
         stat_info = os.stat(self.GetCompatFilename())
         uid = stat_info.st_uid
         gid = stat_info.st_gid
-        os.chown(index_filename, uid, gid)
+        os.chown(tmp_index_filename, uid, gid)
       except OSError as e:
         if e.errno == errno.ENOENT:
-          os.chmod(index_filename,
-                   stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+          os.chmod(tmp_index_filename,
+                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
         index_line = ('%s\0%s\0%s\n' % (key, pos, '\0' *
                                         (max_length - len(key) - len(pos))))
         index_file.write(index_line)
       index_file.close()
+    for index_name in self._indices:
+      # rename tmp index file to target index file in order to
+      # prevent getting user info fail during update index.
+      tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(), index_name)
+      index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
+      os.rename(tmp_index_filename, index_filename)
 
 
 class FilesSshkeyMapHandler(FilesCache):
@@ -332,10 +340,11 @@ class FilesPasswdMapHandler(FilesCache):
     Returns:
       Number of bytes written to the target.
     """
-    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (
-        entry.name, entry.passwd, entry.uid, entry.gid, entry.gecos, entry.dir,
-        entry.shell)
-    target.write(password_entry + '\n')
+    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
+                                               entry.uid, entry.gid,
+                                               entry.gecos, entry.dir,
+                                               entry.shell)
+    target.write(password_entry.encode() + b'\n')
     return len(password_entry) + 1
 
 
@@ -366,7 +375,7 @@ class FilesGroupMapHandler(FilesCache):
     """Write a GroupMapEntry to the target cache."""
     group_entry = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
                                    ','.join(entry.members))
-    target.write(group_entry + '\n')
+    target.write(group_entry.encode() + b'\n')
     return len(group_entry) + 1
 
 
@@ -395,11 +404,16 @@ class FilesShadowMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write a ShadowMapEntry to the target cache."""
-    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (
-        entry.name, entry.passwd, entry.lstchg or '', entry.min or '',
-        entry.max or '', entry.warn or '', entry.inact or '', entry.expire or
-        '', entry.flag or '')
-    target.write(shadow_entry + '\n')
+    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
+                                                   entry.passwd,
+                                                   entry.lstchg or '',
+                                                   entry.min or '',
+                                                   entry.max or '',
+                                                   entry.warn or '',
+                                                   entry.inact or '',
+                                                   entry.expire or '',
+                                                   entry.flag or '')
+    target.write(shadow_entry.encode() + b'\n')
     return len(shadow_entry) + 1
 
 
