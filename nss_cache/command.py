@@ -24,6 +24,10 @@ import optparse
 import os
 import shutil
 from io import BytesIO as StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import tempfile
 import time
 

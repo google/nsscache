@@ -5,7 +5,7 @@ install:
  - travis_retry sudo apt-get install -y libnss-db libcurl4-gnutls-dev libgnutls-dev python-ldap python-mox python-pycurl
  - |-
     if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then
-      travis_retry sudo apt-get install -y python3-mox3 python3-ldap
+      travis_retry sudo apt-get install -y python3-mox3 python3-ldap python3-bsddb3
     fi
  - pip install .
  - travis_retry pip install -r requirements.txt

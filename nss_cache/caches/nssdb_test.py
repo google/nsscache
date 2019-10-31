@@ -35,7 +35,7 @@ except ImportError:
 try:
   import mox
 except ImportError:
-  import mox3
+  from mox3 import mox
 
 from nss_cache import error
 
