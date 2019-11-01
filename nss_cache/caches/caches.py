@@ -95,10 +95,11 @@ class Cache(object):
     self.log.debug('Output dir: %s', self.output_dir)
     self.log.debug('CWD: %s', os.getcwd())
     try:
-      (fd, self.temp_cache_filename) = tempfile.mkstemp(
+      self.temp_cache_file = tempfile.NamedTemporaryFile(
+        delete=False,
           prefix='nsscache-cache-file-',
           dir=os.path.join(os.getcwd(), self.output_dir))
-      self.temp_cache_file = os.fdopen(fd, 'w+b')
+      self.temp_cache_filename = self.temp_cache_file.name
       self.log.debug('opened temporary cache filename %r',
                      self.temp_cache_filename)
     except OSError as e:
