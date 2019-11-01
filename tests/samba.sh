@@ -27,11 +27,6 @@ rm -fr /etc/systemd/system/samba-ad-dc.service
 # Domain provision
 echo '' > /etc/samba/smb.conf && samba-tool domain provision --realm=LOCAL.DOMAIN --domain=LOCAL --server-role='dc' --dns-backend='SAMBA_INTERNAL' --option 'dns forwarder'='127.0.0.1' --adminpass='4dm1n_s3cr36_v3ry_c0mpl3x' --use-rfc2307 -d 1
 
-# Add name server
-cat > '/etc/resolvconf/resolv.conf.d/head' << EOF
-nameserver 127.0.0.1
-EOF
-
 # Kerberos settings
 rm -fr /etc/krb5.conf
 cp /var/lib/samba/private/krb5.conf /etc/
@@ -41,21 +36,6 @@ rm -fr /etc/systemd/system/samba-ad-dc.service
 /usr/bin/systemctl daemon-reload
 /usr/bin/systemctl start samba-ad-dc.service
 /usr/bin/systemctl enable samba-ad-dc.service
-
-# I don't know if this is needed for CI environment
-cat > '/etc/network/interfaces' << EOF
-auto lo
-iface lo inet loopback
-
-allow-hotplug eth0
-    iface eth0 inet static
-    address 127.0.0.1
-    netmask 255.255.255.0
-    gateway 127.0.0.1
-    dns-nameservers 127.0.0.1
-    dns-search local.domain
-    pre-up /sbin/ip link set eth0 up
-EOF
 
 # Request a kerberos ticket
 cat > '/root/.kinit' << EOF
