@@ -1,0 +1,23 @@
+version: 2
+jobs:
+  build:
+    branches:
+      only:
+        - CircleCi
+    docker:
+      - image: circleci/python:3.7
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
+            pip install . --user
+            pip install -r requirements.txt --user
+            pip install yapf --user
+      - run:
+          name: Running tests
+          command: |
+            python3 runtests.py -vvv
+            python3 setup.py install --root=/tmp/nsscache
