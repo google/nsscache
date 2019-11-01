@@ -10,7 +10,7 @@ install:
 script:
  - PYTHONTRACEMALLOC=1 python runtests.py -vvv
  - python setup.py install --root=/tmp/nsscache
- - yapf --diff --recursive . | wc -l | xargs test 0 -eq
+ - yapf --diff --recursive . | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
 
 python:
  - "3.7"
