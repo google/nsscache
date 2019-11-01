@@ -55,11 +55,11 @@ class FilesMapParser(object):
         continue
       entry = self._ReadEntry(line)
       if entry is None:
-        self.log.warn('Could not create entry from line %r in cache, skipping',
+        self.log.warning('Could not create entry from line %r in cache, skipping',
                       line)
         continue
       if not data.Add(entry):
-        self.log.warn('Could not add entry %r read from line %r in cache',
+        self.log.warning('Could not add entry %r read from line %r in cache',
                       entry, line)
     return data
 

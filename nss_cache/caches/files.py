@@ -166,7 +166,7 @@ class FilesCache(caches.Cache):
 
     missing_from_cache = written_keys - cache_keys
     if missing_from_cache:
-      self.log.warn('verify failed: %d missing from the on-disk cache',
+      self.log.warning('verify failed: %d missing from the on-disk cache',
                     len(missing_from_cache))
       if len(missing_from_cache) < 1000:
         self.log.debug('keys missing from the on-disk cache: %r',
@@ -179,7 +179,7 @@ class FilesCache(caches.Cache):
 
     missing_from_map = cache_keys - written_keys
     if missing_from_map:
-      self.log.warn(
+      self.log.warning(
           'verify failed: %d keys found, unexpected in the on-disk '
           'cache', len(missing_from_map))
       if len(missing_from_map) < 1000:

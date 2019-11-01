@@ -221,7 +221,7 @@ class Cache(object):
     #assert 0 == len(writable_map), "self.Write should be destructive."
 
     if entries_written is None:
-      self.log.warn('cache write failed, exiting')
+      self.log.warning('cache write failed, exiting')
       return 1
 
     if force_write or self.Verify(entries_written):
@@ -232,7 +232,7 @@ class Cache(object):
       self.WriteIndex()
       return 0
 
-    self.log.warn('verification failed, exiting')
+    self.log.warning('verification failed, exiting')
     return 1
 
   def WriteIndex(self):

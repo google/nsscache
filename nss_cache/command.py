@@ -63,7 +63,7 @@ class Command(object):
     # Setup logging.
     self.log = logging.getLogger(__name__)
     if self.__doc__ == Command.__doc__:
-      self.log.warn('No help message set for %r', self)
+      self.log.warning('No help message set for %r', self)
     # Setup command parser.
     self.parser = self._GetParser()
     # Attribute used to hold optional lock object.
@@ -321,7 +321,7 @@ class Update(Command):
           self.log.error(e)
           retval += 1
         except error.InvalidMerge as e:
-          self.log.warn('Could not merge map %r: %s.  Skipping.', map_name, e)
+          self.log.warning('Could not merge map %r: %s.  Skipping.', map_name, e)
       finally:
         # Start chdir cleanup
         os.chdir(old_cwd)

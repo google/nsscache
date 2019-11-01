@@ -235,7 +235,7 @@ class NssCacheApp(object):
     try:
       command_callable = getattr(command, command_name.capitalize())
     except AttributeError:
-      self.log.warn('%s is not implemented', command_name)
+      self.log.warning('%s is not implemented', command_name)
       print(('command %r is not implemented' % command_name))
       self.parser.print_help()
       return os.EX_SOFTWARE

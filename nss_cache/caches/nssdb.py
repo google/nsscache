@@ -117,7 +117,7 @@ class NssDbCache(caches.Cache):
       if self.IsMapPrimaryKey(k):
         password_entry = self.ConvertValueToMapEntry(db[k])
         if not data.Add(password_entry):
-          self.log.warn('could not add entry built from %r', db[k])
+          self.log.warning('could not add entry built from %r', db[k])
 
     db.close()
 
@@ -130,7 +130,7 @@ class NssDbCache(caches.Cache):
     # TODO(jaq): this should probably raise a better exception and be handled
     # gracefully
     if not os.path.exists(self.makedb):
-      self.log.warn('makedb binary %s does not exist, cannot generate bdb map',
+      self.log.warning('makedb binary %s does not exist, cannot generate bdb map',
                     self.makedb)
       return None
     else:
@@ -274,7 +274,7 @@ class NssDbCache(caches.Cache):
     # we tried to write out are still there.  so written_keys must be a subset
     # of cache_keys!
     if not written_keys.issubset(cache_keys):
-      self.log.warn('verify failed: written keys missing from the on-disk'
+      self.log.warning('verify failed: written keys missing from the on-disk'
                     ' cache!')
       intersection = written_keys.intersection(cache_keys)
       missing_keys = written_keys - intersection
