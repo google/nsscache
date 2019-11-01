@@ -28,7 +28,7 @@ jobs:
       only:
         - CircleCi
     docker:
-        - image: circleci/buildpack-deps:buster
+        - image: circleci/pytho:buster
     steps:
       - checkout
       - run:
