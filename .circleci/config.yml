@@ -4,15 +4,17 @@ jobs:
     branches:
       only:
         - CircleCi
-    docker:
-      - image: circleci/python:3.7-buster
-      - image: circleci/python:3.8-buster
+    #docker:
+    #  - image: circleci/python:3.7-buster
+    #  - image: circleci/python:3.8-buster
+      machine:
+        image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run:
           command: |
             sudo apt-get update -qq
-            sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
+            sudo apt-get install -y python3 libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
             pip install . --user
             pip install -r requirements.txt --user
             pip install yapf --user
@@ -23,14 +25,14 @@ jobs:
             python3 runtests.py -vvv
             python3 setup.py install --root=/tmp/nsscache
             #yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
-  build_server:
-    branches:
-      only:
-        - CircleCi
-    docker:
-        - image: circleci/buildpack-deps:buster
-    steps:
-      - name: Install smaba4 AD
-      - run:
-          command: |
-            sudo bash tests/samba.sh
+#  build_server:
+#    branches:
+#      only:
+#        - CircleCi
+#    docker:
+#        - image: circleci/buildpack-deps:buster
+#    steps:
+#      - name: Install smaba4 AD
+#      - run:
+#          command: |
+#            sudo bash tests/samba.sh
