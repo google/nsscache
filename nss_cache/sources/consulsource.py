@@ -209,6 +209,8 @@ class ConsulShadowMapParser(ConsulMapParser):
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = name
     map_entry.passwd = entry.get('passwd', '*')
+    if isinstance(map_entry.passwd, bytes):
+      map_entry.passwd = map_entry.passwd.decode('ascii')
 
     for attr in ['lstchg', 'min', 'max', 'warn', 'inact', 'expire']:
       try:

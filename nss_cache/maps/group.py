@@ -63,6 +63,9 @@ class GroupMapEntry(maps.MapEntry):
     super(GroupMapEntry, self).__init__(data)
     
     # Seed data with defaults if needed
-    if self.passwd is None: self.passwd = 'x'
-    if self.members is None: self.members = []
-    if self.groupmembers is None: self.groupmembers = []
+    if self.passwd is None:
+      self.passwd = 'x'
+    if self.members is None:
+      self.members = []
+    if self.groupmembers is None:
+      self.groupmembers = []

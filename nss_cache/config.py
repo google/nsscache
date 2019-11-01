@@ -276,16 +276,16 @@ def ParseNSSwitchConf(nsswitch_filename):
     a dictionary keyed by map names and containing a list of sources
     for each map.
   """
-  nsswitch_file = open(nsswitch_filename, 'r')
+  with open(nsswitch_filename, 'r') as nsswitch_file:
 
-  nsswitch = {}
+    nsswitch = {}
 
-  map_re = re.compile('^([a-z]+): *(.*)$')
-  for line in nsswitch_file:
-    match = map_re.match(line)
-    if match:
-      sources = match.group(2).split()
-      nsswitch[match.group(1)] = sources
+    map_re = re.compile('^([a-z]+): *(.*)$')
+    for line in nsswitch_file:
+      match = map_re.match(line)
+      if match:
+        sources = match.group(2).split()
+        nsswitch[match.group(1)] = sources
 
   return nsswitch
 

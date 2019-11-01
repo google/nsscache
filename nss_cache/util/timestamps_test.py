@@ -82,6 +82,7 @@ class TestTimestamps(mox.MoxTestBase):
 
     ts_file = open(ts_filename, 'r')
     self.assertEqual('1970-01-01T00:00:01Z\n', ts_file.read())
+    ts_file.close()
 
 if __name__ == '__main__':
   unittest.main()
