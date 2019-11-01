@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build_client:
+  build:
     branches:
       only:
         - CircleCi
@@ -30,7 +30,8 @@ jobs:
     docker:
         - image: circleci/buildpack-deps:buster
     steps:
-      - name: Install smaba4 AD
+      - checkout
       - run:
-          command: |
+        name: Install smaba4 AD
+        command: |
             sudo bash tests/samba.sh
