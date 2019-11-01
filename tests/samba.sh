@@ -2,17 +2,6 @@
 
 export DEBIAN_FRONTEND=noninteractive
 
-sudo zfs set aclmode=passthrough zroot
-sudo zfs set aclinherit=passthrough zroot
-sudo zfs create -V 2G zroot/samba4sysvol
-sudo newfs /dev/zvol/zroot/samba4sysvol
-sudo sh -c 'cat >>/etc/fstab' <<EOF
-/dev/zvol/zroot/samba4sysvol /var/db/samba4/sysvol ufs       rw,acls 0       0
-EOF
-
-sudo mkdir -p /var/db/samba4/sysvol
-sudo mount /var/db/samba4/sysvol
-
 apt-get update
 apt-get upgrade -y
 apt-get dist-upgrade -y
@@ -39,13 +28,7 @@ echo '' > /etc/samba/smb.conf && samba-tool domain provision --realm=LOCAL.DOMAI
 
 # Kerberos settings
 rm -fr /etc/krb5.conf
-#cp /var/lib/samba/private/krb5.conf /etc/
-cat > '/etc/krb5.conf' << EOF
-[libdefaults]
-    default_realm = LOCAL.DOAMIN
-    dns_lookup_realm = false
-    dns_lookup_kdc = true
-EOF
+cp /var/lib/samba/private/krb5.conf /etc/
 
 # Start samba-ad-dc service only
 rm -fr /etc/systemd/system/samba-ad-dc.service

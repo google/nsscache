@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Running tests
           command: |
-            sudo bash tests/samba.sh
+            #sudo bash tests/samba.sh
             python3 runtests.py -vvv
             python3 setup.py install --root=/tmp/nsscache
             #yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
