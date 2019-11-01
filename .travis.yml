@@ -7,7 +7,7 @@ install:
  - travis_retry pip install -r requirements.txt
 
 script:
- - python runtests.py
+ - PYTHONTRACEMALLOC=1 python runtests.py -vvv
  - python setup.py install --root=/tmp/nsscache
 
 python:
