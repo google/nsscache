@@ -1,8 +1,4 @@
-version: 2.1
-workflows:
-  main:
-    jobs:
-      - build
+version: 2
 jobs:
   build:
     branches:
