@@ -4,11 +4,11 @@ jobs:
     branches:
       only:
         - CircleCi
-    #docker:
-    #  - image: circleci/python:3.7-buster
-    #  - image: circleci/python:3.8-buster
-    machine:
-      image: ubuntu-1604:201903-01
+    docker:
+      - image: circleci/python:3.7-buster
+      - image: circleci/python:3.8-buster
+    #machine:
+    #  image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run:
@@ -25,14 +25,3 @@ jobs:
             python3 runtests.py -vvv
             python3 setup.py install --root=/tmp/nsscache
             #yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
-#  build_server:
-#    branches:
-#      only:
-#        - CircleCi
-#    docker:
-#        - image: circleci/buildpack-deps:buster
-#    steps:
-#      - name: Install smaba4 AD
-#      - run:
-#          command: |
-#            sudo bash tests/samba.sh
