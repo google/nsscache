@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for caches/caches.py."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
@@ -32,6 +31,7 @@ from nss_cache.caches import caches
 class FakeCacheCls(caches.Cache):
 
   CACHE_FILENAME = 'shadow'
+
   def __init__(self, config, map_name):
     super(FakeCacheCls, self).__init__(config, map_name)
 
@@ -39,8 +39,7 @@ class FakeCacheCls(caches.Cache):
     return 0
 
   def GetCacheFilename(self):
-    return os.path.join(self.output_dir,
-                        self.CACHE_FILENAME + '.test')
+    return os.path.join(self.output_dir, self.CACHE_FILENAME + '.test')
 
 
 class TestCls(mox.MoxTestBase):
@@ -49,10 +48,10 @@ class TestCls(mox.MoxTestBase):
     self.workdir = tempfile.mkdtemp()
     self.config = {'dir': self.workdir}
     if platform.system() == 'FreeBSD':
-        # FreeBSD doesn't have a shadow file
-        self.shadow = config.MAP_PASSWORD
+      # FreeBSD doesn't have a shadow file
+      self.shadow = config.MAP_PASSWORD
     else:
-        self.shadow = config.MAP_SHADOW
+      self.shadow = config.MAP_SHADOW
 
   def tearDown(self):
     os.rmdir(self.workdir)
@@ -79,6 +78,7 @@ class TestCls(mox.MoxTestBase):
 
 
 class TestCache(mox.MoxTestBase):
+
   def testWriteMap(self):
     cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
     self.mox.StubOutWithMock(cache_map, '_Commit')

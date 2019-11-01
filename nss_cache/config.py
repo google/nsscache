@@ -329,7 +329,7 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
 
     if nss_module_name not in nsswitch[configured_map]:
       logging.warning(('nsscache is configured to build maps for %r, '
-                    'but NSS is not configured (in %r) to use it'),
-                   configured_map, nsswitch_filename)
+                       'but NSS is not configured (in %r) to use it'),
+                      configured_map, nsswitch_filename)
       warnings += 1
   return (warnings, errors)

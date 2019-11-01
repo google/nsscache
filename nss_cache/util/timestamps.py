@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 """Timestamp handling routines."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
-
 
 import logging
 import os.path
@@ -54,8 +52,7 @@ def ReadTimestamp(filename):
   else:
     timestamp_file.close()
 
-  logging.debug('read timestamp %s from file %r',
-                 timestamp_string, filename)
+  logging.debug('read timestamp %s from file %r', timestamp_string, filename)
 
   if timestamp_string is not None:
     try:
@@ -63,8 +60,7 @@ def ReadTimestamp(filename):
       timestamp = time.strptime(timestamp_string + ' UTC',
                                 '%Y-%m-%dT%H:%M:%SZ %Z')
     except ValueError as e:
-      logging.error('cannot parse timestamp file %r: %s',
-                     filename, e)
+      logging.error('cannot parse timestamp file %r: %s', filename, e)
       timestamp = None
   else:
     timestamp = None
@@ -74,13 +70,14 @@ def ReadTimestamp(filename):
   logging.debug('      Now is: %r', now)
   if timestamp > now:
     logging.warning('timestamp %r (%r) from %r is in the future, now is %r',
-                 timestamp_string, time.mktime(timestamp),
-                 filename, time.mktime(now))
-    if time.mktime(timestamp) - time.mktime(now) >= 60*60:
+                    timestamp_string, time.mktime(timestamp), filename,
+                    time.mktime(now))
+    if time.mktime(timestamp) - time.mktime(now) >= 60 * 60:
       logging.info('Resetting timestamp to now.')
       timestamp = now
 
   return timestamp
+
 
 def WriteTimestamp(timestamp, filename):
   """Write a given timestamp out to a file, converting to the ISO-8601 format.
@@ -102,8 +99,8 @@ def WriteTimestamp(timestamp, filename):
 
   timestamp_dir = os.path.dirname(filename)
 
-  (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
-                                               dir=timestamp_dir)
+  (filedesc, temp_filename) = tempfile.mkstemp(
+      prefix='nsscache-update-', dir=timestamp_dir)
 
   time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', timestamp)
 
@@ -116,8 +113,8 @@ def WriteTimestamp(timestamp, filename):
     logging.warning('writing timestamp failed!')
     return False
 
-  os.chmod(temp_filename, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+  os.chmod(temp_filename,
+           stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
   os.rename(temp_filename, filename)
-  logging.debug('wrote timestamp %s to file %r',
-                 time_string, filename)
+  logging.debug('wrote timestamp %s to file %r', time_string, filename)
   return True

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/command.py."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
@@ -30,7 +29,6 @@ from nss_cache import nss
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-
 
 
 class TestNSS(mox.MoxTestBase):
@@ -126,7 +124,7 @@ class TestNSS(mox.MoxTestBase):
     lines = [line1, line2]
 
     mock_getent = self.mox.CreateMockAnything()
-    mock_getent.communicate().AndReturn([b'\n'.join(lines),b''])
+    mock_getent.communicate().AndReturn([b'\n'.join(lines), b''])
     mock_getent.returncode = 0
 
     entry1 = shadow.ShadowMapEntry()

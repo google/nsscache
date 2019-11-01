@@ -98,9 +98,8 @@ class NssCacheApp(object):
         # Omitting an argument to StreamHandler results in sys.stderr being
         # used.
         handler = logging.StreamHandler()
-      format_str = (
-          os.path.basename(sys.argv[0]) +
-          '[%(process)d]: %(levelname)s %(message)s')
+      format_str = (os.path.basename(sys.argv[0]) +
+                    '[%(process)d]: %(levelname)s %(message)s')
       fmt = logging.Formatter(format_str)
       handler.setFormatter(fmt)
       handler.setLevel(level=logging.INFO)

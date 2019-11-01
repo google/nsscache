@@ -321,7 +321,8 @@ class Update(Command):
           self.log.error(e)
           retval += 1
         except error.InvalidMerge as e:
-          self.log.warning('Could not merge map %r: %s.  Skipping.', map_name, e)
+          self.log.warning('Could not merge map %r: %s.  Skipping.', map_name,
+                           e)
       finally:
         # Start chdir cleanup
         os.chdir(old_cwd)

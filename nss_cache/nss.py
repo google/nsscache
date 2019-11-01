@@ -125,7 +125,8 @@ def GetShadowMap():
 
 def _SpawnGetent(map_name):
   """Run 'getent map' in a subprocess for reading NSS data."""
-  getent = subprocess.Popen(
-      [GETENT, map_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  getent = subprocess.Popen([GETENT, map_name],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
 
   return getent

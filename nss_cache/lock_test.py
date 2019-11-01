@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit tests for nss_cache/lock.py."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
-
 
 import builtins
 import errno
@@ -108,8 +106,8 @@ class TestPidFile(mox.MoxTestBase):
     self.assertTrue(os.path.exists(self.filename))
 
     file_mode = os.stat(self.filename)[stat.ST_MODE]
-    correct_mode = (stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
-                    | stat.S_IROTH)
+    correct_mode = (stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP |
+                    stat.S_IROTH)
     self.assertEqual(file_mode, correct_mode)
 
     os.remove(self.filename)
@@ -173,12 +171,10 @@ class TestPidFile(mox.MoxTestBase):
     locker.ClearLock()
     self.mox.StubOutWithMock(locker, '_file')
     self.mox.StubOutWithMock(fcntl, 'lockf')
-    fcntl.lockf(locker._file,
-                fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-                    IOError(errno.EAGAIN, ''))
-    fcntl.lockf(locker._file,
-                fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-                    IOError(errno.EAGAIN, ''))
+    fcntl.lockf(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
+        IOError(errno.EAGAIN, ''))
+    fcntl.lockf(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
+        IOError(errno.EAGAIN, ''))
     self.mox.ReplayAll()
 
     # This is a little weird due to recursion.

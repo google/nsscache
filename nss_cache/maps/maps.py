@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Base class of maps for nsscache.
 
 Map:  Abstract class representing a basic NSS map.
@@ -136,8 +135,10 @@ class Map(object):
     if entry.Key() not in self._data:
       self._index.append(entry.Key())
     else:
-      self.log.warning('duplicate key detected when adding to map: %r, overwritten', entry.Key())
-    
+      self.log.warning(
+          'duplicate key detected when adding to map: %r, overwritten',
+          entry.Key())
+
     self._data[entry.Key()] = entry
     return True
 
@@ -173,23 +174,22 @@ class Map(object):
       InvalidMerge: Attempt to Merge an older map into a newer one.
     """
     if type(self) != type(other):
-      raise TypeError(
-          'Attempt to Merge() differently typed Maps: %r != %r' %
-          (type(self), type(other)))
+      raise TypeError('Attempt to Merge() differently typed Maps: %r != %r' %
+                      (type(self), type(other)))
 
     if other.GetModifyTimestamp() and self.GetModifyTimestamp():
       if other.GetModifyTimestamp() < self.GetModifyTimestamp():
         raise error.InvalidMerge(
             'Attempt to Merge a map with an older modify time into a newer one: '
-            'other: %s, self: %s' %
-            (other.GetModifyTimestamp(), self.GetModifyTimestamp()))
+            'other: %s, self: %s' % (other.GetModifyTimestamp(),
+                                     self.GetModifyTimestamp()))
 
     if other.GetUpdateTimestamp() and self.GetUpdateTimestamp():
       if other.GetUpdateTimestamp() < self.GetUpdateTimestamp():
         raise error.InvalidMerge(
             'Attempt to Merge a map with an older update time into a newer one: '
-            'other: %s, self: %s' %
-            (other.GetUpdateTimestamp(), self.GetUpdateTimestamp()))
+            'other: %s, self: %s' % (other.GetUpdateTimestamp(),
+                                     self.GetUpdateTimestamp()))
 
     self.log.info('merging from a map of %d entries', len(other))
 
@@ -200,8 +200,8 @@ class Map(object):
         if self.Add(their_entry):
           merge_count += 1
 
-    self.log.info('%d of %d entries were new or modified',
-                  merge_count, len(other))
+    self.log.info('%d of %d entries were new or modified', merge_count,
+                  len(other))
 
     if merge_count > 0:
       self.SetModifyTimestamp(other.GetModifyTimestamp())
@@ -224,8 +224,8 @@ class Map(object):
       # pop items off the start of the index, in sorted order.
       index_key = self._index.pop(0)
     except IndexError:
-      raise KeyError # Callers expect a KeyError rather than IndexError
-    return self._data.pop(index_key) # Throws the KeyError if empty.
+      raise KeyError  # Callers expect a KeyError rather than IndexError
+    return self._data.pop(index_key)  # Throws the KeyError if empty.
 
   def SetModifyTimestamp(self, value):
     """Set the last modify timestamp of this map.
@@ -239,8 +239,7 @@ class Map(object):
     if value is None or isinstance(value, int):
       self._last_modification_timestamp = value
     else:
-      raise TypeError('timestamp can only be int or None, not %r'
-                      % value)
+      raise TypeError('timestamp can only be int or None, not %r' % value)
 
   def GetModifyTimestamp(self):
     """Return last modification timestamp of this map.
@@ -262,8 +261,7 @@ class Map(object):
     if value is None or isinstance(value, int):
       self._last_update_timestamp = value
     else:
-      raise TypeError('timestamp can only be int or None, not %r',
-                      value)
+      raise TypeError('timestamp can only be int or None, not %r', value)
 
   def GetUpdateTimestamp(self):
     """Return last update timestamp of this map.

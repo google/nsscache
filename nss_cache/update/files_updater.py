@@ -132,8 +132,8 @@ class FileMapUpdater(updater.Updater):
     # We did an update, write our timestamps unless there is an error.
     if return_val is 0:
       mtime = os.stat(cache.GetCacheFilename()).st_mtime
-      self.log.debug('Cache filename %s has mtime %d',
-                     cache.GetCacheFilename(), mtime)
+      self.log.debug('Cache filename %s has mtime %d', cache.GetCacheFilename(),
+                     mtime)
       self.WriteModifyTimestamp(mtime)
       self.WriteUpdateTimestamp()
 

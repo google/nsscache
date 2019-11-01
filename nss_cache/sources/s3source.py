@@ -236,12 +236,12 @@ class S3MapParser(object):
         continue
       map_entry = self._ReadEntry(key, value)
       if map_entry is None:
-        self.log.warning('Could not create entry from line %r in cache, skipping',
-                      value)
+        self.log.warning(
+            'Could not create entry from line %r in cache, skipping', value)
         continue
       if not data.Add(map_entry):
         self.log.warning('Could not add entry %r read from line %r in cache',
-                      map_entry, value)
+                         map_entry, value)
     return data
 
 

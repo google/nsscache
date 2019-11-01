@@ -10,21 +10,23 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import s3source
 
+
 class TestS3Source(unittest.TestCase):
 
   def setUp(self):
     """Initialize a basic config dict."""
     super(TestS3Source, self).setUp()
     self.config = {
-      'passwd_object': 'PASSWD_OBJ',
-      'group_object': 'GROUP_OBJ',
-      'bucket': 'TEST_BUCKET'
+        'passwd_object': 'PASSWD_OBJ',
+        'group_object': 'GROUP_OBJ',
+        'bucket': 'TEST_BUCKET'
     }
 
   def testDefaultConfiguration(self):
     source = s3source.S3FilesSource({})
     self.assertEqual(source.conf['bucket'], s3source.S3FilesSource.BUCKET)
-    self.assertEqual(source.conf['passwd_object'], s3source.S3FilesSource.PASSWD_OBJECT)
+    self.assertEqual(source.conf['passwd_object'],
+                     s3source.S3FilesSource.PASSWD_OBJECT)
 
   def testOverrideDefaultConfiguration(self):
     source = s3source.S3FilesSource(self.config)
@@ -34,6 +36,7 @@ class TestS3Source(unittest.TestCase):
 
 
 class TestPasswdMapParser(unittest.TestCase):
+
   def setUp(self):
     """Set some default avalible data for testing."""
     self.good_entry = passwd.PasswdMapEntry()
@@ -61,7 +64,14 @@ class TestPasswdMapParser(unittest.TestCase):
     self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
-    data = {'uid': '10', 'gid': '10', 'comment': 'How Now Brown Cow', 'shell': '/bin/bash', 'home': '/home/foo', 'passwd': 'x'}
+    data = {
+        'uid': '10',
+        'gid': '10',
+        'comment': 'How Now Brown Cow',
+        'shell': '/bin/bash',
+        'home': '/home/foo',
+        'passwd': 'x'
+    }
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 

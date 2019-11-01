@@ -96,7 +96,7 @@ class Cache(object):
     self.log.debug('CWD: %s', os.getcwd())
     try:
       self.temp_cache_file = tempfile.NamedTemporaryFile(
-        delete=False,
+          delete=False,
           prefix='nsscache-cache-file-',
           dir=os.path.join(os.getcwd(), self.output_dir))
       self.temp_cache_filename = self.temp_cache_file.name

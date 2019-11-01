@@ -130,8 +130,9 @@ class NssDbCache(caches.Cache):
     # TODO(jaq): this should probably raise a better exception and be handled
     # gracefully
     if not os.path.exists(self.makedb):
-      self.log.warning('makedb binary %s does not exist, cannot generate bdb map',
-                    self.makedb)
+      self.log.warning(
+          'makedb binary %s does not exist, cannot generate bdb map',
+          self.makedb)
       return None
     else:
       self.log.debug('executing makedb: %s - %s', self.makedb,
@@ -142,12 +143,11 @@ class NssDbCache(caches.Cache):
       # foo: Invalid type 5 specified
       # makedb: cannot open output file `foo': Invalid argument
       os.unlink(self.temp_cache_filename)
-      makedb = subprocess.Popen(
-          [self.makedb, '-', self.temp_cache_filename],
-          stdin=subprocess.PIPE,
-          stdout=subprocess.PIPE,
-          stderr=subprocess.STDOUT,
-          close_fds=True)
+      makedb = subprocess.Popen([self.makedb, '-', self.temp_cache_filename],
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                close_fds=True)
       fcntl.fcntl(makedb.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
       makedb.allout = ''
       return makedb
@@ -275,7 +275,7 @@ class NssDbCache(caches.Cache):
     # of cache_keys!
     if not written_keys.issubset(cache_keys):
       self.log.warning('verify failed: written keys missing from the on-disk'
-                    ' cache!')
+                       ' cache!')
       intersection = written_keys.intersection(cache_keys)
       missing_keys = written_keys - intersection
       self.log.debug('missing: %r', missing_keys)
@@ -321,7 +321,8 @@ class NssDbPasswdHandler(NssDbCache):
     if target:
       target.write(('.%s %s\n' % (entry.name, password_entry)).encode('ascii'))
       target.write(('=%d %s\n' % (entry.uid, password_entry)).encode('ascii'))
-      target.write(('0%d %s\n' % (enumeration_index, password_entry)).encode('ascii'))
+      target.write(
+          ('0%d %s\n' % (enumeration_index, password_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for this map.
@@ -381,7 +382,8 @@ class NssDbPasswdHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return [('.%s' % entry.name).encode('ascii'), ('=%d' % entry.uid).encode('ascii')]
+    return [('.%s' % entry.name).encode('ascii'),
+            ('=%d' % entry.uid).encode('ascii')]
 
 
 class NssDbGroupHandler(NssDbCache):
@@ -469,7 +471,8 @@ class NssDbGroupHandler(NssDbCache):
     """
     if not is_valid_unix_name(entry.name):
       return []
-    return map(lambda x: x.encode('ascii'), ['.%s' % entry.name, '=%d' % entry.gid])
+    return map(lambda x: x.encode('ascii'),
+               ['.%s' % entry.name, '=%d' % entry.gid])
 
 
 class NssDbShadowHandler(NssDbCache):
@@ -509,7 +512,8 @@ class NssDbShadowHandler(NssDbCache):
     # Write to makedb with each key
     if target:
       target.write(('.%s %s\n' % (entry.name, shadow_entry)).encode('ascii'))
-      target.write(('0%d %s\n' % (enumeration_index, shadow_entry)).encode('ascii'))
+      target.write(
+          ('0%d %s\n' % (enumeration_index, shadow_entry)).encode('ascii'))
 
   def IsMapPrimaryKey(self, key):
     """Defines the 'primary' key for a nss_db shadow.db map.

@@ -167,7 +167,7 @@ class FilesCache(caches.Cache):
     missing_from_cache = written_keys - cache_keys
     if missing_from_cache:
       self.log.warning('verify failed: %d missing from the on-disk cache',
-                    len(missing_from_cache))
+                       len(missing_from_cache))
       if len(missing_from_cache) < 1000:
         self.log.debug('keys missing from the on-disk cache: %r',
                        missing_from_cache)
@@ -221,7 +221,7 @@ class FilesCache(caches.Cache):
     except:
       self._Rollback()
       raise
-    
+
     return written_keys
 
   def GetCacheFilename(self):
@@ -254,7 +254,7 @@ class FilesCache(caches.Cache):
       except OSError as e:
         if e.errno == errno.ENOENT:
           os.chmod(tmp_index_filename,
-                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
       for key in sorted(index):
         pos = index[key]
         index_line = ('%s\0%s\0%s\n' % (key, pos, '\0' *
@@ -340,10 +340,9 @@ class FilesPasswdMapHandler(FilesCache):
     Returns:
       Number of bytes written to the target.
     """
-    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (entry.name, entry.passwd,
-                                               entry.uid, entry.gid,
-                                               entry.gecos, entry.dir,
-                                               entry.shell)
+    password_entry = '%s:%s:%d:%d:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.uid, entry.gid, entry.gecos, entry.dir,
+        entry.shell)
     target.write(password_entry.encode() + b'\n')
     return len(password_entry) + 1
 
@@ -404,15 +403,10 @@ class FilesShadowMapHandler(FilesCache):
 
   def _WriteData(self, target, entry):
     """Write a ShadowMapEntry to the target cache."""
-    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (entry.name,
-                                                   entry.passwd,
-                                                   entry.lstchg or '',
-                                                   entry.min or '',
-                                                   entry.max or '',
-                                                   entry.warn or '',
-                                                   entry.inact or '',
-                                                   entry.expire or '',
-                                                   entry.flag or '')
+    shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (
+        entry.name, entry.passwd, entry.lstchg or '', entry.min or '',
+        entry.max or '', entry.warn or '', entry.inact or '', entry.expire or
+        '', entry.flag or '')
     target.write(shadow_entry.encode() + b'\n')
     return len(shadow_entry) + 1
 

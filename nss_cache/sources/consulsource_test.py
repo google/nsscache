@@ -17,28 +17,30 @@ class TestConsulSource(unittest.TestCase):
     """Initialize a basic config dict."""
     super(TestConsulSource, self).setUp()
     self.config = {
-      'passwd_url': 'PASSWD_URL',
-      'group_url': 'GROUP_URL',
-      'datacenter': 'TEST_DATACENTER',
-      'token': 'TEST_TOKEN',
+        'passwd_url': 'PASSWD_URL',
+        'group_url': 'GROUP_URL',
+        'datacenter': 'TEST_DATACENTER',
+        'token': 'TEST_TOKEN',
     }
 
   def testDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource({})
     self.assertEqual(source.conf['datacenter'],
-                      consulsource.ConsulFilesSource.DATACENTER)
-    self.assertEqual(source.conf['token'],
-                      consulsource.ConsulFilesSource.TOKEN)
+                     consulsource.ConsulFilesSource.DATACENTER)
+    self.assertEqual(source.conf['token'], consulsource.ConsulFilesSource.TOKEN)
 
   def testOverrideDefaultConfiguration(self):
     source = consulsource.ConsulFilesSource(self.config)
     self.assertEqual(source.conf['datacenter'], 'TEST_DATACENTER')
     self.assertEqual(source.conf['token'], 'TEST_TOKEN')
-    self.assertEqual(source.conf['passwd_url'], 'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
-    self.assertEqual(source.conf['group_url'], 'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['passwd_url'],
+                     'PASSWD_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
+    self.assertEqual(source.conf['group_url'],
+                     'GROUP_URL?recurse&token=TEST_TOKEN&dc=TEST_DATACENTER')
 
 
 class TestPasswdMapParser(unittest.TestCase):
+
   def setUp(self):
     """Set some default avalible data for testing."""
     self.good_entry = passwd.PasswdMapEntry()
@@ -65,7 +67,14 @@ class TestPasswdMapParser(unittest.TestCase):
     self.assertEqual(self.good_entry, passwd_map.PopItem())
 
   def testReadEntry(self):
-    data = {'uid': '10', 'gid': '10', 'comment': b'How Now Brown Cow', 'shell': b'/bin/bash', 'home': b'/home/foo', 'passwd': 'x'}
+    data = {
+        'uid': '10',
+        'gid': '10',
+        'comment': b'How Now Brown Cow',
+        'shell': b'/bin/bash',
+        'home': b'/home/foo',
+        'passwd': 'x'
+    }
     entry = self.parser._ReadEntry('foo', data)
     self.assertEqual(self.good_entry, entry)
 
