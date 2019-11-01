@@ -1,4 +1,4 @@
-# Copyright 2007 Google Inc.
+h# Copyright 2007 Google Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -154,7 +154,7 @@ class NssDbCache(caches.Cache):
 
   def _Read(self, proc):
     while len(select.select([proc.stdout], (), (), 0)[0]) > 0:
-      data = proc.stdout.read(-1)
+      data = proc.stdout.read(-1)  # Read everything
       if len(data) == 0:
         break  # sigh... select() says there's data.
       proc.allout += data

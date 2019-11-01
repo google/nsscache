@@ -532,23 +532,23 @@ class TestNssDbCache(unittest.TestCase):
     cache = nssdb.NssDbPasswdHandler(dummy_config)
 
     written = cache.Write(data)
-    self.assertTrue('.foo' in written)
-    self.assertTrue('=1000' in written)
+    self.assertTrue(b'.foo' in written)
+    self.assertTrue(b'=1000' in written)
 
     # perform test
     db = btopen(cache.temp_cache_filename, 'r')
 
     self.assertEqual(3, len(list(db.keys())))
-    self.assertTrue('.foo' in list(db.keys()))
-    self.assertTrue('=1000' in list(db.keys()))
-    self.assertTrue('00' in list(db.keys()))
+    self.assertTrue(b'.foo' in list(db.keys()))
+    self.assertTrue(b'=1000' in list(db.keys()))
+    self.assertTrue(b'00' in list(db.keys()))
 
     # convert data to pwent
     d = ('%s:x:%s:%s:%s:%s:%s\x00' % (pw.name, pw.uid, pw.gid, pw.gecos,
                                      pw.dir, pw.shell)).encode('ascii')
-    self.assertEqual(db['00'], d)
-    self.assertEqual(db['.foo'], d)
-    self.assertEqual(db['=1000'], d)
+    self.assertEqual(db[b'00'], d)
+    self.assertEqual(db[b'.foo'], d)
+    self.assertEqual(db[b'=1000'], d)
 
     # tear down
     os.unlink(cache.temp_cache_filename)
