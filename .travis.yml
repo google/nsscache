@@ -5,10 +5,12 @@ install:
  - travis_retry sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
  - pip install .
  - travis_retry pip install -r requirements.txt
+ - pip install yapf
 
 script:
  - PYTHONTRACEMALLOC=1 python runtests.py -vvv
  - python setup.py install --root=/tmp/nsscache
+ - yapf --diff --recursive . | wc -l | xargs test 0 -eq
 
 python:
  - "3.7"

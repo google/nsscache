@@ -19,6 +19,10 @@ frustration later on.
 All submissions, including submissions by project members, require review. We
 use Github pull requests for this purpose.
 
+Please format your code with github.com/google/yapf before sending pull
+requests.  You can install this from PyPI with `pip install yapf` or on Debian
+systems as the `yapf3` package.
+
 ### Response Time
 
 This repository is maintained as a best effort service.
