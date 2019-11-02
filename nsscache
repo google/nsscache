@@ -1,4 +1,4 @@
-#!/usr/bin/python -E
+#!/usr/bin/python3
 #
 # Copyright 2007 Google Inc.
 #
@@ -28,9 +28,9 @@ from nss_cache import app
 
 if __name__ == '__main__':
   nsscache_app = app.NssCacheApp()
-  start_time = time.clock()
+  start_time = time.process_time()
   return_value = nsscache_app.Run(sys.argv[1:], os.environ)
-  end_time = time.clock()
+  end_time = time.process_time()
   nsscache_app.log.info('Exiting nsscache with value %d runtime %f',
                         return_value, end_time - start_time)
   sys.exit(return_value)
