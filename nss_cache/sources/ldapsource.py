@@ -397,9 +397,15 @@ class LdapSource(source.Source):
         # If the dn is requested, return it along with the payload,
         # otherwise ignore it.
         for key in record[1]:
-          if isinstance(record[1][key][0], bytes) and key != 'objectSid':
-            value = record[1][key][0].decode('utf-8')
-            record[1][key] = [value]
+          if len(record[1][key]) > 1:
+            for i, item in enumerate(record[1][key]):
+              if isinstance(item, bytes) and key != 'objectSid':
+                value = item.decode('utf-8')
+                record[1][key][i] = value
+          else:
+            if isinstance(record[1][key][0], bytes) and key != 'objectSid':
+              value = record[1][key][0].decode('utf-8')
+              record[1][key] = [value]
         if self._dn_requested:
           merged_records = {'dn': record[0]}
           merged_records.update(record[1])
