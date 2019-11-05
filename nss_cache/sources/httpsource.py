@@ -80,25 +80,25 @@ class HttpFilesSource(source.Source):
 
   def _SetDefaults(self, configuration):
     """Set defaults if necessary."""
-    if not 'automount_base_url' in configuration:
+    if 'automount_base_url' not in configuration:
       configuration['automount_base_url'] = self.AUTOMOUNT_BASE_URL
-    if not 'passwd_url' in configuration:
+    if 'passwd_url' not in configuration:
       configuration['passwd_url'] = self.PASSWD_URL
-    if not 'shadow_url' in configuration:
+    if 'shadow_url' not in configuration:
       configuration['shadow_url'] = self.SHADOW_URL
-    if not 'group_url' in configuration:
+    if 'group_url' not in configuration:
       configuration['group_url'] = self.GROUP_URL
-    if not 'netgroup_url' in configuration:
+    if 'netgroup_url' not in configuration:
       configuration['netgroup_url'] = self.GROUP_URL
-    if not 'sshkey_url' in configuration:
+    if 'sshkey_url' not in configuration:
       configuration['sshkey_url'] = self.SSHKEY_URL
-    if not 'retry_delay' in configuration:
+    if 'retry_delay' not in configuration:
       configuration['retry_delay'] = self.RETRY_DELAY
-    if not 'retry_max' in configuration:
+    if 'retry_max' not in configuration:
       configuration['retry_max'] = self.RETRY_MAX
-    if not 'tls_cacertfile' in configuration:
+    if 'tls_cacertfile' not in configuration:
       configuration['tls_cacertfile'] = self.TLS_CACERTFILE
-    if not 'http_proxy' in configuration:
+    if 'http_proxy' not in configuration:
       configuration['http_proxy'] = None
 
   def GetPasswdMap(self, since=None):

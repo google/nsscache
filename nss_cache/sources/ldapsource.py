@@ -190,25 +190,25 @@ class LdapSource(source.Source):
     if 'uri' in configuration:
       if configuration['uri'].startswith('ldapi://'):
         configuration['uri'] = 'ldapi://' + quote(configuration['uri'][8:], '')
-    if not 'bind_dn' in configuration:
+    if 'bind_dn' not in configuration:
       configuration['bind_dn'] = self.BIND_DN
-    if not 'bind_password' in configuration:
+    if 'bind_password' not in configuration:
       configuration['bind_password'] = self.BIND_PASSWORD
-    if not 'retry_delay' in configuration:
+    if 'retry_delay' not in configuration:
       configuration['retry_delay'] = self.RETRY_DELAY
-    if not 'retry_max' in configuration:
+    if 'retry_max' not in configuration:
       configuration['retry_max'] = self.RETRY_MAX
-    if not 'scope' in configuration:
+    if 'scope' not in configuration:
       configuration['scope'] = self.SCOPE
-    if not 'timelimit' in configuration:
+    if 'timelimit' not in configuration:
       configuration['timelimit'] = self.TIMELIMIT
     # TODO(jaq): XXX EVIL.  ldap client libraries change behaviour if we use
     # polling, and it's nasty.  So don't let the user poll.
     if configuration['timelimit'] == 0:
       configuration['timelimit'] = -1
-    if not 'tls_require_cert' in configuration:
+    if 'tls_require_cert' not in configuration:
       configuration['tls_require_cert'] = self.TLS_REQUIRE_CERT
-    if not 'tls_starttls' in configuration:
+    if 'tls_starttls' not in configuration:
       configuration['tls_starttls'] = 0
 
     # Translate tls_require into appropriate constant, if necessary.
@@ -223,13 +223,13 @@ class LdapSource(source.Source):
     elif configuration['tls_require_cert'] == 'try':
       configuration['tls_require_cert'] = ldap.OPT_X_TLS_TRY
 
-    if not 'sasl_authzid' in configuration:
+    if 'sasl_authzid' not in configuration:
       configuration['sasl_authzid'] = ''
 
     # Should we issue STARTTLS?
     if configuration['tls_starttls'] in (1, '1', 'on', 'yes', 'true'):
       configuration['tls_starttls'] = 1
-    #if not configuration['tls_starttls']:
+    # if not configuration['tls_starttls']:
     else:
       configuration['tls_starttls'] = 0
 
