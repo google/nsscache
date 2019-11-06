@@ -39,240 +39,247 @@ from nss_cache import error
 
 
 class Updater(object):
-  """Base class which holds the setup and timestamp logic.
+    """Base class which holds the setup and timestamp logic.
 
-  This class holds all the timestamp manipulation used by child classes and
-  callers.
+    This class holds all the timestamp manipulation used by child classes and
+    callers.
 
-  Attributes:
-    log: logging.Logger instance used for output.
-    map_name: A string representing the type of the map we are an Updater for.
-    timestamp_dir: A string with the directory containing our timestamp files.
-    cache_options: A dict containing the options for any caches we create.
-    modify_file: A string with our last modified timestamp filename.
-    update_file: A string with our last updated timestamp filename.
-  """
-
-  def __init__(self,
-               map_name,
-               timestamp_dir,
-               cache_options,
-               automount_mountpoint=None,
-               can_do_incremental=False):
-    """Construct an updater object.
-
-    Args:
+    Attributes:
+      log: logging.Logger instance used for output.
       map_name: A string representing the type of the map we are an Updater for.
       timestamp_dir: A string with the directory containing our timestamp files.
       cache_options: A dict containing the options for any caches we create.
-      automount_mountpoint: An optional string containing automount path info.
-      can_do_incremental: Indicates whether or not our source can provide
-          incremental updates at all.
+      modify_file: A string with our last modified timestamp filename.
+      update_file: A string with our last updated timestamp filename.
     """
 
-    # Set up a logger
-    self.log = logging.getLogger(__name__)
-    # Used to fetch the right maps later on
-    self.map_name = map_name
-    # Used for tempfile writing
-    self.timestamp_dir = timestamp_dir
-    # Used to create cache(s)
-    self.cache_options = cache_options
-    self.can_do_incremental = can_do_incremental
+    def __init__(self,
+                 map_name,
+                 timestamp_dir,
+                 cache_options,
+                 automount_mountpoint=None,
+                 can_do_incremental=False):
+        """Construct an updater object.
 
-    # Calculate our timestamp files
-    if automount_mountpoint is None:
-      timestamp_prefix = '%s/timestamp-%s' % (timestamp_dir, map_name)
-    else:
-      # turn /auto into auto.auto, and /usr/local into /auto.usr_local
-      automount_mountpoint = automount_mountpoint.lstrip('/')
-      automount_mountpoint = automount_mountpoint.replace('/', '_')
-      timestamp_prefix = '%s/timestamp-%s-%s' % (timestamp_dir, map_name,
-                                                 automount_mountpoint)
-    self.modify_file = '%s-modify' % timestamp_prefix
-    self.update_file = '%s-update' % timestamp_prefix
+        Args:
+          map_name: A string representing the type of the map we are an Updater for.
+          timestamp_dir: A string with the directory containing our timestamp files.
+          cache_options: A dict containing the options for any caches we create.
+          automount_mountpoint: An optional string containing automount path info.
+          can_do_incremental: Indicates whether or not our source can provide
+              incremental updates at all.
+        """
 
-    # Timestamp info is cached here
-    self.modify_time = None
-    self.update_time = None
+        # Set up a logger
+        self.log = logging.getLogger(__name__)
+        # Used to fetch the right maps later on
+        self.map_name = map_name
+        # Used for tempfile writing
+        self.timestamp_dir = timestamp_dir
+        # Used to create cache(s)
+        self.cache_options = cache_options
+        self.can_do_incremental = can_do_incremental
 
-  def _GetCurrentTime(self):
-    """Helper method to get the current time, to assist test mocks."""
-    return int(time.time())
+        # Calculate our timestamp files
+        if automount_mountpoint is None:
+            timestamp_prefix = '%s/timestamp-%s' % (timestamp_dir, map_name)
+        else:
+            # turn /auto into auto.auto, and /usr/local into /auto.usr_local
+            automount_mountpoint = automount_mountpoint.lstrip('/')
+            automount_mountpoint = automount_mountpoint.replace('/', '_')
+            timestamp_prefix = '%s/timestamp-%s-%s' % (timestamp_dir, map_name,
+                                                       automount_mountpoint)
+        self.modify_file = '%s-modify' % timestamp_prefix
+        self.update_file = '%s-update' % timestamp_prefix
 
-  def _ReadTimestamp(self, filename):
-    """Return a timestamp from a file.
+        # Timestamp info is cached here
+        self.modify_time = None
+        self.update_time = None
 
-    The timestamp file format is a single line, containing a string in the
-    ISO-8601 format YYYY-MM-DDThh:mm:ssZ (i.e. UTC time).  We do not support
-    all ISO-8601 formats for reasons of convenience in the code.
+    def _GetCurrentTime(self):
+        """Helper method to get the current time, to assist test mocks."""
+        return int(time.time())
 
-    Timestamps internal to nss_cache deliberately do not carry milliseconds.
+    def _ReadTimestamp(self, filename):
+        """Return a timestamp from a file.
 
-    Args:
-      filename:  A String naming the file to read from.
+        The timestamp file format is a single line, containing a string in the
+        ISO-8601 format YYYY-MM-DDThh:mm:ssZ (i.e. UTC time).  We do not support
+        all ISO-8601 formats for reasons of convenience in the code.
 
-    Returns:
-      An int with the number of seconds since epoch, or None if the timestamp
-      file doesn't exist or has errors.
-    """
-    if not os.path.exists(filename):
-      return None
+        Timestamps internal to nss_cache deliberately do not carry milliseconds.
 
-    try:
-      timestamp_file = open(filename, 'r')
-      timestamp_string = timestamp_file.read().strip()
-    except IOError as e:
-      self.log.warning('error opening timestamp file: %s', e)
-      timestamp_string = None
-    else:
-      timestamp_file.close()
+        Args:
+          filename:  A String naming the file to read from.
 
-    self.log.debug('read timestamp %s from file %r', timestamp_string, filename)
+        Returns:
+          An int with the number of seconds since epoch, or None if the timestamp
+          file doesn't exist or has errors.
+        """
+        if not os.path.exists(filename):
+            return None
 
-    if timestamp_string is not None:
-      try:
-        # Append UTC to force the timezone to parse the string in.
-        timestamp = int(
-            calendar.timegm(
-                time.strptime(timestamp_string + ' UTC',
-                              '%Y-%m-%dT%H:%M:%SZ %Z')))
-      except ValueError as e:
-        self.log.error('cannot parse timestamp file %r: %s', filename, e)
-        timestamp = None
-    else:
-      timestamp = None
+        try:
+            timestamp_file = open(filename, 'r')
+            timestamp_string = timestamp_file.read().strip()
+        except IOError as e:
+            self.log.warning('error opening timestamp file: %s', e)
+            timestamp_string = None
+        else:
+            timestamp_file.close()
 
-    now = self._GetCurrentTime()
-    if timestamp and timestamp > now:
-      self.log.warning('timestamp %r from %r is in the future, now is %r',
-                       timestamp_string, filename, now)
-      if timestamp - now >= 60 * 60:
-        self.log.info('Resetting timestamp to now.')
-        timestamp = now
+        self.log.debug('read timestamp %s from file %r', timestamp_string,
+                       filename)
 
-    return timestamp
+        if timestamp_string is not None:
+            try:
+                # Append UTC to force the timezone to parse the string in.
+                timestamp = int(
+                    calendar.timegm(
+                        time.strptime(timestamp_string + ' UTC',
+                                      '%Y-%m-%dT%H:%M:%SZ %Z')))
+            except ValueError as e:
+                self.log.error('cannot parse timestamp file %r: %s', filename,
+                               e)
+                timestamp = None
+        else:
+            timestamp = None
 
-  def _WriteTimestamp(self, timestamp, filename):
-    """Write a given timestamp out to a file, converting to the ISO-8601 format.
+        now = self._GetCurrentTime()
+        if timestamp and timestamp > now:
+            self.log.warning('timestamp %r from %r is in the future, now is %r',
+                             timestamp_string, filename, now)
+            if timestamp - now >= 60 * 60:
+                self.log.info('Resetting timestamp to now.')
+                timestamp = now
 
-    We convert internal timestamp format (epoch) to ISO-8601 format, i.e.
-    YYYY-MM-DDThh:mm:ssZ which is basically UTC time, then write it out to a
-    file.
+        return timestamp
 
-    Args:
-      timestamp: A String in nss_cache internal timestamp format, aka time_t.
-      filename: A String naming the file to write to.
+    def _WriteTimestamp(self, timestamp, filename):
+        """Write a given timestamp out to a file, converting to the ISO-8601
+        format.
 
-    Returns:
-       A boolean indicating success of write.
-    """
-    # Make sure self.timestamp_dir exists before calling tempfile.mkstemp
-    try:
-      os.makedirs(self.timestamp_dir)
-    except OSError as e:
-      if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
-        pass  # Directory already exists; squelch error
-      else:
-        raise
+        We convert internal timestamp format (epoch) to ISO-8601 format, i.e.
+        YYYY-MM-DDThh:mm:ssZ which is basically UTC time, then write it out to a
+        file.
 
-    (filedesc, temp_filename) = tempfile.mkstemp(
-        prefix='nsscache-update-', dir=self.timestamp_dir)
-    time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(timestamp))
+        Args:
+          timestamp: A String in nss_cache internal timestamp format, aka time_t.
+          filename: A String naming the file to write to.
 
-    try:
-      os.write(filedesc, b'%s\n' % time_string.encode())
-      os.fsync(filedesc)
-      os.close(filedesc)
-    except OSError:
-      os.unlink(temp_filename)
-      self.log.warning('writing timestamp failed!')
-      return False
+        Returns:
+           A boolean indicating success of write.
+        """
+        # Make sure self.timestamp_dir exists before calling tempfile.mkstemp
+        try:
+            os.makedirs(self.timestamp_dir)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(self.timestamp_dir):
+                pass  # Directory already exists; squelch error
+            else:
+                raise
 
-    os.chmod(temp_filename,
-             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-    os.rename(temp_filename, filename)
-    self.log.debug('wrote timestamp %s to file %r', time_string, filename)
-    return True
+        (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
+                                                     dir=self.timestamp_dir)
+        time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ',
+                                    time.gmtime(timestamp))
 
-  def GetUpdateTimestamp(self):
-    """Return the timestamp of the last cache update.
+        try:
+            os.write(filedesc, b'%s\n' % time_string.encode())
+            os.fsync(filedesc)
+            os.close(filedesc)
+        except OSError:
+            os.unlink(temp_filename)
+            self.log.warning('writing timestamp failed!')
+            return False
 
-    Returns:
-      An int with the number of seconds since epoch, or None if the timestamp
-      file doesn't exist or has errors.
-    """
-    if self.update_time is None:
-      self.update_time = self._ReadTimestamp(self.update_file)
-    return self.update_time
+        os.chmod(temp_filename,
+                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.rename(temp_filename, filename)
+        self.log.debug('wrote timestamp %s to file %r', time_string, filename)
+        return True
 
-  def GetModifyTimestamp(self):
-    """Return the timestamp of the last cache modification.
+    def GetUpdateTimestamp(self):
+        """Return the timestamp of the last cache update.
 
-    Args: None
+        Returns:
+          An int with the number of seconds since epoch, or None if the timestamp
+          file doesn't exist or has errors.
+        """
+        if self.update_time is None:
+            self.update_time = self._ReadTimestamp(self.update_file)
+        return self.update_time
 
-    Returns:
-      An int with the number of seconds since epoch, or None if the timestamp
-      file doesn't exist or has errors.
-    """
-    if self.modify_time is None:
-      self.modify_time = self._ReadTimestamp(self.modify_file)
-    return self.modify_time
+    def GetModifyTimestamp(self):
+        """Return the timestamp of the last cache modification.
 
-  def WriteUpdateTimestamp(self, update_timestamp=None):
-    """Convenience method for writing the last update timestamp.
+        Args: None
 
-    Args:
-      update_timestamp: An int with the number of seconds since epoch,
-        defaulting to the current time if None.
+        Returns:
+          An int with the number of seconds since epoch, or None if the timestamp
+          file doesn't exist or has errors.
+        """
+        if self.modify_time is None:
+            self.modify_time = self._ReadTimestamp(self.modify_file)
+        return self.modify_time
 
-    Returns:
-      A boolean indicating success of the write.
-    """
-    # blow away our cached value
-    self.update_time = None
-    # default to now
-    if update_timestamp is None:
-      update_timestamp = self._GetCurrentTime()
-    return self._WriteTimestamp(update_timestamp, self.update_file)
+    def WriteUpdateTimestamp(self, update_timestamp=None):
+        """Convenience method for writing the last update timestamp.
 
-  def WriteModifyTimestamp(self, timestamp):
-    """Convenience method for writing the last modify timestamp.
+        Args:
+          update_timestamp: An int with the number of seconds since epoch,
+            defaulting to the current time if None.
 
-    Args:
-      timestamp:  An int with the number of seconds since epoch.
-	If timestamp is None, performs no action.
+        Returns:
+          A boolean indicating success of the write.
+        """
+        # blow away our cached value
+        self.update_time = None
+        # default to now
+        if update_timestamp is None:
+            update_timestamp = self._GetCurrentTime()
+        return self._WriteTimestamp(update_timestamp, self.update_file)
 
-    Returns:
-      A boolean indicating success of the write.
-    """
-    if timestamp is None:
-      return True
-    # blow away our cached value
-    self.modify_time = None
-    return self._WriteTimestamp(timestamp, self.modify_file)
+    def WriteModifyTimestamp(self, timestamp):
+        """Convenience method for writing the last modify timestamp.
 
-  def UpdateFromSource(self, source, incremental=True, force_write=False):
-    """Update this map's cache from the source provided.
+        Args:
+          timestamp:  An int with the number of seconds since epoch.
+            If timestamp is None, performs no action.
 
-    The FileMapUpdater expects to fetch as single map from the source
-    and write/merge it to disk.  We create a cache to write to, and then call
-    UpdateCacheFromSource() with that cache.
+        Returns:
+          A boolean indicating success of the write.
+        """
+        if timestamp is None:
+            return True
+        # blow away our cached value
+        self.modify_time = None
+        return self._WriteTimestamp(timestamp, self.modify_file)
 
-    Note that AutomountUpdater also calls UpdateCacheFromSource() for each
-    cache it is writing, hence the distinct seperation.
+    def UpdateFromSource(self, source, incremental=True, force_write=False):
+        """Update this map's cache from the source provided.
 
-    Args:
-      source: A nss_cache.sources.Source object.
-      incremental: A boolean flag indicating that an incremental update should
-        be performed, defaults to True.
-      force_write: A boolean flag forcing empty map updates, defaults to False.
+        The FileMapUpdater expects to fetch as single map from the source
+        and write/merge it to disk.  We create a cache to write to, and then call
+        UpdateCacheFromSource() with that cache.
 
-    Returns:
-      An int indicating success of update (0 == good, fail otherwise).
-    """
-    # Create the single cache we write to
-    cache = cache_factory.Create(self.cache_options, self.map_name)
+        Note that AutomountUpdater also calls UpdateCacheFromSource() for each
+        cache it is writing, hence the distinct seperation.
 
-    return self.UpdateCacheFromSource(
-        cache, source, incremental, force_write, location=None)
+        Args:
+          source: A nss_cache.sources.Source object.
+          incremental: A boolean flag indicating that an incremental update should
+            be performed, defaults to True.
+          force_write: A boolean flag forcing empty map updates, defaults to False.
+
+        Returns:
+          An int indicating success of update (0 == good, fail otherwise).
+        """
+        # Create the single cache we write to
+        cache = cache_factory.Create(self.cache_options, self.map_name)
+
+        return self.UpdateCacheFromSource(cache,
+                                          source,
+                                          incremental,
+                                          force_write,
+                                          location=None)

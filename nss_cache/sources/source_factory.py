@@ -22,76 +22,76 @@ _source_implementations = {}
 
 
 def RegisterImplementation(source):
-  """Register a Source implementation with the factory method.
+    """Register a Source implementation with the factory method.
 
-  Sources being registered are expected to have a name attribute,
-  unique to themselves.
+    Sources being registered are expected to have a name attribute,
+    unique to themselves.
 
-  Child modules are expected to call this method in the file-level
-  scope.
+    Child modules are expected to call this method in the file-level
+    scope.
 
-  Args:
-    source: A class type that is a subclass of Source
+    Args:
+      source: A class type that is a subclass of Source
 
-  Returns:
-    Nothing
+    Returns:
+      Nothing
 
-  Raises:
-    RuntimeError: no 'name' entry in this source.
-  """
-  global _source_implementations
-  if 'name' not in source.__dict__:
-    raise RuntimeError("'name' not defined in Source %r" % (source,))
+    Raises:
+      RuntimeError: no 'name' entry in this source.
+    """
+    global _source_implementations
+    if 'name' not in source.__dict__:
+        raise RuntimeError("'name' not defined in Source %r" % (source,))
 
-  _source_implementations[source.name] = source
+    _source_implementations[source.name] = source
 
 
 # Discover all the known implementations of sources.
 try:
-  from nss_cache.sources import httpsource
-  httpsource.RegisterImplementation(RegisterImplementation)
+    from nss_cache.sources import httpsource
+    httpsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
-  pass
+    pass
 
 try:
-  from nss_cache.sources import ldapsource
-  ldapsource.RegisterImplementation(RegisterImplementation)
+    from nss_cache.sources import ldapsource
+    ldapsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
-  pass
+    pass
 
 try:
-  from nss_cache.sources import consulsource
-  consulsource.RegisterImplementation(RegisterImplementation)
+    from nss_cache.sources import consulsource
+    consulsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
-  pass
+    pass
 
 try:
-  from nss_cache.sources import s3source
-  s3source.RegisterImplementation(RegisterImplementation)
+    from nss_cache.sources import s3source
+    s3source.RegisterImplementation(RegisterImplementation)
 except ImportError:
-  pass
+    pass
 
 
 def Create(conf):
-  """Source creation factory method.
+    """Source creation factory method.
 
-  Args:
-   conf: a dictionary of configuration key/value pairs, including one
-           required attribute 'name'.
+    Args:
+     conf: a dictionary of configuration key/value pairs, including one
+             required attribute 'name'.
 
-  Returns:
-    A Source instance.
+    Returns:
+      A Source instance.
 
-  Raises:
-    RuntimeError: no sources are registered with RegisterImplementation
-  """
-  global _source_implementations
-  if not _source_implementations:
-    raise RuntimeError('no source implementations exist')
+    Raises:
+      RuntimeError: no sources are registered with RegisterImplementation
+    """
+    global _source_implementations
+    if not _source_implementations:
+        raise RuntimeError('no source implementations exist')
 
-  source_name = conf['name']
+    source_name = conf['name']
 
-  if source_name not in list(_source_implementations.keys()):
-    raise RuntimeError('source not implemented: %r' % (source_name,))
+    if source_name not in list(_source_implementations.keys()):
+        raise RuntimeError('source not implemented: %r' % (source_name,))
 
-  return _source_implementations[source_name](conf)
+    return _source_implementations[source_name](conf)

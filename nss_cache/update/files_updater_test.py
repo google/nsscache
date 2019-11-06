@@ -39,172 +39,176 @@ from nss_cache.update import files_updater
 
 
 class SingleFileUpdaterTest(mox.MoxTestBase):
-  """Unit tests for FileMapUpdaterlass."""
+    """Unit tests for FileMapUpdaterlass."""
 
-  def setUp(self):
-    super(SingleFileUpdaterTest, self).setUp()
-    self.workdir = tempfile.mkdtemp()
-    self.workdir2 = tempfile.mkdtemp()
+    def setUp(self):
+        super(SingleFileUpdaterTest, self).setUp()
+        self.workdir = tempfile.mkdtemp()
+        self.workdir2 = tempfile.mkdtemp()
 
-  def tearDown(self):
-    super(SingleFileUpdaterTest, self).tearDown()
-    shutil.rmtree(self.workdir)
-    shutil.rmtree(self.workdir2)
+    def tearDown(self):
+        super(SingleFileUpdaterTest, self).tearDown()
+        shutil.rmtree(self.workdir)
+        shutil.rmtree(self.workdir2)
 
-  def testFullUpdate(self):
-    original_modify_stamp = time.gmtime(1)
-    new_modify_stamp = time.gmtime(2)
+    def testFullUpdate(self):
+        original_modify_stamp = time.gmtime(1)
+        new_modify_stamp = time.gmtime(2)
 
-    # Construct a fake source.
-    def GetFile(map_name, dst_file, current_file, location):
-      print(("GetFile: %s" % dst_file))
-      f = open(dst_file, 'w')
-      f.write('root:x:0:0:root:/root:/bin/bash\n')
-      f.close()
-      os.utime(dst_file, (1, 2))
-      os.system("ls -al %s" % dst_file)
-      return dst_file
+        # Construct a fake source.
+        def GetFile(map_name, dst_file, current_file, location):
+            print(("GetFile: %s" % dst_file))
+            f = open(dst_file, 'w')
+            f.write('root:x:0:0:root:/root:/bin/bash\n')
+            f.close()
+            os.utime(dst_file, (1, 2))
+            os.system("ls -al %s" % dst_file)
+            return dst_file
 
-    dst_file = mox.Value()
-    source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(
-        config.MAP_PASSWORD,
-        mox.Remember(dst_file),
-        current_file=mox.IgnoreArg(),
-        location=mox.IgnoreArg()).WithSideEffects(GetFile).AndReturn(dst_file)
+        dst_file = mox.Value()
+        source_mock = self.mox.CreateMock(source.FileSource)
+        source_mock.GetFile(config.MAP_PASSWORD,
+                            mox.Remember(dst_file),
+                            current_file=mox.IgnoreArg(),
+                            location=mox.IgnoreArg()).WithSideEffects(
+                                GetFile).AndReturn(dst_file)
 
-    # Construct the cache.
-    cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
-    map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    password_map = passwd.PasswdMap()
-    password_map.SetModifyTimestamp(new_modify_stamp)
-    password_map.Add(map_entry)
-    cache.Write(password_map)
+        # Construct the cache.
+        cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
+        map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+        password_map = passwd.PasswdMap()
+        password_map.SetModifyTimestamp(new_modify_stamp)
+        password_map.Add(map_entry)
+        cache.Write(password_map)
 
-    updater = files_updater.FileMapUpdater(config.MAP_PASSWORD, self.workdir, {
-        'name': 'files',
-        'dir': self.workdir2
-    })
-    updater.WriteModifyTimestamp(original_modify_stamp)
+        updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
+                                               self.workdir, {
+                                                   'name': 'files',
+                                                   'dir': self.workdir2
+                                               })
+        updater.WriteModifyTimestamp(original_modify_stamp)
 
-    self.mox.ReplayAll()
+        self.mox.ReplayAll()
 
-    self.assertEqual(
-        0,
-        updater.UpdateCacheFromSource(
-            cache, source_mock, force_write=False, location=None))
+        self.assertEqual(
+            0,
+            updater.UpdateCacheFromSource(cache,
+                                          source_mock,
+                                          force_write=False,
+                                          location=None))
 
-    self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
-    self.assertNotEqual(None, updater.GetUpdateTimestamp())
+        self.assertEqual(new_modify_stamp, updater.GetModifyTimestamp())
+        self.assertNotEqual(None, updater.GetUpdateTimestamp())
 
-  def testFullUpdateOnEmptyCache(self):
-    """A full update as above, but the initial cache is empty."""
-    original_modify_stamp = time.gmtime(1)
-    new_modify_stamp = time.gmtime(2)
-    # Construct an updater
-    self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-                                                self.workdir, {
-                                                    'name': 'files',
-                                                    'dir': self.workdir2
-                                                })
-    self.updater.WriteModifyTimestamp(original_modify_stamp)
+    def testFullUpdateOnEmptyCache(self):
+        """A full update as above, but the initial cache is empty."""
+        original_modify_stamp = time.gmtime(1)
+        new_modify_stamp = time.gmtime(2)
+        # Construct an updater
+        self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
+                                                    self.workdir, {
+                                                        'name': 'files',
+                                                        'dir': self.workdir2
+                                                    })
+        self.updater.WriteModifyTimestamp(original_modify_stamp)
 
-    # Construct a cache
-    cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
+        # Construct a cache
+        cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
 
-    def GetFileEffects(map_name, dst_file, current_file, location):
-      f = open(dst_file, 'w')
-      f.write('root:x:0:0:root:/root:/bin/bash\n')
-      f.close()
-      os.utime(dst_file, (1, 2))
-      return dst_file
+        def GetFileEffects(map_name, dst_file, current_file, location):
+            f = open(dst_file, 'w')
+            f.write('root:x:0:0:root:/root:/bin/bash\n')
+            f.close()
+            os.utime(dst_file, (1, 2))
+            return dst_file
 
-    source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(
-        config.MAP_PASSWORD, mox.IgnoreArg(), mox.IgnoreArg(),
-        location=None).WithSideEffects(GetFileEffects)
+        source_mock = self.mox.CreateMock(source.FileSource)
+        source_mock.GetFile(config.MAP_PASSWORD,
+                            mox.IgnoreArg(),
+                            mox.IgnoreArg(),
+                            location=None).WithSideEffects(GetFileEffects)
 
-    #source_mock = MockSource()
-    self.assertEqual(
-        0,
-        self.updater.UpdateCacheFromSource(
-            cache, source_mock, force_write=False, location=None))
-    self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
-    self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
+        #source_mock = MockSource()
+        self.assertEqual(
+            0,
+            self.updater.UpdateCacheFromSource(cache,
+                                               source_mock,
+                                               force_write=False,
+                                               location=None))
+        self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+        self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
 
-  def testFullUpdateOnEmptySource(self):
-    """A full update as above, but instead, the initial source is empty."""
-    original_modify_stamp = time.gmtime(1)
-    new_modify_stamp = time.gmtime(2)
-    # Construct an updater
-    self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-                                                self.workdir, {
-                                                    'name': 'files',
-                                                    'dir': self.workdir2
-                                                })
-    self.updater.WriteModifyTimestamp(original_modify_stamp)
+    def testFullUpdateOnEmptySource(self):
+        """A full update as above, but instead, the initial source is empty."""
+        original_modify_stamp = time.gmtime(1)
+        new_modify_stamp = time.gmtime(2)
+        # Construct an updater
+        self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
+                                                    self.workdir, {
+                                                        'name': 'files',
+                                                        'dir': self.workdir2
+                                                    })
+        self.updater.WriteModifyTimestamp(original_modify_stamp)
 
-    # Construct a cache
-    cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
-    map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-    password_map = passwd.PasswdMap()
-    password_map.SetModifyTimestamp(new_modify_stamp)
-    password_map.Add(map_entry)
-    cache.Write(password_map)
+        # Construct a cache
+        cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
+        map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+        password_map = passwd.PasswdMap()
+        password_map.SetModifyTimestamp(new_modify_stamp)
+        password_map.Add(map_entry)
+        cache.Write(password_map)
 
-    source_mock = self.mox.CreateMock(source.FileSource)
-    source_mock.GetFile(
-        config.MAP_PASSWORD,
-        mox.IgnoreArg(),
-        current_file=mox.IgnoreArg(),
-        location=None).AndReturn(None)
-    self.mox.ReplayAll()
-    self.assertRaises(
-        error.EmptyMap,
-        self.updater.UpdateCacheFromSource,
-        cache,
-        source_mock,
-        force_write=False,
-        location=None)
-    self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
-    self.assertEqual(None, self.updater.GetUpdateTimestamp())
+        source_mock = self.mox.CreateMock(source.FileSource)
+        source_mock.GetFile(config.MAP_PASSWORD,
+                            mox.IgnoreArg(),
+                            current_file=mox.IgnoreArg(),
+                            location=None).AndReturn(None)
+        self.mox.ReplayAll()
+        self.assertRaises(error.EmptyMap,
+                          self.updater.UpdateCacheFromSource,
+                          cache,
+                          source_mock,
+                          force_write=False,
+                          location=None)
+        self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+        self.assertEqual(None, self.updater.GetUpdateTimestamp())
 
-  # def disabled_testFullUpdateOnEmptySourceForceWrite(self):
-  #   """A full update as above, but instead, the initial source is empty."""
-  #   original_modify_stamp = time.gmtime(1)
-  #   new_modify_stamp = time.gmtime(2)
-  #   # Construct an updater
-  #   self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
-  #                                                self.workdir,
-  #                                                {'name': 'files',
-  #                                                 'dir': self.workdir2})
-  #   self.updater.WriteModifyTimestamp(original_modify_stamp)
+    # def disabled_testFullUpdateOnEmptySourceForceWrite(self):
+    #   """A full update as above, but instead, the initial source is empty."""
+    #   original_modify_stamp = time.gmtime(1)
+    #   new_modify_stamp = time.gmtime(2)
+    #   # Construct an updater
+    #   self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
+    #                                                self.workdir,
+    #                                                {'name': 'files',
+    #                                                 'dir': self.workdir2})
+    #   self.updater.WriteModifyTimestamp(original_modify_stamp)
 
-  #   # Construct a cache
-  #   cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
-  #   map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
-  #   password_map = passwd.PasswdMap()
-  #   password_map.SetModifyTimestamp(new_modify_stamp)
-  #   password_map.Add(map_entry)
-  #   cache.Write(password_map)
+    #   # Construct a cache
+    #   cache = files.FilesPasswdMapHandler({'dir': self.workdir2})
+    #   map_entry = passwd.PasswdMapEntry({'name': 'foo', 'uid': 10, 'gid': 10})
+    #   password_map = passwd.PasswdMap()
+    #   password_map.SetModifyTimestamp(new_modify_stamp)
+    #   password_map.Add(map_entry)
+    #   cache.Write(password_map)
 
-  #   class MockSource(pmock.Mock):
-  #     def GetFile(self, map_name, dst_file, current_file, location=None):
-  #       assert location is None
-  #       assert map_name == config.MAP_PASSWORD
-  #       f = open(dst_file, 'w')
-  #       f.write('')
-  #       f.close()
-  #       os.utime(dst_file, (1, 2))
-  #       return dst_file
+    #   class MockSource(pmock.Mock):
+    #     def GetFile(self, map_name, dst_file, current_file, location=None):
+    #       assert location is None
+    #       assert map_name == config.MAP_PASSWORD
+    #       f = open(dst_file, 'w')
+    #       f.write('')
+    #       f.close()
+    #       os.utime(dst_file, (1, 2))
+    #       return dst_file
 
-  #   source_mock = MockSource()
-  #   self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
-  #                                                          source_mock,
-  #                                                          force_write=True,
-  #                                                          location=None))
-  #   self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
-  #   self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
+    #   source_mock = MockSource()
+    #   self.assertEqual(0, self.updater.UpdateCacheFromSource(cache,
+    #                                                          source_mock,
+    #                                                          force_write=True,
+    #                                                          location=None))
+    #   self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+    #   self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
 
 
 # class AutomountUpdaterTest(mox.MoxTestBase):
@@ -376,4 +380,4 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 #     cache_factory.Create = original_create
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

@@ -27,44 +27,44 @@ from nss_cache.maps import maps
 
 
 class GroupMap(maps.Map):
-  """This class represents an NSS group map.
-  
-  Map data is stored as a list of MapEntry objects, see the abstract
-  class Map.
-  """
+    """This class represents an NSS group map.
 
-  def __init__(self, iterable=None):
-    """Construct a GroupMap object using optional iterable."""
-    super(GroupMap, self).__init__(iterable)
+    Map data is stored as a list of MapEntry objects, see the abstract
+    class Map.
+    """
 
-  def Add(self, entry):
-    """Add a new object, verify it is a GroupMapEntry object."""
-    if not isinstance(entry, GroupMapEntry):
-      raise TypeError
-    return super(GroupMap, self).Add(entry)
+    def __init__(self, iterable=None):
+        """Construct a GroupMap object using optional iterable."""
+        super(GroupMap, self).__init__(iterable)
+
+    def Add(self, entry):
+        """Add a new object, verify it is a GroupMapEntry object."""
+        if not isinstance(entry, GroupMapEntry):
+            raise TypeError
+        return super(GroupMap, self).Add(entry)
 
 
 class GroupMapEntry(maps.MapEntry):
-  """This class represents NSS group map entries."""
-  # Using slots saves us over 2x memory on large maps.
-  __slots__ = ('name', 'passwd', 'gid', 'members', 'groupmembers')
-  _KEY = 'name'
-  _ATTRS = ('name', 'passwd', 'gid', 'members', 'groupmembers')
+    """This class represents NSS group map entries."""
+    # Using slots saves us over 2x memory on large maps.
+    __slots__ = ('name', 'passwd', 'gid', 'members', 'groupmembers')
+    _KEY = 'name'
+    _ATTRS = ('name', 'passwd', 'gid', 'members', 'groupmembers')
 
-  def __init__(self, data=None):
-    """Construct a GroupMapEntry, setting reasonable defaults."""
-    self.name = None
-    self.passwd = None
-    self.gid = None
-    self.members = None
-    self.groupmembers = None
+    def __init__(self, data=None):
+        """Construct a GroupMapEntry, setting reasonable defaults."""
+        self.name = None
+        self.passwd = None
+        self.gid = None
+        self.members = None
+        self.groupmembers = None
 
-    super(GroupMapEntry, self).__init__(data)
+        super(GroupMapEntry, self).__init__(data)
 
-    # Seed data with defaults if needed
-    if self.passwd is None:
-      self.passwd = 'x'
-    if self.members is None:
-      self.members = []
-    if self.groupmembers is None:
-      self.groupmembers = []
+        # Seed data with defaults if needed
+        if self.passwd is None:
+            self.passwd = 'x'
+        if self.members is None:
+            self.members = []
+        if self.groupmembers is None:
+            self.groupmembers = []
