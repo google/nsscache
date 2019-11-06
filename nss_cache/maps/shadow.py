@@ -27,45 +27,45 @@ from nss_cache.maps import maps
 
 
 class ShadowMap(maps.Map):
-  """This class represents an NSS shadow map.
-  
-  Map data is stored as a list of MapEntry objects, see the abstract
-  class Map.
-  """
+    """This class represents an NSS shadow map.
 
-  def __init__(self, iterable=None):
-    """Construct a ShadowMap object using optional iterable."""
-    super(ShadowMap, self).__init__(iterable)
+    Map data is stored as a list of MapEntry objects, see the abstract
+    class Map.
+    """
 
-  def Add(self, entry):
-    """Add a new object, verify it is a ShadowMapEntry object."""
-    if not isinstance(entry, ShadowMapEntry):
-      raise TypeError
-    return super(ShadowMap, self).Add(entry)
+    def __init__(self, iterable=None):
+        """Construct a ShadowMap object using optional iterable."""
+        super(ShadowMap, self).__init__(iterable)
+
+    def Add(self, entry):
+        """Add a new object, verify it is a ShadowMapEntry object."""
+        if not isinstance(entry, ShadowMapEntry):
+            raise TypeError
+        return super(ShadowMap, self).Add(entry)
 
 
 class ShadowMapEntry(maps.MapEntry):
-  """This class represents NSS shadow map entries."""
-  __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
-               'expire', 'flag')
-  _KEY = 'name'
-  _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact', 'expire',
-            'flag')
+    """This class represents NSS shadow map entries."""
+    __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
+                 'expire', 'flag')
+    _KEY = 'name'
+    _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
+              'expire', 'flag')
 
-  def __init__(self, data=None):
-    """Construct a ShadowMapEntry, setting reasonable defaults."""
-    self.name = None
-    self.passwd = None
-    self.lstchg = None
-    self.min = None
-    self.max = None
-    self.warn = None
-    self.inact = None
-    self.expire = None
-    self.flag = None
+    def __init__(self, data=None):
+        """Construct a ShadowMapEntry, setting reasonable defaults."""
+        self.name = None
+        self.passwd = None
+        self.lstchg = None
+        self.min = None
+        self.max = None
+        self.warn = None
+        self.inact = None
+        self.expire = None
+        self.flag = None
 
-    super(ShadowMapEntry, self).__init__(data)
+        super(ShadowMapEntry, self).__init__(data)
 
-    # Seed data with defaults if needed
-    if self.passwd is None:
-      self.passwd = '!!'
+        # Seed data with defaults if needed
+        if self.passwd is None:
+            self.passwd = '!!'
