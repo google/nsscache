@@ -16,8 +16,10 @@ from nss_cache.maps import shadow
 from nss_cache.sources import source
 from nss_cache import error
 
+
 def RegisterImplementation(registration_callback):
   registration_callback(S3FilesSource)
+
 
 class S3FilesSource(source.Source):
   """Source for data fetched from S3."""
@@ -66,7 +68,8 @@ class S3FilesSource(source.Source):
     Returns:
       instance of passwd.PasswdMap
     """
-    return PasswdUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'], self.conf['passwd_object'], since)
+    return PasswdUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'],
+                                           self.conf['passwd_object'], since)
 
   def GetGroupMap(self, since=None):
     """Return the group map from this source.
@@ -78,7 +81,8 @@ class S3FilesSource(source.Source):
     Returns:
       instance of group.GroupMap
     """
-    return GroupUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'], self.conf['group_object'], since)
+    return GroupUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'],
+                                          self.conf['group_object'], since)
 
   def GetShadowMap(self, since=None):
     """Return the shadow map from this source.
@@ -90,7 +94,9 @@ class S3FilesSource(source.Source):
     Returns:
       instance of shadow.ShadowMap
     """
-    return ShadowUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'], self.conf['shadow_object'], since)
+    return ShadowUpdateGetter().GetUpdates(self.s3_client, self.conf['bucket'],
+                                           self.conf['shadow_object'], since)
+
 
 class S3UpdateGetter(object):
   """Base class that gets updates from s3."""
@@ -117,7 +123,7 @@ class S3UpdateGetter(object):
       number of seconds since epoch
     """
     dt = datetime_obj.replace(tzinfo=None)
-    return int((dt - datetime.datetime(1970,1,1)).total_seconds())
+    return int((dt - datetime.datetime(1970, 1, 1)).total_seconds())
 
   def GetUpdates(self, s3_client, bucket, obj, since):
     """Get updates from a source.
@@ -138,14 +144,13 @@ class S3UpdateGetter(object):
     try:
       if since is not None:
         response = s3_client.get_object(
-          Bucket=bucket,
-          IfModifiedSince=self.FromTimestampToDateTime(since),
-          Key=obj
-        )
+            Bucket=bucket,
+            IfModifiedSince=self.FromTimestampToDateTime(since),
+            Key=obj)
       else:
         response = s3_client.get_object(Bucket=bucket, Key=obj)
-      body = response["Body"]
-      last_modified_ts = self.FromDateTimeToTimestamp(response["LastModified"])
+      body = response['Body']
+      last_modified_ts = self.FromDateTimeToTimestamp(response['LastModified'])
     except ClientError as e:
       error_code = int(e.response['Error']['Code'])
       if error_code == 304:
@@ -208,6 +213,7 @@ class ShadowUpdateGetter(S3UpdateGetter):
     """Returns a new ShadowMap instance to have ShadowMapEntries added to it."""
     return shadow.ShadowMap()
 
+
 class S3MapParser(object):
   """A base class for parsing nss_files module cache."""
 
@@ -230,10 +236,12 @@ class S3MapParser(object):
         continue
       map_entry = self._ReadEntry(key, value)
       if map_entry is None:
-        self.log.warn('Could not create entry from line %r in cache, skipping', value)
+        self.log.warning(
+            'Could not create entry from line %r in cache, skipping', value)
         continue
       if not data.Add(map_entry):
-        self.log.warn('Could not add entry %r read from line %r in cache', map_entry, value)
+        self.log.warning('Could not add entry %r read from line %r in cache',
+                         map_entry, value)
     return data
 
 
@@ -283,6 +291,7 @@ class S3GroupMapParser(S3MapParser):
       members = ['']
     map_entry.members = members
     return map_entry
+
 
 class S3ShadowMapParser(S3MapParser):
   """Class for parsing nss_files module shadow cache."""

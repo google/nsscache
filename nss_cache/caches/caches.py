@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Base class of cache for nsscache."""
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
@@ -33,6 +32,7 @@ from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
+
 
 class Cache(object):
   """Abstract base class for Caches.
@@ -95,13 +95,14 @@ class Cache(object):
     self.log.debug('Output dir: %s', self.output_dir)
     self.log.debug('CWD: %s', os.getcwd())
     try:
-      (fd, self.temp_cache_filename) = tempfile.mkstemp(
+      self.temp_cache_file = tempfile.NamedTemporaryFile(
+          delete=False,
           prefix='nsscache-cache-file-',
           dir=os.path.join(os.getcwd(), self.output_dir))
-      self.temp_cache_file = os.fdopen(fd, 'w+b')
+      self.temp_cache_filename = self.temp_cache_file.name
       self.log.debug('opened temporary cache filename %r',
                      self.temp_cache_filename)
-    except OSError, e:
+    except OSError as e:
       if e.errno == errno.EACCES:
         self.log.info('Got OSError (%s) when trying to create temporary file',
                       e)
@@ -116,7 +117,7 @@ class Cache(object):
     # Safe file remove (ignore "no such file or directory" errors):
     try:
       os.remove(self.temp_cache_filename)
-    except OSError, e:
+    except OSError as e:
       if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
         raise  # re-raise exception if a different error occured
 
@@ -150,14 +151,14 @@ class Cache(object):
       uid = stat_info.st_uid
       gid = stat_info.st_gid
       os.chown(self.temp_cache_filename, uid, gid)
-    except OSError, e:
+    except OSError as e:
       if e.errno == errno.ENOENT:
-        if self.map_name == "sshkey":
+        if self.map_name == 'sshkey':
           os.chmod(self.temp_cache_filename,
-                   stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
         else:
           os.chmod(self.temp_cache_filename,
-                   stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IROTH)
+                   stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
     self.log.debug('committing temporary cache file %r to %r',
                    self.temp_cache_filename, self.GetCacheFilename())
     os.rename(self.temp_cache_filename, self.GetCacheFilename())
@@ -183,8 +184,8 @@ class Cache(object):
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
-    raise NotImplementedError('%s must implement this method!' %
-                              self.__class__.__name__)
+    raise NotImplementedError(
+        '%s must implement this method!' % self.__class__.__name__)
 
   def GetMapLocation(self):
     """Return the location of the Map in this cache.
@@ -195,8 +196,8 @@ class Cache(object):
     Raises:
       NotImplementedError:  We should have been implemented by child.
     """
-    raise NotImplementedError('%s must implement this method!' %
-                              self.__class__.__name__)
+    raise NotImplementedError(
+        '%s must implement this method!' % self.__class__.__name__)
 
   def WriteMap(self, map_data=None, force_write=False):
     """Write a map to disk.
@@ -221,7 +222,7 @@ class Cache(object):
     #assert 0 == len(writable_map), "self.Write should be destructive."
 
     if entries_written is None:
-      self.log.warn('cache write failed, exiting')
+      self.log.warning('cache write failed, exiting')
       return 1
 
     if force_write or self.Verify(entries_written):
@@ -232,7 +233,7 @@ class Cache(object):
       self.WriteIndex()
       return 0
 
-    self.log.warn('verification failed, exiting')
+    self.log.warning('verification failed, exiting')
     return 1
 
   def WriteIndex(self):

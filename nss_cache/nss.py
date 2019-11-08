@@ -13,14 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """NSS utility library."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
+import pwd
 import grp
 import logging
-import pwd
 import subprocess
 
 from nss_cache import config
@@ -92,6 +91,7 @@ def GetShadowMap():
   shadow_map = shadow.ShadowMap()
 
   for line in getent_stdout.split():
+    line = line.decode('utf-8')
     nss_entry = line.strip().split(':')
     map_entry = shadow.ShadowMapEntry()
     map_entry.name = nss_entry[0]
@@ -126,6 +126,7 @@ def GetShadowMap():
 def _SpawnGetent(map_name):
   """Run 'getent map' in a subprocess for reading NSS data."""
   getent = subprocess.Popen([GETENT, map_name],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
 
   return getent

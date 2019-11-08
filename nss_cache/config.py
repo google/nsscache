@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Configuration classes for nss_cache module.
 
 These classes perform command line and file-based configuration
@@ -22,10 +21,9 @@ loading and parsing for the nss_cache module.
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
 
-import ConfigParser
+from configparser import ConfigParser
 import logging
 import re
-
 
 # known nss map types.
 MAP_PASSWORD = 'passwd'
@@ -140,7 +138,7 @@ def LoadConfig(configuration):
   Raises:
     error.NoConfigFound: no configuration file was found
   """
-  parser = ConfigParser.ConfigParser()
+  parser = ConfigParser()
 
   # load config file
   configuration.log.debug('Attempting to parse configuration file: %s',
@@ -154,8 +152,8 @@ def LoadConfig(configuration):
 
   # this is also required, but global only
   # TODO(v): make this default to /var/lib/nsscache before next release
-  configuration.timestamp_dir = FixValue(parser.get(default,
-                                                    Config.OPT_TIMESTAMP_DIR))
+  configuration.timestamp_dir = FixValue(
+      parser.get(default, Config.OPT_TIMESTAMP_DIR))
 
   # optional defaults
   if parser.has_option(default, Config.OPT_LOCKFILE):
@@ -246,8 +244,8 @@ def FixValue(value):
     fixed value
   """
   # Strip quotes if necessary.
-  if ((value.startswith('"') and value.endswith('"'))
-      or (value.startswith('\'') and value.endswith('\''))):
+  if ((value.startswith('"') and value.endswith('"')) or
+      (value.startswith('\'') and value.endswith('\''))):
     value = value[1:-1]
 
   # Convert to float if necessary.  Python converts between floats and ints
@@ -278,16 +276,16 @@ def ParseNSSwitchConf(nsswitch_filename):
     a dictionary keyed by map names and containing a list of sources
     for each map.
   """
-  nsswitch_file = open(nsswitch_filename, 'r')
+  with open(nsswitch_filename, 'r') as nsswitch_file:
 
-  nsswitch = {}
+    nsswitch = {}
 
-  map_re = re.compile('^([a-z]+): *(.*)$')
-  for line in nsswitch_file:
-    match = map_re.match(line)
-    if match:
-      sources = match.group(2).split()
-      nsswitch[match.group(1)] = sources
+    map_re = re.compile('^([a-z]+): *(.*)$')
+    for line in nsswitch_file:
+      match = map_re.match(line)
+      if match:
+        sources = match.group(2).split()
+        nsswitch[match.group(1)] = sources
 
   return nsswitch
 
@@ -321,8 +319,8 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
     if conf.options[configured_map].cache['name'] == 'files':
       nss_module_name = 'files'
       if ('cache_filename_suffix' in conf.options[configured_map].cache and
-          conf.options[configured_map].cache['cache_filename_suffix'] ==
-          'cache'):
+          conf.options[configured_map].cache['cache_filename_suffix'] == 'cache'
+         ):
         # We are configured for libnss-cache for this map.
         nss_module_name = 'cache'
     else:
@@ -330,8 +328,8 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
       nss_module_name = 'db'
 
     if nss_module_name not in nsswitch[configured_map]:
-      logging.warn(('nsscache is configured to build maps for %r, '
-                    'but NSS is not configured (in %r) to use it'),
-                   configured_map, nsswitch_filename)
+      logging.warning(('nsscache is configured to build maps for %r, '
+                       'but NSS is not configured (in %r) to use it'),
+                      configured_map, nsswitch_filename)
       warnings += 1
   return (warnings, errors)

@@ -1,4 +1,4 @@
-#!/usr/bin/python -E
+#!/usr/bin/python3
 #
 # Copyright 2007 Google Inc.
 #
@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Executable frontend to nss_cache."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -29,9 +28,9 @@ from nss_cache import app
 
 if __name__ == '__main__':
   nsscache_app = app.NssCacheApp()
-  start_time = time.clock()
+  start_time = time.process_time()
   return_value = nsscache_app.Run(sys.argv[1:], os.environ)
-  end_time = time.clock()
+  end_time = time.process_time()
   nsscache_app.log.info('Exiting nsscache with value %d runtime %f',
                         return_value, end_time - start_time)
   sys.exit(return_value)

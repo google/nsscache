@@ -39,7 +39,8 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
 
     for url in ['passwd_url', 'group_url', 'shadow_url']:
       configuration[url] = '{}?recurse&token={}&dc={}'.format(
-          configuration[url], configuration['token'], configuration['datacenter'])
+          configuration[url], configuration['token'],
+          configuration['datacenter'])
 
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
@@ -113,6 +114,7 @@ class ShadowUpdateGetter(httpsource.UpdateGetter):
     """Returns a new ShadowMap instance to have ShadowMapEntries added to it."""
     return shadow.ShadowMap()
 
+
 class ConsulMapParser(object):
   """A base class for parsing nss_files module cache."""
 
@@ -140,15 +142,15 @@ class ConsulMapParser(object):
       entry_piece = key[-1]
       entries[name][entry_piece] = value
 
-    for name, entry in entries.iteritems():
+    for name, entry in list(entries.items()):
       map_entry = self._ReadEntry(name, entry)
       if map_entry is None:
-        self.log.warn('Could not create entry from line %r in cache, skipping',
-                      entry)
+        self.log.warning(
+            'Could not create entry from line %r in cache, skipping', entry)
         continue
       if not data.Add(map_entry):
-        self.log.warn('Could not add entry %r read from line %r in cache',
-                      map_entry, entry)
+        self.log.warning('Could not add entry %r read from line %r in cache',
+                         map_entry, entry)
     return data
 
 
@@ -199,6 +201,7 @@ class ConsulGroupMapParser(ConsulMapParser):
     map_entry.members = members
     return map_entry
 
+
 class ConsulShadowMapParser(ConsulMapParser):
   """Class for parsing nss_files module shadow cache."""
 
@@ -209,6 +212,8 @@ class ConsulShadowMapParser(ConsulMapParser):
     # maps expect strict typing, so convert to int as appropriate.
     map_entry.name = name
     map_entry.passwd = entry.get('passwd', '*')
+    if isinstance(map_entry.passwd, bytes):
+      map_entry.passwd = map_entry.passwd.decode('ascii')
 
     for attr in ['lstchg', 'min', 'max', 'warn', 'inact', 'expire']:
       try:

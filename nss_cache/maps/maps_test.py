@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Unit test for base.py.
 
 Since these are abstract classes, the bulk of the functionality in base.py is
@@ -26,51 +25,46 @@ __author__ = ('jaq@google.com (Jamie Wilkinson)',
 import time
 import unittest
 
-
 from nss_cache.maps import maps
 
 
 class TestMap(unittest.TestCase):
   """Tests for the Map class."""
-  
+
   def testIsAbstract(self):
     """Creating a Map should raise a TypeError."""
     self.assertRaises(TypeError, maps.Map)
 
   def testModifyTimestamp(self):
+
     class StubMap(maps.Map):
       pass
 
     foo = StubMap()
     now = int(time.time())
     foo.SetModifyTimestamp(now)
-    self.assertEquals(now,
-                      foo.GetModifyTimestamp())
-    self.assertRaises(TypeError,
-                      foo.SetModifyTimestamp,
-                      1.1)
+    self.assertEqual(now, foo.GetModifyTimestamp())
+    self.assertRaises(TypeError, foo.SetModifyTimestamp, 1.1)
     foo.SetModifyTimestamp(None)
     self.assertEqual(None, foo.GetModifyTimestamp())
-    
+
   def testUpdateTimestamp(self):
+
     class StubMap(maps.Map):
       pass
 
     foo = StubMap()
     now = int(time.time())
     foo.SetUpdateTimestamp(now)
-    self.assertEquals(now,
-                      foo.GetUpdateTimestamp())
-    self.assertRaises(TypeError,
-                      foo.SetUpdateTimestamp,
-                      1.1)
+    self.assertEqual(now, foo.GetUpdateTimestamp())
+    self.assertRaises(TypeError, foo.SetUpdateTimestamp, 1.1)
     foo.SetUpdateTimestamp(None)
     self.assertEqual(None, foo.GetUpdateTimestamp())
 
 
 class TestMapEntry(unittest.TestCase):
   """Tests for the MapEntry class."""
-  
+
   def testIsAbstract(self):
     """Creating a MapEntry should raise a TypeError."""
     self.assertRaises(TypeError, maps.MapEntry)

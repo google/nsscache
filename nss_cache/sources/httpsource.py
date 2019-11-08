@@ -13,19 +13,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of an http data source for nsscache."""
 
 __author__ = ('blaedd@google.com (David MacKinnon',)
 
 import bz2
 import calendar
-import cStringIO
 import logging
 import os
 import pycurl
 import time
-import urlparse
+from urllib.parse import urljoin
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -82,27 +80,26 @@ class HttpFilesSource(source.Source):
 
   def _SetDefaults(self, configuration):
     """Set defaults if necessary."""
-    if not 'automount_base_url' in configuration:
+    if 'automount_base_url' not in configuration:
       configuration['automount_base_url'] = self.AUTOMOUNT_BASE_URL
-    if not 'passwd_url' in configuration:
+    if 'passwd_url' not in configuration:
       configuration['passwd_url'] = self.PASSWD_URL
-    if not 'shadow_url' in configuration:
+    if 'shadow_url' not in configuration:
       configuration['shadow_url'] = self.SHADOW_URL
-    if not 'group_url' in configuration:
+    if 'group_url' not in configuration:
       configuration['group_url'] = self.GROUP_URL
-    if not 'netgroup_url' in configuration:
+    if 'netgroup_url' not in configuration:
       configuration['netgroup_url'] = self.GROUP_URL
-    if not 'sshkey_url' in configuration:
+    if 'sshkey_url' not in configuration:
       configuration['sshkey_url'] = self.SSHKEY_URL
-    if not 'retry_delay' in configuration:
+    if 'retry_delay' not in configuration:
       configuration['retry_delay'] = self.RETRY_DELAY
-    if not 'retry_max' in configuration:
+    if 'retry_max' not in configuration:
       configuration['retry_max'] = self.RETRY_MAX
-    if not 'tls_cacertfile' in configuration:
+    if 'tls_cacertfile' not in configuration:
       configuration['tls_cacertfile'] = self.TLS_CACERTFILE
-    if not 'http_proxy' in configuration:
+    if 'http_proxy' not in configuration:
       configuration['http_proxy'] = None
-
 
   def GetPasswdMap(self, since=None):
     """Return the passwd map from this source.
@@ -126,8 +123,7 @@ class HttpFilesSource(source.Source):
     Returns:
       instance of shadow.ShadowMap
     """
-    return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'],
-                                           since)
+    return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'], since)
 
   def GetGroupMap(self, since=None):
     """Return the group map from this source.
@@ -140,7 +136,6 @@ class HttpFilesSource(source.Source):
       instance of group.GroupMap
     """
     return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'], since)
-
 
   def GetNetgroupMap(self, since=None):
     """Return the netgroup map from this source.
@@ -177,10 +172,8 @@ class HttpFilesSource(source.Source):
     if location is None:
       self.log.error('A location is required to retrieve an automount map!')
       raise error.EmptyMap
-    automount_url = urlparse.urljoin(self.conf['automount_base_url'],
-                                     location)
+    automount_url = urljoin(self.conf['automount_base_url'], location)
     return AutomountUpdateGetter().GetUpdates(self, automount_url, since)
-
 
   def GetAutomountMasterMap(self):
     """Return the autmount master map from this source.
@@ -193,7 +186,6 @@ class HttpFilesSource(source.Source):
       map_entry.location = os.path.split(map_entry.location)[1]
       self.log.debug('master map has: %s' % map_entry.location)
     return master_map
-
 
   def GetSshkeyMap(self, since=None):
     """Return the sshkey map from this source.
@@ -292,7 +284,7 @@ class UpdateGetter(object):
       for header in headers:
         if header.lower().startswith('last-modified'):
           self.log.debug('%s', header)
-          http_ts_string = header[header.find(':')+1:].strip()
+          http_ts_string = header[header.find(':') + 1:].strip()
           last_modified = self.FromHttpToTimestamp(http_ts_string)
           break
       else:
@@ -304,10 +296,10 @@ class UpdateGetter(object):
 
     # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
     try:
-      response = cStringIO.StringIO(bz2.decompress(body))
+      response = bz2.decompress(body)
       self.log.debug('bzip encoding found')
     except IOError:
-      response = cStringIO.StringIO(body)
+      response = body
 
     data_map = self.GetMap(cache_info=response)
     if http_ts_string:
@@ -380,6 +372,7 @@ class GroupUpdateGetter(UpdateGetter):
     """Returns a new GroupMap instance to have GroupMapEntries added to it."""
     return group.GroupMap()
 
+
 class NetgroupUpdateGetter(UpdateGetter):
   """Get netgroup updates."""
 
@@ -390,6 +383,7 @@ class NetgroupUpdateGetter(UpdateGetter):
   def CreateMap(self):
     """Returns a new NetgroupMap instance to have GroupMapEntries added to it."""
     return netgroup.NetgroupMap()
+
 
 class SshkeyUpdateGetter(UpdateGetter):
   """Get sshkey updates."""

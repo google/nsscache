@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 """Unit tests for nss_cache/caches/files.py."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
@@ -24,8 +23,7 @@ import shutil
 import tempfile
 import unittest
 import sys
-
-import mox
+from mox3 import mox
 
 from nss_cache import config
 from nss_cache.maps import automount
@@ -49,7 +47,7 @@ class TestFilesCache(mox.MoxTestBase):
 
   def testInstantiation(self):
     cache = files.FilesCache(self.config, config.MAP_PASSWORD)
-    self.failIfEqual(None, cache)
+    self.assertNotEqual(None, cache)
 
   def testWrite(self):
     cache = files.FilesPasswdMapHandler(self.config)
@@ -66,23 +64,21 @@ class TestFilesCache(mox.MoxTestBase):
     cache = files.FilesCache(new_config, config.MAP_PASSWORD)
 
     cache.CACHE_FILENAME = 'test'
-    self.assertEqual(os.path.join(self.workdir, 'test.blarg'),
-                     cache.GetCacheFilename())
+    self.assertEqual(
+        os.path.join(self.workdir, 'test.blarg'), cache.GetCacheFilename())
 
     cache.temp_cache_file = open(os.path.join(self.workdir, 'pre-commit'), 'w')
     cache.temp_cache_file.write('\n')
-    cache.temp_cache_filename = os.path.join(self.workdir,
-                                             'pre-commit')
+    cache.temp_cache_filename = os.path.join(self.workdir, 'pre-commit')
     cache._Commit()
-    expected_cache_filename = os.path.join(self.workdir,
-                                           'test.blarg')
-    self.failUnless(os.path.exists(expected_cache_filename))
+    expected_cache_filename = os.path.join(self.workdir, 'test.blarg')
+    self.assertTrue(os.path.exists(expected_cache_filename))
 
   def testWritePasswdEntry(self):
     """We correctly write a typical entry in /etc/passwd format."""
     cache = files.FilesPasswdMapHandler(self.config)
     file_mock = self.mox.CreateMock(sys.stdout)
-    file_mock.write('root:x:0:0:Rootsy:/root:/bin/bash\n')
+    file_mock.write(b'root:x:0:0:Rootsy:/root:/bin/bash\n')
 
     map_entry = passwd.PasswdMapEntry()
     map_entry.name = 'root'
@@ -101,7 +97,7 @@ class TestFilesCache(mox.MoxTestBase):
     """We correctly write a typical entry in /etc/group format."""
     cache = files.FilesGroupMapHandler(self.config)
     file_mock = self.mox.CreateMock(sys.stdout)
-    file_mock.write('root:x:0:zero_cool,acid_burn\n')
+    file_mock.write(b'root:x:0:zero_cool,acid_burn\n')
 
     map_entry = group.GroupMapEntry()
     map_entry.name = 'root'
@@ -117,7 +113,7 @@ class TestFilesCache(mox.MoxTestBase):
     """We correctly write a typical entry in /etc/shadow format."""
     cache = files.FilesShadowMapHandler(self.config)
     file_mock = self.mox.CreateMock(sys.stdout)
-    file_mock.write('root:$1$zomgmd5support:::::::\n')
+    file_mock.write(b'root:$1$zomgmd5support:::::::\n')
 
     map_entry = shadow.ShadowMapEntry()
     map_entry.name = 'root'
@@ -173,14 +169,14 @@ class TestFilesCache(mox.MoxTestBase):
     # also tests GetMapLocation() because it uses it :)
     conf = {'dir': self.workdir, 'cache_filename_suffix': ''}
     cache = files.FilesAutomountMapHandler(conf)
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.master' % self.workdir)
 
     cache = files.FilesAutomountMapHandler(conf, automount_mountpoint='/home')
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.home' % self.workdir)
 
-    cache = files.FilesAutomountMapHandler(conf,
-                                           automount_mountpoint='/usr/meh')
-    self.assertEquals(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
+    cache = files.FilesAutomountMapHandler(
+        conf, automount_mountpoint='/usr/meh')
+    self.assertEqual(cache.GetMapLocation(), '%s/auto.usr_meh' % self.workdir)
 
   def testCacheFileDoesNotExist(self):
     """Make sure we just get an empty map rather than exception."""
@@ -192,29 +188,83 @@ class TestFilesCache(mox.MoxTestBase):
 
   def testIndexCreation(self):
     cache = files.FilesPasswdMapHandler(self.config)
-    entries = [passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
-               passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
-               passwd.PasswdMapEntry(dict(name='quux', uid=12, gid=11)),
-              ]
+    entries = [
+        passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+        passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+        passwd.PasswdMapEntry(dict(name='quux', uid=12, gid=11)),
+    ]
     pmap = passwd.PasswdMap(entries)
     cache.Write(pmap)
     cache.WriteIndex()
 
     index_filename = cache.GetCacheFilename() + '.ixname'
-    self.failUnless(os.path.exists(index_filename),
-                    'Index not created %s' % index_filename)
-    f = open(index_filename)
-    self.assertEqual('bar\x0015\x00\x00\n', f.readline())
-    self.assertEqual('foo\x000\x00\x00\x00\n', f.readline())
-    self.assertEqual('quux\x0030\x00\n', f.readline())
+    self.assertTrue(
+        os.path.exists(index_filename), 'Index not created %s' % index_filename)
+    with open(index_filename) as f:
+      self.assertEqual('bar\x0015\x00\x00\n', f.readline())
+      self.assertEqual('foo\x000\x00\x00\x00\n', f.readline())
+      self.assertEqual('quux\x0030\x00\n', f.readline())
 
     index_filename = cache.GetCacheFilename() + '.ixuid'
-    self.failUnless(os.path.exists(index_filename),
-                    'Index not created %s' % index_filename)
-    f = open(index_filename)
-    self.assertEqual('10\x000\x00\x00\n', f.readline())
-    self.assertEqual('11\x0015\x00\n', f.readline())
-    self.assertEqual('12\x0030\x00\n', f.readline())
+    self.assertTrue(
+        os.path.exists(index_filename), 'Index not created %s' % index_filename)
+    with open(index_filename) as f:
+      self.assertEqual('10\x000\x00\x00\n', f.readline())
+      self.assertEqual('11\x0015\x00\n', f.readline())
+      self.assertEqual('12\x0030\x00\n', f.readline())
+
+  def testWriteCacheAndIndex(self):
+    cache = files.FilesPasswdMapHandler(self.config)
+    entries = [
+        passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+        passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+    ]
+    pmap = passwd.PasswdMap(entries)
+    written = cache.Write(pmap)
+    cache.WriteIndex()
+
+    self.assertTrue('foo' in written)
+    self.assertTrue('bar' in written)
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    self.assertTrue(
+        os.path.exists(index_filename), 'Index not created %s' % index_filename)
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    self.assertTrue(
+        os.path.exists(index_filename), 'Index not created %s' % index_filename)
+
+    entries = [
+        passwd.PasswdMapEntry(dict(name='foo', uid=10, gid=10)),
+        passwd.PasswdMapEntry(dict(name='bar', uid=11, gid=11)),
+        passwd.PasswdMapEntry(dict(name='quux', uid=12, gid=11)),
+    ]
+    pmap = passwd.PasswdMap(entries)
+    written = cache.Write(pmap)
+    self.assertTrue('foo' in written)
+    self.assertTrue('bar' in written)
+    self.assertTrue('quux' in written)
+
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    with open(index_filename) as f:
+      self.assertEqual('bar\x0015\x00\n', f.readline())
+      self.assertEqual('foo\x000\x00\x00\n', f.readline())
+
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    with open(index_filename) as f:
+      self.assertEqual('10\x000\x00\x00\n', f.readline())
+      self.assertEqual('11\x0015\x00\n', f.readline())
+
+    cache.WriteIndex()
+    index_filename = cache.GetCacheFilename() + '.ixname'
+    with open(index_filename) as f:
+      self.assertEqual('bar\x0015\x00\x00\n', f.readline())
+      self.assertEqual('foo\x000\x00\x00\x00\n', f.readline())
+      self.assertEqual('quux\x0030\x00\n', f.readline())
+
+    index_filename = cache.GetCacheFilename() + '.ixuid'
+    with open(index_filename) as f:
+      self.assertEqual('10\x000\x00\x00\n', f.readline())
+      self.assertEqual('11\x0015\x00\n', f.readline())
+      self.assertEqual('12\x0030\x00\n', f.readline())
 
 
 if __name__ == '__main__':

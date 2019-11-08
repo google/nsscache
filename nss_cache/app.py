@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Main program body for nsscache.
 
 The nsscache program is the user interface to the nss_cache package,
@@ -34,7 +33,6 @@ import nss_cache
 from nss_cache import command
 from nss_cache import config
 from nss_cache import error
-
 
 # Hack to support python 2.3's logging module
 try:
@@ -77,7 +75,11 @@ class NssCacheApp(object):
     See the file README.style for logging policy set up here.
     """
     # default to syslog unless on a tty
-    if os.isatty(sys.stdin.fileno()):
+    try:
+      is_tty = os.isatty(sys.stdin.fileno())
+    except ValueError:
+      is_tty = False
+    if is_tty:
       format_str = ('%(levelname)-8s %(asctime)-15s '
                     '%(filename)s:%(lineno)d: '
                     '%(funcName)s: '
@@ -89,10 +91,10 @@ class NssCacheApp(object):
     else:
       facility = logging.handlers.SysLogHandler.LOG_DAEMON
       try:
-        handler = logging.handlers.SysLogHandler(address='/dev/log',
-                                                 facility=facility)
+        handler = logging.handlers.SysLogHandler(
+            address='/dev/log', facility=facility)
       except socket.error:
-        print '/dev/log could not be opened; falling back on stderr.'
+        print('/dev/log could not be opened; falling back on stderr.')
         # Omitting an argument to StreamHandler results in sys.stderr being
         # used.
         handler = logging.StreamHandler()
@@ -121,14 +123,14 @@ class NssCacheApp(object):
              '\n'
              'commands:\n')
     command_descriptions = []
-    for (name, cls) in command.__dict__.items():
+    for (name, cls) in list(command.__dict__.items()):
       # skip the command base object
       if name == 'Command':
         continue
       if hasattr(cls, 'Help'):
         short_help = cls().Help(short=True)
-        command_descriptions.append('  %-21s %.40s' % (name.lower(),
-                                                       short_help.lower()))
+        command_descriptions.append(
+            '  %-21s %.40s' % (name.lower(), short_help.lower()))
 
     usage += '\n'.join(command_descriptions)
     version_string = ('nsscache ' + nss_cache.__version__ + '\n'
@@ -147,15 +149,17 @@ class NssCacheApp(object):
     parser.disable_interspersed_args()
 
     # Add options.
-    parser.set_defaults(verbose=False,
-                        debug=False)
-    parser.add_option('-v', '--verbose', action='store_true',
-                      help='enable verbose output')
-    parser.add_option('-d', '--debug', action='store_true',
-                      help='enable debugging output')
-    parser.add_option('-c', '--config-file', type='string',
-                      help='read configuration from FILE',
-                      metavar='FILE')
+    parser.set_defaults(verbose=False, debug=False)
+    parser.add_option(
+        '-v', '--verbose', action='store_true', help='enable verbose output')
+    parser.add_option(
+        '-d', '--debug', action='store_true', help='enable debugging output')
+    parser.add_option(
+        '-c',
+        '--config-file',
+        type='string',
+        help='read configuration from FILE',
+        metavar='FILE')
 
     # filthy monkeypatch hack to remove the prepended 'usage: '
     # TODO(jaq): we really ought to subclass OptionParser instead...
@@ -188,7 +192,7 @@ class NssCacheApp(object):
     # Parse the commandline.
     try:
       (options, args) = self.parser.parse_args(args)
-    except SystemExit, e:
+    except SystemExit as e:
       # OptionParser objects raise SystemExit (error() calls exit()
       # calls sys.exit()) upon a parser error.
       # This can be handled better by overriding error or monkeypatching
@@ -207,13 +211,12 @@ class NssCacheApp(object):
     if options.config_file:
       conf.config_file = options.config_file
 
-    self.log.info('using nss_cache library, version %s',
-                  nss_cache.__version__)
+    self.log.info('using nss_cache library, version %s', nss_cache.__version__)
     self.log.debug('library path is %r', nss_cache.__file__)
 
     # Identify the command to dispatch.
     if not args:
-      print 'No command given'
+      print('No command given')
       self.parser.print_help()
       return os.EX_USAGE
     # print global help if command is 'help' with no argument
@@ -231,14 +234,14 @@ class NssCacheApp(object):
     try:
       command_callable = getattr(command, command_name.capitalize())
     except AttributeError:
-      self.log.warn('%s is not implemented', command_name)
-      print 'command %r is not implemented' % command_name
+      self.log.warning('%s is not implemented', command_name)
+      print(('command %r is not implemented' % command_name))
       self.parser.print_help()
       return os.EX_SOFTWARE
 
     try:
       retval = command_callable().Run(conf=conf, args=args)
-    except error.SourceUnavailable, e:
+    except error.SourceUnavailable as e:
       self.log.error('Problem with configured data source: %s', e)
       return os.EX_TEMPFAIL
 

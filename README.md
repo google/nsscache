@@ -25,3 +25,9 @@ Pair *nsscache* with https://github.com/google/libnss-cache to integrate the loc
 Mailing list: https://groups.google.com/forum/#!forum/nsscache-discuss
 
 Issue history is at https://code.google.com/p/nsscache/issues/list
+
+---
+
+# Contributions
+
+Please format your code with github.com/google/yapf (installable as `pip install yapf` or the `yapf3` package on Debian systems) before sending pull requests.

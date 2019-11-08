@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2018-11-01 "nsscache 0.37" "File formats"
+.TH NSSCACHE.CONF 5 2019-11-09 "nsscache 0.38" "File formats"
 .SH NAME
 nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -101,6 +101,12 @@ These options configure the behaviour of the
 source.
 
 .TP
+.B ldap_ad
+Set to 1 if connecting to Active Directory. If enabled, default Active Directory
+attributes will be used for mapping. Leave disabled if connecting to
+.I openldap.
+
+.TP
 .B ldap_uri
 The LDAP URI to connect to.
 
@@ -177,7 +183,19 @@ Set to 1 to enable STARTTLS. Leave absent to disable.
 
 .TP
 .B ldap_uidattr
-The uid-like attribute in your directory.  Defaults to uid.
+The uid-like attribute in your directory. Defaults to uid.
+
+.TP
+.B ldap_use_rid
+If enabled (set to 1) the relative identifier (RID) wll be used for mapping. 
+By default uidNumber and gidNumber will be mapped when connectin to OpenLdap.
+Leave disabled for default.
+It has no effect if the option \fBldap_ad\fP is enabled.
+
+.TP
+.B ldap_offset
+Default Offset option to map uidNumber and gidNumber to higher number.
+This can be useful to avoid conflict with already existing uidNumber and gidNumber.
 
 .TP
 .B ldap_uidregex
@@ -201,8 +219,15 @@ if this is set.
 
 .TP
 .B ldap_override_shell
-If specified, set every user's login shell to the given one.  May be
-useful on bastion hosts or to ensure uniformity.
+If specified, set every user's login shell to the given one. May be
+useful on bastion hosts or to ensure uniformity. Enable for
+Active Directory since the attribute (loginShell) is not default.
+
+.TP
+.B ldap_home_dir
+Set a home directory for all users in passwd. If enabled (set to 1),
+all users will have their home directory in
+.I /home.
 
 .TP
 .B ldap_rfc2307bis

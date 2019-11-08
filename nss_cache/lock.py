@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Lock management for nss_cache module."""
 
 __author__ = 'vasilios@google.com (Vasilios Hoffman)'
@@ -122,7 +121,7 @@ class PidFile(object):
       # Open the file and trap permission denied.
       try:
         self._Open()
-      except IOError, e:
+      except IOError as e:
         if e.errno == errno.EACCES:
           self.log.warning('Permission denied opening lock file: %s',
                            self.filename)
@@ -134,8 +133,8 @@ class PidFile(object):
     try:
       fcntl.lockf(self._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
       return_val = True
-    except IOError, e:
-      if e.errno == fcntl.F_GETSIG:
+    except IOError as e:
+      if e.errno in [errno.EACCES, errno.EAGAIN]:
         # Catch the error raised when the file is locked.
         if not force:
           self.log.debug('%s already locked!', self.filename)
@@ -174,8 +173,9 @@ class PidFile(object):
     pid_content = self._file.read()
     try:
       pid = int(pid_content.strip())
-    except (AttributeError, ValueError), e:
-      self.log.warning('Not sending TERM, could not parse pid file content: %r', pid_content)
+    except (AttributeError, ValueError) as e:
+      self.log.warning('Not sending TERM, could not parse pid file content: %r',
+                       pid_content)
       return
 
     self.log.debug('retrieved pid %d' % pid)
@@ -189,7 +189,7 @@ class PidFile(object):
     proc_path = '%s/%i/cmdline' % (self.PROC_DIR, pid)
     try:
       proc_file = open(proc_path, 'r')
-    except IOError, e:
+    except IOError as e:
       if e.errno == errno.ENOENT:
         self.log.debug('process does not exist, skipping signal.')
         return

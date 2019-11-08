@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """Factory for data source implementations."""
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
-
 
 _source_implementations = {}
 
@@ -49,22 +47,24 @@ def RegisterImplementation(source):
 
 
 # Discover all the known implementations of sources.
-from nss_cache.sources import httpsource
-from nss_cache.sources import ldapsource
-from nss_cache.sources import consulsource
-
-httpsource.RegisterImplementation(RegisterImplementation)
-ldapsource.RegisterImplementation(RegisterImplementation)
-consulsource.RegisterImplementation(RegisterImplementation)
-
-# Don't load the zsync source if zsync python module isn't there.
 try:
-  from nss_cache.sources import zsyncsource
-  zsyncsource.RegisterImplementation(RegisterImplementation)
+  from nss_cache.sources import httpsource
+  httpsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
   pass
 
-# Don't load the s3 source if boto3/botocore python modules aren't there.
+try:
+  from nss_cache.sources import ldapsource
+  ldapsource.RegisterImplementation(RegisterImplementation)
+except ImportError:
+  pass
+
+try:
+  from nss_cache.sources import consulsource
+  consulsource.RegisterImplementation(RegisterImplementation)
+except ImportError:
+  pass
+
 try:
   from nss_cache.sources import s3source
   s3source.RegisterImplementation(RegisterImplementation)
@@ -91,7 +91,7 @@ def Create(conf):
 
   source_name = conf['name']
 
-  if source_name not in _source_implementations.keys():
+  if source_name not in list(_source_implementations.keys()):
     raise RuntimeError('source not implemented: %r' % (source_name,))
 
   return _source_implementations[source_name](conf)

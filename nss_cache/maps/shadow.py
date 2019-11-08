@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of a shadow map for nsscache.
 
 ShadowMap:  An implementation of NSS shadow maps based on the Map
@@ -37,7 +36,7 @@ class ShadowMap(maps.Map):
   def __init__(self, iterable=None):
     """Construct a ShadowMap object using optional iterable."""
     super(ShadowMap, self).__init__(iterable)
-    
+
   def Add(self, entry):
     """Add a new object, verify it is a ShadowMapEntry object."""
     if not isinstance(entry, ShadowMapEntry):
@@ -50,9 +49,9 @@ class ShadowMapEntry(maps.MapEntry):
   __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
                'expire', 'flag')
   _KEY = 'name'
-  _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
-            'expire', 'flag')
-  
+  _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact', 'expire',
+            'flag')
+
   def __init__(self, data=None):
     """Construct a ShadowMapEntry, setting reasonable defaults."""
     self.name = None
@@ -66,6 +65,7 @@ class ShadowMapEntry(maps.MapEntry):
     self.flag = None
 
     super(ShadowMapEntry, self).__init__(data)
-    
+
     # Seed data with defaults if needed
-    if self.passwd is None: self.passwd = '!!'
+    if self.passwd is None:
+      self.passwd = '!!'

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """An implementation of a passwd map for nsscache.
 
 PasswdMap:  An implementation of NSS passwd maps based on the Map
@@ -57,7 +56,7 @@ class PasswdMapEntry(maps.MapEntry):
   __slots__ = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
   _KEY = 'name'
   _ATTRS = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
-  
+
   def __init__(self, data=None):
     """Construct a PasswdMapEntry, setting reasonable defaults."""
     self.name = None
@@ -71,7 +70,11 @@ class PasswdMapEntry(maps.MapEntry):
     super(PasswdMapEntry, self).__init__(data)
 
     # Seed data with defaults if still empty
-    if self.passwd is None: self.passwd = 'x'
-    if self.gecos is None: self.gecos = ''
-    if self.dir is None: self.dir = ''
-    if self.shell is None: self.shell = ''
+    if self.passwd is None:
+      self.passwd = 'x'
+    if self.gecos is None:
+      self.gecos = ''
+    if self.dir is None:
+      self.dir = ''
+    if self.shell is None:
+      self.shell = ''
