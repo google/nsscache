@@ -1,22 +1,30 @@
 language: python
 
 install:
- - travis_retry sudo apt-get update -qq
- - travis_retry sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
- - pip install .
- - travis_retry pip install -r requirements.txt
- - pip install yapf
+  - travis_retry sudo apt-get update -qq
+  - travis_retry sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
+  - pip install .
+  - travis_retry pip install -r requirements.txt
+  - pip install yapf
+
+addons:
+  hosts:
+    - local.domain
 
 script:
- - PYTHONTRACEMALLOC=1 python runtests.py -vvv
- - python setup.py install --root=/tmp/nsscache
- #- yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
+  - PYTHONTRACEMALLOC=1 python3 runtests.py -vvv
+  - python3 setup.py install --root=/tmp/nsscache
+  #- yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
+  - sudo /bin/sh -c tests/samba.sh
+  - sudo -E $(which python3) $(which nsscache) -c tests/nsscache.conf --debug verify
+  - sudo -E $(which python3) $(which nsscache) -c tests/nsscache.conf --debug update --full
 
 python:
- - "3.7"
- - "3.8"
- - "nightly"
+  - "3.7"
+  - "3.8"
+  - "nightly"
+
 matrix:
- fast_finish: true
- allow_failures:
-  - python: nightly
+  fast_finish: true
+  allow_failures:
+   - python: nightly
