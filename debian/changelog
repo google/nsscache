@@ -1,3 +1,10 @@
+nsscache (0.38-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+    * Python3!  Closes: #937164
+
+ - Jamie Wilkinson <jaq@debian.org>  Sat, 09 Nov 2019 02:55:10 +1100
+
 nsscache (0.37-1) unstable; urgency=medium
 
   * New upstream release. 
