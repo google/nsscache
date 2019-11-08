@@ -10,8 +10,8 @@ Vcs-Git: https://github.com/google/nsscache.git -b debian
 
 Package: nsscache
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python3-pycurl, python3-ldap
-Provides: ${python:Provides}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, python3-pycurl, python3-ldap
+Provides: ${python3:Provides}
 Recommends: libnss-cache | libnss-db
 Description: asynchronously synchronise local NSS databases with remote directory services
  Synchronises local NSS caches, such as those served by the
