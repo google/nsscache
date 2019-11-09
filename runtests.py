@@ -1,4 +1,4 @@
-#!/usr/bin/python -B
+#!/usr/bin/python3
 #
 # Copyright 2007 Google Inc.
 #
@@ -49,10 +49,7 @@ from nss_cache.sources.source_factory_test import *
 from nss_cache.sources.consulsource_test import *
 from nss_cache.sources.httpsource_test import *
 from nss_cache.sources.ldapsource_test import *
-try:
-  from nss_cache.sources.s3source_test import *
-except ImportError:
-  pass
+from nss_cache.sources.s3source_test import *
 
 from nss_cache.update.updater_test import *
 from nss_cache.update.map_updater_test import *
