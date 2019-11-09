@@ -140,34 +140,6 @@ class TestNssCacheApp(unittest.TestCase):
 #     self.assertTrue(output.getvalue().find('enable debugging') >= 0,
 #                     msg='Bad argument failed to output expected help text')
 
-# TODO(jaq):  test terminal logging (syslog versus stdout)
-
-# TODO(jaq): these two tests fail because logging is being imported at the
-# top of this file before nss_cache.app and thus the logger class is not
-# set correctly
-# def testDebug2LoggingLevel(self):
-#   class test_handler(logging.Handler):
-#     def __init__(self):
-#       logging.Handler.__init__(self)
-#       #self.setLevel(logging.DEBUG)
-#       self.levels = []
-
-#     def emit(self, record):
-#       print record
-#       self.levels.append(record.levelno)
-#       print self.levels
-
-#   handler = test_handler()
-#   a = app.NssCacheApp()
-#   print "log:", a.log
-#   a.log.addHandler(handler)
-#   a.log.debug2('logged at level debug2')
-#   print handler.levels
-#   self.failUnless(5 in handler.levels)
-
-# def testVerboseLoggingLevel(self):
-#   a = app.NssCacheApp()
-#   a.log.verbose('logged at level verbose')
 
 if __name__ == '__main__':
     unittest.main()
