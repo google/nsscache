@@ -1,27 +1,17 @@
-version: 2
+version: 2.0
 jobs:
   build:
-    branches:
-      only:
-        - CircleCi
+    working_directory: ~/nsscache
     docker:
-      - image: circleci/python:3.7-buster
-      - image: circleci/python:3.8-buster
-    #machine:
-    #  image: ubuntu-1604:201903-01
+      - image: circleci/python:3.7
     steps:
       - checkout
-      - run:
-          command: |
-            sudo apt-get update -qq
-            sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
-            pip install . --user
-            pip install -r requirements.txt --user
-            pip install yapf --user
-      - run:
-          name: Running tests
-          command: |
-            #sudo bash tests/samba.sh
-            python3 runtests.py -vvv
-            python3 setup.py install --root=/tmp/nsscache
-            #yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
+      - run: sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
+      - run: sudo pip install pipenv
+      - run: pipenv install
+      - run: pipenv run python runtests.py -vvv
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: tr1
