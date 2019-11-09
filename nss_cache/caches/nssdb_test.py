@@ -112,6 +112,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     def testNssDbPasswdHandlerWrite(self):
         ent = 'foo:x:1000:1000:foo:/:/bin/sh'
 
+        # pytest makes sys.stdin something different?
         makedb_stdin = self.mox.CreateMock(sys.stdin)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
