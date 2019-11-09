@@ -4,4 +4,5 @@ Depends: @,
 	slapd,
 	ldap-utils,
 	libnss-db,
-	db-util
+	db-util,
+	python3-bsddb3
