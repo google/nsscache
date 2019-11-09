@@ -78,10 +78,9 @@ class TestCommand(mox.MoxTestBase):
         mock_lock.Lock(force=True).AndReturn('LOCK')
         mock_lock.Locked().AndReturn(True)
         mock_lock.Unlock()
-
         self.mox.ReplayAll()
-        c = command.Command()
 
+        c = command.Command()
         self.assertEqual('LOCK', c._Lock(force=True))
 
     def testUnlock(self):
