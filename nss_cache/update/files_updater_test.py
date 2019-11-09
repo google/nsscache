@@ -52,8 +52,8 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
         shutil.rmtree(self.workdir2)
 
     def testFullUpdate(self):
-        original_modify_stamp = time.gmtime(1)
-        new_modify_stamp = time.gmtime(2)
+        original_modify_stamp = 1
+        new_modify_stamp = 2
 
         # Construct a fake source.
         def GetFile(map_name, dst_file, current_file, location):
@@ -102,8 +102,8 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 
     def testFullUpdateOnEmptyCache(self):
         """A full update as above, but the initial cache is empty."""
-        original_modify_stamp = time.gmtime(1)
-        new_modify_stamp = time.gmtime(2)
+        original_modify_stamp = 1
+        new_modify_stamp = 2
         # Construct an updater
         self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
                                                     self.workdir, {
@@ -140,8 +140,8 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
 
     def testFullUpdateOnEmptySource(self):
         """A full update as above, but instead, the initial source is empty."""
-        original_modify_stamp = time.gmtime(1)
-        new_modify_stamp = time.gmtime(2)
+        original_modify_stamp = 1
+        new_modify_stamp = 2
         # Construct an updater
         self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
                                                     self.workdir, {
