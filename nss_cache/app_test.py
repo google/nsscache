@@ -119,55 +119,18 @@ class TestNssCacheApp(unittest.TestCase):
         self.assertTrue(
             stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
 
+    @unittest.skip('cant pass unless theres a valid config')
+    def testRunBadArgsPrintsGlobalHelp(self):
+        # trap stdout into a StringIO
+        stdout_buffer = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = stdout_buffer
+        # verify bad arguments calls help
+        return_code = app.NssCacheApp().Run(['blarg'], {})
+        sys.stdout = old_stdout
+        assert return_code == 1
+        assert stdout_buffer.getvalue().find('enable debugging') >= 0
 
-# TODO(jaq): app.Run() invocation of command_callable is tested by inspection
-# only.
-
-# TODO(jaq): increase betteriness of this test
-#   def testRunBadArgsPrintsGlobalHelp(self):
-#     # verify bad arguments calls help
-#     # This will fail when run under 'nosetests -s' because nose will
-#     # also intercept sys.stdout :(  (Recommend refactoring NssCacheApp
-#     # to take in an output stream for help and usage?
-#     output = cStringIO.StringIO()
-#     stdout = sys.stdout
-#     sys.stdout = output
-
-#     return_code = app.NssCacheApp().Run(['blarg'])
-#     sys.stdout = stdout
-
-#     self.assertEquals(return_code, 1, msg='invalid return code')
-#     self.assertTrue(output.getvalue().find('enable debugging') >= 0,
-#                     msg='Bad argument failed to output expected help text')
-
-# TODO(jaq):  test terminal logging (syslog versus stdout)
-
-# TODO(jaq): these two tests fail because logging is being imported at the
-# top of this file before nss_cache.app and thus the logger class is not
-# set correctly
-# def testDebug2LoggingLevel(self):
-#   class test_handler(logging.Handler):
-#     def __init__(self):
-#       logging.Handler.__init__(self)
-#       #self.setLevel(logging.DEBUG)
-#       self.levels = []
-
-#     def emit(self, record):
-#       print record
-#       self.levels.append(record.levelno)
-#       print self.levels
-
-#   handler = test_handler()
-#   a = app.NssCacheApp()
-#   print "log:", a.log
-#   a.log.addHandler(handler)
-#   a.log.debug2('logged at level debug2')
-#   print handler.levels
-#   self.failUnless(5 in handler.levels)
-
-# def testVerboseLoggingLevel(self):
-#   a = app.NssCacheApp()
-#   a.log.verbose('logged at level verbose')
 
 if __name__ == '__main__':
     unittest.main()

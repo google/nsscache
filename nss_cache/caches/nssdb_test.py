@@ -17,6 +17,7 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
+import io
 import logging
 import os.path
 import select
@@ -84,7 +85,7 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     def testNssDbPasswdHandlerWriteData(self):
         entry_string = 'foo:x:1000:1000:foo:/:/bin/sh'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % entry_string).encode('ascii'))
         makedb_stdin.write(('=1000 %s\n' % entry_string).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % entry_string).encode('ascii'))
@@ -112,13 +113,13 @@ class TestNssDbPasswdHandler(mox.MoxTestBase):
     def testNssDbPasswdHandlerWrite(self):
         ent = 'foo:x:1000:1000:foo:/:/bin/sh'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
         makedb_stdin.close()
 
-        makedb_stdout = self.mox.CreateMock(sys.stdout)
+        makedb_stdout = self.mox.CreateMock(io.BytesIO)
         makedb_stdout.read(-1).AndReturn('')
         makedb_stdout.close()
 
@@ -263,7 +264,7 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     def testNssDbGroupHandlerWriteData(self):
         ent = 'foo:x:1000:bar'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
@@ -289,13 +290,13 @@ class TestNssDbGroupHandler(mox.MoxTestBase):
     def testNssDbGroupHandlerWrite(self):
         ent = 'foo:x:1000:bar'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('=1000 %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
         makedb_stdin.close()
 
-        makedb_stdout = self.mox.CreateMock(sys.stdout)
+        makedb_stdout = self.mox.CreateMock(io.BytesIO)
         makedb_stdout.read(-1).AndReturn('')
         makedb_stdout.close()
 
@@ -417,7 +418,7 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     def testNssDbShadowHandlerWriteData(self):
         ent = 'foo:!!:::::::0'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
 
@@ -439,12 +440,12 @@ class TestNssDbShadowHandler(mox.MoxTestBase):
     def testNssDbShadowHandlerWrite(self):
         ent = 'foo:*:::::::0'
 
-        makedb_stdin = self.mox.CreateMock(sys.stdin)
+        makedb_stdin = self.mox.CreateMock(io.BytesIO)
         makedb_stdin.write(('.foo %s\n' % ent).encode('ascii'))
         makedb_stdin.write(('00 %s\n' % ent).encode('ascii'))
         makedb_stdin.close()
 
-        makedb_stdout = self.mox.CreateMock(sys.stdout)
+        makedb_stdout = self.mox.CreateMock(io.BytesIO)
         makedb_stdout.read(-1).AndReturn('')
         makedb_stdout.close()
 
