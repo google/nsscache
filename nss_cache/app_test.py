@@ -119,26 +119,17 @@ class TestNssCacheApp(unittest.TestCase):
         self.assertTrue(
             stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
 
-
-# TODO(jaq): app.Run() invocation of command_callable is tested by inspection
-# only.
-
-# TODO(jaq): increase betteriness of this test
-#   def testRunBadArgsPrintsGlobalHelp(self):
-#     # verify bad arguments calls help
-#     # This will fail when run under 'nosetests -s' because nose will
-#     # also intercept sys.stdout :(  (Recommend refactoring NssCacheApp
-#     # to take in an output stream for help and usage?
-#     output = cStringIO.StringIO()
-#     stdout = sys.stdout
-#     sys.stdout = output
-
-#     return_code = app.NssCacheApp().Run(['blarg'])
-#     sys.stdout = stdout
-
-#     self.assertEquals(return_code, 1, msg='invalid return code')
-#     self.assertTrue(output.getvalue().find('enable debugging') >= 0,
-#                     msg='Bad argument failed to output expected help text')
+    @unittest.skip('cant pass unless theres a valid config')
+    def testRunBadArgsPrintsGlobalHelp(self):
+        # trap stdout into a StringIO
+        stdout_buffer = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = stdout_buffer
+        # verify bad arguments calls help
+        return_code = app.NssCacheApp().Run(['blarg'], {})
+        sys.stdout = old_stdout
+        assert return_code == 1
+        assert stdout_buffer.getvalue().find('enable debugging') >= 0
 
 
 if __name__ == '__main__':
