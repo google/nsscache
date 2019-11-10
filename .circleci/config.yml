@@ -6,11 +6,6 @@ jobs:
     executor:
       name: "python/default"
       tag: "3.7"
-    #working_directory: ~/nsscache
-    # docker:
-    #   - image: circleci/python:3.7
-    #     environment:
-    #       PIPENV_VENV_IN_PROJECT: true
     steps:
       - checkout
       # Install C libraries before pip install.
@@ -18,22 +13,6 @@ jobs:
       - python/load-cache
       - python/install-deps
       - python/save-cache
-      
-      # - run: sudo chown -R circleci:circleci /usr/local/bin
-      # - run: sudo chown -R circleci:circleci /usr/local/lib/python3.7/site-packages
-      # - restore_cache:
-      # # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-      #     key: deps9-{{ .Branch }}-{{ checksum "requirements.txt" }}
-      # - run:
-      #     command: |
-      #       sudo pip install pipenv
-      #       pipenv install
-      # - save_cache: # cache Python dependencies using checksum of Pipfile as the cache-key
-      #     key: deps9-{{ .Branch }}-{{ checksum "requirements-txt" }}
-      #     paths:
-      #       - ".venv"
-      #       - "/usr/local/bin"
-      #       - "/usr/local/lib/python3.7/site-packages"
       - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache --cov-report html"
       - run: |
           pip install --user python-coveralls
