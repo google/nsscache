@@ -44,7 +44,12 @@ class S3FilesSource(source.Source):
         """
         super(S3FilesSource, self).__init__(conf)
         self._SetDefaults(conf)
-        self.s3_client = boto3.client('s3')
+        self.s3_client = None
+
+    def _GetClient(self):
+        if self.s3_client is None:
+            self.s3_client = boto3.client('s3')
+        return self.s3_client
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
@@ -68,7 +73,7 @@ class S3FilesSource(source.Source):
         Returns:
           instance of passwd.PasswdMap
         """
-        return PasswdUpdateGetter().GetUpdates(self.s3_client,
+        return PasswdUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
                                                self.conf['passwd_object'],
                                                since)
@@ -83,7 +88,7 @@ class S3FilesSource(source.Source):
         Returns:
           instance of group.GroupMap
         """
-        return GroupUpdateGetter().GetUpdates(self.s3_client,
+        return GroupUpdateGetter().GetUpdates(self._GetClient(),
                                               self.conf['bucket'],
                                               self.conf['group_object'], since)
 
@@ -97,7 +102,7 @@ class S3FilesSource(source.Source):
         Returns:
           instance of shadow.ShadowMap
         """
-        return ShadowUpdateGetter().GetUpdates(self.s3_client,
+        return ShadowUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
                                                self.conf['shadow_object'],
                                                since)
