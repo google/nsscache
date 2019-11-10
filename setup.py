@@ -49,7 +49,7 @@ as LDAP.""",
     data_files=[('/etc', ['nsscache.conf'])],
     python_requires='~=3.4',
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'mox3', 'pytest-cov'],
+    tests_require=['pytest', 'mox3', 'pytest-cov', 'python-coveralls'],
     extras_require={
         'bdb': ['bsddb3'],
         'ldap': ['python3-ldap', 'python-ldap'],
