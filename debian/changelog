@@ -1,3 +1,9 @@
+nsscache (0.37-1) unstable; urgency=medium
+
+  * New upstream release. 
+
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 01 Nov 2018 05:29:02 +1100
+
 nsscache (0.36-1) unstable; urgency=medium
 
   * New upstream release. 
