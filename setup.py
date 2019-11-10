@@ -52,7 +52,7 @@ as LDAP.""",
     tests_require=['pytest', 'mox3'],
     extras_require={
         'bdb': ['bsddb3'],
-        'ldap': ['python-ldap'],
+        'ldap': ['python3-ldap', 'python-ldap'],
         'http': ['pycurl'],
         's3': ['boto3'],
         'consul': ['pycurl'],

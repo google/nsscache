@@ -8,6 +8,7 @@ debian/nsscache.substvars
 debian/nsscache
 debian/patches
 dist
+__pycache__/
 .pc
 *.pyc
 *.dsc
