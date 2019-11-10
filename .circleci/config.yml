@@ -4,6 +4,7 @@ orbs:
 jobs:
   build:
     executor: python/default
+      tag: 3.7
     #working_directory: ~/nsscache
     # docker:
     #   - image: circleci/python:3.7
