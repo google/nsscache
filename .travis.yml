@@ -5,14 +5,14 @@ install:
   - travis_retry sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
   - pip install .
   - travis_retry pip install -r requirements.txt
-  - pip install yapf
+  #- pip install yapf
 
 addons:
   hosts:
     - local.domain
 
 script:
-  - PYTHONTRACEMALLOC=1 python3 runtests.py -vvv
+  - PYTHONTRACEMALLOC=1 python3 setup.py test
   - python3 setup.py install --root=/tmp/nsscache
   #- yapf --diff --recursive . | tee /dev/tty | wc -l | xargs test 0 -eq || echo "Please format your code (with `yapf`)"
   - sudo /bin/sh -c tests/samba.sh
