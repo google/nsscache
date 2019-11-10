@@ -23,24 +23,24 @@ from nss_cache.sources import source
 
 
 class TestSource(unittest.TestCase):
-  """Unit tests for the Source class."""
+    """Unit tests for the Source class."""
 
-  def testCreateNoConfig(self):
+    def testCreateNoConfig(self):
 
-    config = []
+        config = []
 
-    self.assertRaises(RuntimeError, source.Source, config)
+        self.assertRaises(RuntimeError, source.Source, config)
 
-    self.assertRaises(RuntimeError, source.Source, None)
+        self.assertRaises(RuntimeError, source.Source, None)
 
-    config = 'foo'
+        config = 'foo'
 
-    self.assertRaises(RuntimeError, source.Source, config)
+        self.assertRaises(RuntimeError, source.Source, config)
 
-  def testVerify(self):
-    s = source.Source({})
-    self.assertRaises(NotImplementedError, s.Verify)
+    def testVerify(self):
+        s = source.Source({})
+        self.assertRaises(NotImplementedError, s.Verify)
 
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

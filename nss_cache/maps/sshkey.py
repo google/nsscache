@@ -27,42 +27,42 @@ from nss_cache.maps import maps
 
 
 class SshkeyMap(maps.Map):
-  """This class represents an NSS sshkey map.
+    """This class represents an NSS sshkey map.
 
-  Map data is stored as a list of MapEntry objects, see the abstract
-  class Map.
-  """
-
-  def Add(self, entry):
-    """Add a new object, verify it is a SshkeyMapEntry instance.
-
-    Args:
-      entry: A SshkeyMapEntry instance.
-
-    Returns:
-      True if added successfully, False otherwise.
-
-    Raises:
-      TypeError: The argument is of the wrong type.
+    Map data is stored as a list of MapEntry objects, see the abstract
+    class Map.
     """
-    if not isinstance(entry, SshkeyMapEntry):
-      raise TypeError
-    return super(SshkeyMap, self).Add(entry)
+
+    def Add(self, entry):
+        """Add a new object, verify it is a SshkeyMapEntry instance.
+
+        Args:
+          entry: A SshkeyMapEntry instance.
+
+        Returns:
+          True if added successfully, False otherwise.
+
+        Raises:
+          TypeError: The argument is of the wrong type.
+        """
+        if not isinstance(entry, SshkeyMapEntry):
+            raise TypeError
+        return super(SshkeyMap, self).Add(entry)
 
 
 class SshkeyMapEntry(maps.MapEntry):
-  """This class represents NSS sshkey map entries."""
-  # Using slots saves us over 2x memory on large maps.
-  __slots__ = ('name', 'sshkey')
-  _KEY = 'name'
-  _ATTRS = ('name', 'sshkey')
+    """This class represents NSS sshkey map entries."""
+    # Using slots saves us over 2x memory on large maps.
+    __slots__ = ('name', 'sshkey')
+    _KEY = 'name'
+    _ATTRS = ('name', 'sshkey')
 
-  def __init__(self, data=None):
-    """Construct a SshkeyMapEntry, setting reasonable defaults."""
-    self.name = None
-    self.sshkey = None
+    def __init__(self, data=None):
+        """Construct a SshkeyMapEntry, setting reasonable defaults."""
+        self.name = None
+        self.sshkey = None
 
-    super(SshkeyMapEntry, self).__init__(data)
-    # Seed data with defaults if still empty
-    if self.sshkey is None:
-      self.sshkey = ''
+        super(SshkeyMapEntry, self).__init__(data)
+        # Seed data with defaults if still empty
+        if self.sshkey is None:
+            self.sshkey = ''

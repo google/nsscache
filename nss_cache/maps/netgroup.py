@@ -42,43 +42,43 @@ from nss_cache.maps import maps
 
 
 class NetgroupMap(maps.Map):
-  """This class represents an NSS netgroup map.
-  
-  Map data is stored as a list of MapEntry objects, see the abstract
-  class Map.
-  """
+    """This class represents an NSS netgroup map.
 
-  def __init__(self, iterable=None):
-    """Construct a NetgroupMap object using optional iterable."""
-    super(NetgroupMap, self).__init__(iterable)
+    Map data is stored as a list of MapEntry objects, see the abstract
+    class Map.
+    """
 
-  def Add(self, entry):
-    """Add a new object, verify it is a NetgroupMapEntry object."""
-    if not isinstance(entry, NetgroupMapEntry):
-      raise TypeError
-    return super(NetgroupMap, self).Add(entry)
+    def __init__(self, iterable=None):
+        """Construct a NetgroupMap object using optional iterable."""
+        super(NetgroupMap, self).__init__(iterable)
+
+    def Add(self, entry):
+        """Add a new object, verify it is a NetgroupMapEntry object."""
+        if not isinstance(entry, NetgroupMapEntry):
+            raise TypeError
+        return super(NetgroupMap, self).Add(entry)
 
 
 class NetgroupMapEntry(maps.MapEntry):
-  """This class represents NSS netgroup map entries.
+    """This class represents NSS netgroup map entries.
 
-  The entries attribute is a list containing an arbitray mix of either
-  strings which are netgroup names, or tuples mapping to (host, user,
-  domain) as per the definition of netgroups.  A None item in the
-  tuple is the equivalent of a null pointer from getnetgrent(),
-  specifically a wildcard.
-  """
-  __slots__ = ('name', 'entries')
-  _KEY = 'name'
-  _ATTRS = ('name', 'entries')
+    The entries attribute is a list containing an arbitray mix of either
+    strings which are netgroup names, or tuples mapping to (host, user,
+    domain) as per the definition of netgroups.  A None item in the
+    tuple is the equivalent of a null pointer from getnetgrent(),
+    specifically a wildcard.
+    """
+    __slots__ = ('name', 'entries')
+    _KEY = 'name'
+    _ATTRS = ('name', 'entries')
 
-  def __init__(self, data=None):
-    """Construct a NetgroupMapEntry."""
-    self.name = None
-    self.entries = None
+    def __init__(self, data=None):
+        """Construct a NetgroupMapEntry."""
+        self.name = None
+        self.entries = None
 
-    super(NetgroupMapEntry, self).__init__(data)
+        super(NetgroupMapEntry, self).__init__(data)
 
-    # Seed data with defaults if needed
-    if self.entries is None:
-      self.entries = ''
+        # Seed data with defaults if needed
+        if self.entries is None:
+            self.entries = ''

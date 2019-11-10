@@ -30,67 +30,67 @@ from nss_cache.caches import caches
 
 class FakeCacheCls(caches.Cache):
 
-  CACHE_FILENAME = 'shadow'
+    CACHE_FILENAME = 'shadow'
 
-  def __init__(self, config, map_name):
-    super(FakeCacheCls, self).__init__(config, map_name)
+    def __init__(self, config, map_name):
+        super(FakeCacheCls, self).__init__(config, map_name)
 
-  def Write(self, map_data):
-    return 0
+    def Write(self, map_data):
+        return 0
 
-  def GetCacheFilename(self):
-    return os.path.join(self.output_dir, self.CACHE_FILENAME + '.test')
+    def GetCacheFilename(self):
+        return os.path.join(self.output_dir, self.CACHE_FILENAME + '.test')
 
 
 class TestCls(mox.MoxTestBase):
 
-  def setUp(self):
-    self.workdir = tempfile.mkdtemp()
-    self.config = {'dir': self.workdir}
-    if platform.system() == 'FreeBSD':
-      # FreeBSD doesn't have a shadow file
-      self.shadow = config.MAP_PASSWORD
-    else:
-      self.shadow = config.MAP_SHADOW
+    def setUp(self):
+        self.workdir = tempfile.mkdtemp()
+        self.config = {'dir': self.workdir}
+        if platform.system() == 'FreeBSD':
+            # FreeBSD doesn't have a shadow file
+            self.shadow = config.MAP_PASSWORD
+        else:
+            self.shadow = config.MAP_SHADOW
 
-  def tearDown(self):
-    os.rmdir(self.workdir)
+    def tearDown(self):
+        os.rmdir(self.workdir)
 
-  def testCopyOwnerMissing(self):
-    expected = os.stat(os.path.join('/etc', self.shadow))
-    expected = stat.S_IMODE(expected.st_mode)
-    cache = FakeCacheCls(config=self.config, map_name=self.shadow)
-    cache._Begin()
-    cache._Commit()
-    data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
-    self.assertEqual(expected, stat.S_IMODE(data.st_mode))
-    os.unlink(cache.GetCacheFilename())
+    def testCopyOwnerMissing(self):
+        expected = os.stat(os.path.join('/etc', self.shadow))
+        expected = stat.S_IMODE(expected.st_mode)
+        cache = FakeCacheCls(config=self.config, map_name=self.shadow)
+        cache._Begin()
+        cache._Commit()
+        data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
+        self.assertEqual(expected, stat.S_IMODE(data.st_mode))
+        os.unlink(cache.GetCacheFilename())
 
-  def testCopyOwnerPresent(self):
-    expected = os.stat(os.path.join('/etc/', self.shadow))
-    expected = stat.S_IMODE(expected.st_mode)
-    cache = FakeCacheCls(config=self.config, map_name=self.shadow)
-    cache._Begin()
-    cache._Commit()
-    data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
-    self.assertEqual(expected, stat.S_IMODE(data.st_mode))
-    os.unlink(cache.GetCacheFilename())
+    def testCopyOwnerPresent(self):
+        expected = os.stat(os.path.join('/etc/', self.shadow))
+        expected = stat.S_IMODE(expected.st_mode)
+        cache = FakeCacheCls(config=self.config, map_name=self.shadow)
+        cache._Begin()
+        cache._Commit()
+        data = os.stat(os.path.join(self.workdir, cache.GetCacheFilename()))
+        self.assertEqual(expected, stat.S_IMODE(data.st_mode))
+        os.unlink(cache.GetCacheFilename())
 
 
 class TestCache(mox.MoxTestBase):
 
-  def testWriteMap(self):
-    cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
-    self.mox.StubOutWithMock(cache_map, '_Commit')
-    self.mox.StubOutWithMock(cache_map, 'Write')
-    self.mox.StubOutWithMock(cache_map, 'Verify')
-    cache_map._Commit()
-    cache_map.Write('writable_map').AndReturn('entries_written')
-    cache_map.Verify('entries_written').AndReturn(True)
-    self.mox.ReplayAll()
+    def testWriteMap(self):
+        cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
+        self.mox.StubOutWithMock(cache_map, '_Commit')
+        self.mox.StubOutWithMock(cache_map, 'Write')
+        self.mox.StubOutWithMock(cache_map, 'Verify')
+        cache_map._Commit()
+        cache_map.Write('writable_map').AndReturn('entries_written')
+        cache_map.Verify('entries_written').AndReturn(True)
+        self.mox.ReplayAll()
 
-    self.assertEqual(0, cache_map.WriteMap('writable_map'))
+        self.assertEqual(0, cache_map.WriteMap('writable_map'))
 
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

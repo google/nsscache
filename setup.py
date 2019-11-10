@@ -47,6 +47,7 @@ as LDAP.""",
     ],
     scripts=['nsscache'],
     data_files=[('/etc', ['nsscache.conf'])],
+    python_requires='~=3.4',
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'mox3'],
     extras_require={

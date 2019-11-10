@@ -50,6 +50,7 @@ from nss_cache.sources.consulsource_test import *
 from nss_cache.sources.httpsource_test import *
 from nss_cache.sources.ldapsource_test import *
 from nss_cache.sources.s3source_test import *
+from nss_cache.sources.s3source_test import *
 
 from nss_cache.update.updater_test import *
 from nss_cache.update.map_updater_test import *
@@ -61,33 +62,33 @@ from nss_cache.util.timestamps_test import *
 
 
 class NsscacheTestProgram(unittest.TestProgram):
-  """Run nsscache tests.
+    """Run nsscache tests.
 
-  Wraps the TestProgram class to set the logging output based on the
-  test verbosity.
-  """
+    Wraps the TestProgram class to set the logging output based on the
+    test verbosity.
+    """
 
-  def __init__(self, *args, **kwargs):
-    super(NsscacheTestProgram, self).__init__(*args, **kwargs)
-    if self.verbosity >= 2:
-      format_str = ('\n%(pathname)s:%(lineno)d:\n'
-                    '  %(levelname)-8s %(module)s.%(funcName)s: '
-                    '%(message)s')
-      logging.basicConfig(stream=sys.stderr, format=format_str)
-      logging.getLogger().setLevel(logging.DEBUG)
-    else:
-      logging.disable(logging.CRITICAL)
-    self.runAllTests()
+    def __init__(self, *args, **kwargs):
+        super(NsscacheTestProgram, self).__init__(*args, **kwargs)
+        if self.verbosity >= 2:
+            format_str = ('\n%(pathname)s:%(lineno)d:\n'
+                          '  %(levelname)-8s %(module)s.%(funcName)s: '
+                          '%(message)s')
+            logging.basicConfig(stream=sys.stderr, format=format_str)
+            logging.getLogger().setLevel(logging.DEBUG)
+        else:
+            logging.disable(logging.CRITICAL)
+        self.runAllTests()
 
-  # pylint: disable-msg=C6409
-  def runTests(self):
-    """Don't run the tests yet, so our own constructor can do work."""
+    # pylint: disable-msg=C6409
+    def runTests(self):
+        """Don't run the tests yet, so our own constructor can do work."""
 
-  # pylint: disable-msg=C6409
-  def runAllTests(self):
-    super(NsscacheTestProgram, self).runTests()
+    # pylint: disable-msg=C6409
+    def runAllTests(self):
+        super(NsscacheTestProgram, self).runTests()
 
 
 if __name__ == '__main__':
-  os.chdir(sys.path[0])
-  NsscacheTestProgram()
+    os.chdir(sys.path[0])
+    NsscacheTestProgram()
