@@ -10,6 +10,8 @@ jobs:
       - checkout
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.7/site-packages
+      # Install C libraries before pip install.
+      - run: sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
       - restore_cache:
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
           key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
@@ -23,7 +25,6 @@ jobs:
             - ".venv"
             - "/usr/local/bin"
             - "/usr/local/lib/python3.7/site-packages"
-      - run: sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
       - run: pipenv run python setup.py test
       - store_test_results:
           path: test-results
