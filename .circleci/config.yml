@@ -34,7 +34,7 @@ jobs:
       #       - ".venv"
       #       - "/usr/local/bin"
       #       - "/usr/local/lib/python3.7/site-packages"
-      - run: pipenv run python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache"
+      - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache"
       - store_test_results:
           path: test-results
       - store_artifacts:
