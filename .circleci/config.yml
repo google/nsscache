@@ -34,7 +34,7 @@ jobs:
       #       - ".venv"
       #       - "/usr/local/bin"
       #       - "/usr/local/lib/python3.7/site-packages"
-      - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache"
+      - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache --cov-report html"
       - run: |
           pip install --user python-coveralls
           $(python -m site --user-base)/bin/coveralls
@@ -44,5 +44,4 @@ jobs:
           path: test-results
           destination: tr1
       - store_artifacts:
-          path: .coverage
-          destination: cov
+          path: htmlcov
