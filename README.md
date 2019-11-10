@@ -1,7 +1,8 @@
 nsscache - Asynchronously synchronise local NSS databases with remote directory services
 ========================================================================================
 
-[![Build Status](https://travis-ci.org/google/nsscache.svg?branch=master)](https://travis-ci.org/google/nsscache)
+[![Build Status](https://travis-ci.org/google/nsscache.svg?branch=master)](https://travis-ci.org/google/nsscache
+[![CircleCI](https://circleci.com/gh/google/nsscache.svg?style=svg)](https://circleci.com/gh/google/nsscache)
 
 *nsscache* is a commandline tool and Python library that synchronises a local NSS cache from a remote directory service, such as LDAP.
 
