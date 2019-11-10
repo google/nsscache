@@ -36,8 +36,8 @@ jobs:
       #       - "/usr/local/lib/python3.7/site-packages"
       - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache"
       - run: |
-          pip install python-coveralls
-          coveralls
+          pip install --user python-coveralls
+          $(python -m site --user-base)/coveralls
       - store_test_results:
           path: test-results
       - store_artifacts:
