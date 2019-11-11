@@ -1,3 +1,14 @@
+nsscache (0.39-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Move the status check to the run, because beforehand the config doesn't exist.
+  * Update the source options to ignore python generated files.
+  * Update build deps and suggests for boto3, letting the tests pass and users who want s3 buckets to be able to succeed.
+  * Update rules to run pytest tests now runtests is deleted upstream.
+  * Add a config for gbp.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 12 Nov 2019 04:04:05 +1100
+
 nsscache (0.38-2) unstable; urgency=medium
 
   * Ensure the autopkgtest has a bsddb dependency installed. 
