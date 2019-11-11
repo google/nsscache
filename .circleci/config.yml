@@ -16,10 +16,11 @@ jobs:
       - python/install-deps
       # CI-only deps, not in requirements.txt
       - run: pip install --user python-coveralls yapf pylint
+      - run: export PATH=$PATH:$(python -m site --user-base)/bin
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
       - run:
-          command: $(python -m site --user-base)/bin/coveralls
+          command: coveralls
           when: always
       - store_test_results:
           path: test-results
@@ -29,11 +30,12 @@ jobs:
       - store_artifacts:
           path: htmlcov
       - run: sudo apt install -y slapd ldap-utils libnss-db db-util
+      - run: pip install --user -e .
       - run: debian/tests/regtest
       - run:
-          command: $(python -m site --user-base)/bin/yapf --diff --recursive nss_cache nsscache
+          command: yapf --diff --recursive nss_cache nsscache
           no_output_timeout: 20m
-      - run: $(python -m site --user-base)/bin/pylint nsscache nss_cache || true
+      - run: pylint nsscache nss_cache || true
 
 workflows:
   version: 2
