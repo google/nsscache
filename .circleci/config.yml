@@ -10,6 +10,8 @@ jobs:
       tag: "3.7"
     steps:
       - checkout
+      - python/load-cache
+      - python/install-deps
       - run: pip install --user yapf pylint
       - run:
           command: $(python -m site --user-base)/bin/yapf --diff --recursive nss_cache nsscache
