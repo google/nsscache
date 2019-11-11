@@ -250,7 +250,7 @@ class TestLdapSource(mox.MoxTestBase):
         config = dict(self.config)
         attrlist = [
             'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
-            'sambaSID', 'fullName', 'loginShell', 'modifyTimestamp'
+            'fullName', 'loginShell', 'modifyTimestamp'
         ]
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -302,7 +302,7 @@ class TestLdapSource(mox.MoxTestBase):
         config['uidattr'] = 'name'
         attrlist = [
             'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
-            'fullName', 'name', 'sambaSID', 'loginShell', 'modifyTimestamp'
+            'fullName', 'name', 'loginShell', 'modifyTimestamp'
         ]
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -353,7 +353,7 @@ class TestLdapSource(mox.MoxTestBase):
         config['override_shell'] = '/bin/false'
         attrlist = [
             'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
-            'fullName', 'sambaSID', 'loginShell', 'modifyTimestamp'
+            'fullName', 'loginShell', 'modifyTimestamp'
         ]
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
@@ -551,9 +551,7 @@ class TestLdapSource(mox.MoxTestBase):
         })
 
         config = dict(self.config)
-        attrlist = [
-            'cn', 'uid', 'gidNumber', 'memberUid', 'sambaSID', 'modifyTimestamp'
-        ]
+        attrlist = ['cn', 'uid', 'gidNumber', 'memberUid', 'modifyTimestamp']
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
         mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
@@ -747,9 +745,7 @@ class TestLdapSource(mox.MoxTestBase):
 
         config = dict(self.config)
         config['rfc2307bis'] = 1
-        attrlist = [
-            'cn', 'uid', 'gidNumber', 'member', 'sambaSID', 'modifyTimestamp'
-        ]
+        attrlist = ['cn', 'uid', 'gidNumber', 'member', 'modifyTimestamp']
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
         mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
@@ -810,9 +806,7 @@ class TestLdapSource(mox.MoxTestBase):
 
         config = dict(self.config)
         config['rfc2307bis'] = 1
-        attrlist = [
-            'cn', 'uid', 'gidNumber', 'member', 'sambaSID', 'modifyTimestamp'
-        ]
+        attrlist = ['cn', 'uid', 'gidNumber', 'member', 'modifyTimestamp']
 
         mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
         mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
@@ -875,6 +869,7 @@ class TestLdapSource(mox.MoxTestBase):
         config = dict(self.config)
         config['rfc2307bis'] = 1
         config["nested_groups"] = 1
+        config['use_rid'] = 1
         attrlist = [
             'cn', 'uid', 'gidNumber', 'member', 'sambaSID', 'modifyTimestamp'
         ]
@@ -950,6 +945,7 @@ class TestLdapSource(mox.MoxTestBase):
         config = dict(self.config)
         config['rfc2307bis'] = 1
         config["nested_groups"] = 1
+        config['use_rid'] = 1
         attrlist = [
             'cn', 'uid', 'gidNumber', 'member', 'sambaSID', 'modifyTimestamp'
         ]
@@ -1010,6 +1006,7 @@ class TestLdapSource(mox.MoxTestBase):
 
         config = dict(self.config)
         config['rfc2307bis_alt'] = 1
+        config['use_rid'] = 1
         attrlist = [
             'cn', 'gidNumber', 'uniqueMember', 'uid', 'sambaSID',
             'modifyTimestamp'
@@ -1366,7 +1363,7 @@ class TestLdapSource(mox.MoxTestBase):
     def testVerify(self):
         attrlist = [
             'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
-            'fullName', 'sambaSID', 'loginShell', 'modifyTimestamp'
+            'fullName', 'loginShell', 'modifyTimestamp'
         ]
         filterstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
 
@@ -1389,6 +1386,36 @@ class TestLdapSource(mox.MoxTestBase):
 
         self.mox.ReplayAll()
         source = ldapsource.LdapSource(self.config)
+        self.assertEqual(0, source.Verify(0))
+
+    def testVerifyRID(self):
+        attrlist = [
+            'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
+            'fullName', 'loginShell', 'modifyTimestamp', 'sambaSID'
+        ]
+        filterstr = '(&TEST_FILTER(modifyTimestamp>=19700101000001Z))'
+
+        mock_rlo = self.mox.CreateMock(ldap.ldapobject.ReconnectLDAPObject)
+        mock_rlo.simple_bind_s(cred='TEST_BIND_PASSWORD', who='TEST_BIND_DN')
+        mock_rlo.search_ext(base='TEST_BASE',
+                            filterstr=filterstr,
+                            scope=ldap.SCOPE_ONELEVEL,
+                            attrlist=mox.SameElementsAs(attrlist),
+                            serverctrls=mox.Func(
+                                self.compareSPRC())).AndReturn('TEST_RES')
+
+        mock_rlo.result3('TEST_RES', all=0, timeout='TEST_TIMELIMIT').AndReturn(
+            (ldap.RES_SEARCH_RESULT, None, None, []))
+        self.mox.StubOutWithMock(ldap, 'ldapobject')
+        ldap.ldapobject.ReconnectLDAPObject(
+            uri='TEST_URI',
+            retry_max=TEST_RETRY_MAX,
+            retry_delay=TEST_RETRY_DELAY).AndReturn(mock_rlo)
+
+        config = dict(self.config)
+        config['use_rid'] = 1
+        self.mox.ReplayAll()
+        source = ldapsource.LdapSource(config)
         self.assertEqual(0, source.Verify(0))
 
 
