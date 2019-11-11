@@ -31,4 +31,4 @@ Issue history is at https://code.google.com/p/nsscache/issues/list
 
 # Contributions
 
-Please format your code with http://github.com/google/yapf (installable as `pip install yapf` or the `yapf3` package on Debian systems) before sending pull requests.
+Please format your code with https://github.com/google/yapf (installable as `pip install yapf` or the `yapf3` package on Debian systems) before sending pull requests.
