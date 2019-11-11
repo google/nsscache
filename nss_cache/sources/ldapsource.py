@@ -758,15 +758,16 @@ class PasswdUpdateGetter(UpdateGetter):
         else:
             self.attrs = [
                 'uid', 'uidNumber', 'gidNumber', 'gecos', 'cn', 'homeDirectory',
-                'loginShell', 'fullName', 'sambaSID'
+                'loginShell', 'fullName'
             ]
             if 'uidattr' in self.conf:
                 self.attrs.append(self.conf['uidattr'])
             if 'uidregex' in self.conf:
                 self.uidregex = re.compile(self.conf['uidregex'])
-            self.essential_fields = [
-                'uid', 'uidNumber', 'gidNumber', 'sambaSID'
-            ]
+            self.essential_fields = ['uid', 'uidNumber', 'gidNumber']
+            if self.conf.get('use_rid'):
+                self.attrs.append('sambaSID')
+                self.essential_fields.append('sambaSID')
         self.log = logging.getLogger(self.__class__.__name__)
 
     def CreateMap(self):
@@ -857,16 +858,18 @@ class GroupUpdateGetter(UpdateGetter):
             self.essential_fields = ['sAMAccountName', 'objectSid']
         else:
             if conf.get('rfc2307bis'):
-                self.attrs = ['cn', 'gidNumber', 'member', 'uid', 'sambaSID']
+                self.attrs = ['cn', 'gidNumber', 'member', 'uid']
             elif conf.get('rfc2307bis_alt'):
-                self.attrs = [
-                    'cn', 'gidNumber', 'uniqueMember', 'uid', 'sambaSID'
-                ]
+                self.attrs = ['cn', 'gidNumber', 'uniqueMember', 'uid']
             else:
-                self.attrs = ['cn', 'gidNumber', 'memberUid', 'uid', 'sambaSID']
+                self.attrs = ['cn', 'gidNumber', 'memberUid', 'uid']
             if 'groupregex' in conf:
                 self.groupregex = re.compile(self.conf['groupregex'])
-            self.essential_fields = ['cn', 'sambaSID']
+            self.essential_fields = ['cn']
+            if conf.get('use_rid'):
+                self.attrs.append('sambaSID')
+                self.essential_fields.append('sambaSID')
+
         self.log = logging.getLogger(__name__)
 
     def CreateMap(self):
