@@ -12,8 +12,9 @@ jobs:
       - run: sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
       - python/load-cache
       - python/install-deps
-      - python/save-cache
+      # CI-only deps, not in requirements.txt
       - run: pip install --user python-coveralls
+      - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
       - run: $(python -m site --user-base)/bin/coveralls
       - store_test_results:
