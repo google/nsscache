@@ -25,7 +25,7 @@ jobs:
       - python/load-cache
       - python/install-deps
       # CI-only deps, not in requirements.txt
-      - run: pip install --user python-coveralls yapf
+      - run: pip install --user python-coveralls
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
       - run:
