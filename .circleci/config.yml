@@ -13,10 +13,9 @@ jobs:
       - python/load-cache
       - python/install-deps
       - python/save-cache
-      - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache --cov-report html"
-      - run: |
-          pip install --user python-coveralls
-          $(python -m site --user-base)/bin/coveralls
+      - run: pip install --user python-coveralls
+      - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
+      - run: $(python -m site --user-base)/bin/coveralls
       - store_test_results:
           path: test-results
       - store_artifacts:
