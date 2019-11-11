@@ -56,6 +56,8 @@ run_nsscache() {
     mkdir $WORKDIR/$cache
     mkdir $WORKDIR/ldap-timestamps-$cache
 
+    nsscache status
+
     nsscache -d -c "${config}" update --full
     r=$?
     if [[ $r -ne 0 ]]; then
@@ -96,7 +98,6 @@ test_files() {
 check () {
   which nsscache
   nsscache --version
-  nsscache status
 }
 
 check

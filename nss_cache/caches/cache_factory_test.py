@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-"""Unit tests for out cache factory"""
+"""Unit tests for out cache factory."""
 
 __author__ = 'springer@google.com (Matthew Springer)'
 
@@ -25,29 +25,29 @@ from nss_cache.caches import cache_factory
 
 class TestCacheFactory(unittest.TestCase):
 
-  def testRegister(self):
+    def testRegister(self):
 
-    class DummyCache(caches.Cache):
-      pass
+        class DummyCache(caches.Cache):
+            pass
 
-    old_cache_implementations = cache_factory._cache_implementations
-    cache_factory._cache_implementations = {}
-    cache_factory.RegisterImplementation('dummy', 'dummy', DummyCache)
-    self.assertEqual(1, len(cache_factory._cache_implementations))
-    self.assertEqual(1, len(cache_factory._cache_implementations['dummy']))
-    self.assertEqual(DummyCache,
-                     cache_factory._cache_implementations['dummy']['dummy'])
-    cache_factory._cache_implementations = old_cache_implementations
+        old_cache_implementations = cache_factory._cache_implementations
+        cache_factory._cache_implementations = {}
+        cache_factory.RegisterImplementation('dummy', 'dummy', DummyCache)
+        self.assertEqual(1, len(cache_factory._cache_implementations))
+        self.assertEqual(1, len(cache_factory._cache_implementations['dummy']))
+        self.assertEqual(DummyCache,
+                         cache_factory._cache_implementations['dummy']['dummy'])
+        cache_factory._cache_implementations = old_cache_implementations
 
-  def testCreateWithNoImplementations(self):
-    old_cache_implementations = cache_factory._cache_implementations
-    cache_factory._cache_implementations = {}
-    self.assertRaises(RuntimeError, cache_factory.Create, {}, 'map_name')
-    cache_factory._cache_implementations = old_cache_implementations
+    def testCreateWithNoImplementations(self):
+        old_cache_implementations = cache_factory._cache_implementations
+        cache_factory._cache_implementations = {}
+        self.assertRaises(RuntimeError, cache_factory.Create, {}, 'map_name')
+        cache_factory._cache_implementations = old_cache_implementations
 
-  def testThatRegularImplementationsArePresent(self):
-    self.assertEqual(len(cache_factory._cache_implementations), 2)
+    def testThatRegularImplementationsArePresent(self):
+        self.assertEqual(len(cache_factory._cache_implementations), 2)
 
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

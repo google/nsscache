@@ -1,4 +1,4 @@
-.TH NSSCACHE.CONF 5 2019-11-09 "nsscache 0.38" "File formats"
+.TH NSSCACHE.CONF 5 2019-11-12 "nsscache 0.39" "File formats"
 .SH NAME
 nsscache.conf - NSS local cache synchroniser configuration file
 .SH SYNOPSIS
@@ -159,7 +159,7 @@ is the default).  See \fBldap.conf\fP(5) for more information.
 
 .TP
 .B ldap_tls_cacertdir
-Directory for trusted CA certificates.  By default, the system's
+Directory for trusted CA certificates.  By default, the system\'s
 default CA certificate directory will be used.
 
 .TP
@@ -188,7 +188,8 @@ The uid-like attribute in your directory. Defaults to uid.
 .TP
 .B ldap_use_rid
 If enabled (set to 1) the relative identifier (RID) wll be used for mapping. 
-By default uidNumber and gidNumber will be mapped when connectin to OpenLdap.
+By default \fBuidNumber\fP and \fBgidNumber\fP will be mapped when connecting to OpenLDAP with a POSIX-like schema.
+When using Samba4 AD, these attributes won\'t exist.
 Leave disabled for default.
 It has no effect if the option \fBldap_ad\fP is enabled.
 
