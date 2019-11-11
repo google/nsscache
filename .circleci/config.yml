@@ -29,8 +29,8 @@ jobs:
           destination: tr1
       - store_artifacts:
           path: htmlcov
+      - run: pip install --user .
       - run: sudo apt install -y slapd ldap-utils libnss-db db-util
-      - run: pip install --user -e .
       - run: debian/tests/regtest
       - run:
           command: yapf --diff --recursive nss_cache nsscache
