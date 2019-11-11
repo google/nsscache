@@ -41,8 +41,8 @@ jobs:
           destination: tr1
       - store_artifacts:
           path: htmlcov
-
-    test-ldap:
+      - run: sudo apt install -y slapd ldap-utils libnss-db db-util
+      - run: debian/tests/regtest
 
 workflows:
   version: 2
