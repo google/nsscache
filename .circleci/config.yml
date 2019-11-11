@@ -13,10 +13,15 @@ jobs:
       - python/load-cache
       - python/install-deps
       # CI-only deps, not in requirements.txt
-      - run: pip install --user python-coveralls
+      - run: pip install --user python-coveralls yapf
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
-      - run: $(python -m site --user-base)/bin/coveralls
+      - run:
+          command: $(python -m site --user-base)/bin/coveralls
+          when: always
+      - run:
+          command: $(python -m site --user-base)/bin/yapf --diff --recursive nss_cache nsscache
+          no_output_timeout: 20m
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -24,3 +29,5 @@ jobs:
           destination: tr1
       - store_artifacts:
           path: htmlcov
+
+    test-ldap:
