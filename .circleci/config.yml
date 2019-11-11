@@ -14,9 +14,10 @@ jobs:
       - python/install-deps
       - python/save-cache
       - run: python setup.py test --addopts "--junitxml=test-results/junit.xml --cov-report term-missing --cov nss_cache --cov-report html"
-      - run: |
-          pip install --user python-coveralls
-          $(python -m site --user-base)/bin/coveralls
+      # covreage can't read it's own coverage files.
+      # - run: |
+      #     pip install --user python-coveralls
+      #     $(python -m site --user-base)/bin/coveralls
       - store_test_results:
           path: test-results
       - store_artifacts:
