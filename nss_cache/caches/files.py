@@ -24,13 +24,13 @@ format created here.
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
+import configparser
 import errno
 import os.path
 import re
 import shutil
 import stat
 import sys
-from configparser import ConfigParser
 
 from nss_cache import config
 from nss_cache import error
@@ -43,7 +43,7 @@ def LongestLength(l):
 
 
 # Load suffix config variables
-parser = ConfigParser()
+parser = configparser.ConfigParser()
 for i in sys.argv:
     if ('nsscache.conf') in i:
         # Remove '--config-file=' from the string
@@ -55,9 +55,12 @@ for i in sys.argv:
     else:
         # Config in nsscache folder
         parser.read('nsscache.conf')
-prefix = parser.get('suffix', 'prefix')
-suffix = parser.get('suffix', 'suffix')
-
+try:
+    prefix = parser.get('suffix', 'prefix')
+    suffix = parser.get('suffix', 'suffix')
+except configparser.NoSectionError:
+    prefix = ''
+    suffix = ''
 
 def RegisterAllImplementations(register_callback):
     """Register our cache classes independently from the import scheme."""
