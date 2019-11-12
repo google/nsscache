@@ -59,6 +59,7 @@ prefix = parser.get('suffix', 'prefix', fallback='')
 suffix = parser.get('suffix', 'suffix', fallback='')
 
 
+
 def RegisterAllImplementations(register_callback):
     """Register our cache classes independently from the import scheme."""
     register_callback('files', 'passwd', FilesPasswdMapHandler)
