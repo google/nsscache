@@ -1,3 +1,11 @@
+nsscache (0.39-2) unstable; urgency=medium
+
+  * Make the tests execute correctly under pybuild by overriding the default local to search.
+  * Trap NoSectionError when trying to load automount prefix and suffix mutators.
+  * Tell pybuild to copy in nsscache.conf as it's used as testdata for confit_test.py.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Tue, 12 Nov 2019 21:43:52 +1100
+
 nsscache (0.39-1) unstable; urgency=medium
 
   * New upstream release.
