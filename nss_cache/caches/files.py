@@ -62,6 +62,7 @@ except configparser.NoSectionError:
     prefix = ''
     suffix = ''
 
+
 def RegisterAllImplementations(register_callback):
     """Register our cache classes independently from the import scheme."""
     register_callback('files', 'passwd', FilesPasswdMapHandler)
