@@ -2,7 +2,7 @@ Source: nsscache
 Section: admin
 Priority: optional
 Maintainer: Jamie Wilkinson <jaq@debian.org>
-Build-Depends: debhelper (>= 9~), python (>= 2.6.6-3~), dh-python, python-pycurl, python-ldap, python-mox, libnss-db, tzdata
+Build-Depends: debhelper (>= 9~), python3, dh-python, python3-pycurl, python3-ldap, python3-mox3, python3-bsddb3, libnss-db, tzdata, python3-pytest-runner, python3-pytest, python3-boto3
 Standards-Version: 4.1.1
 Homepage: https://github.com/google/nsscache
 Vcs-Browser: https://github.com/google/nsscache/tree/debian
@@ -10,9 +10,10 @@ Vcs-Git: https://github.com/google/nsscache.git -b debian
 
 Package: nsscache
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-pycurl, python-ldap
-Provides: ${python:Provides}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, python3-pycurl, python3-ldap
+Provides: ${python3:Provides}
 Recommends: libnss-cache | libnss-db
+Suggests: python3-boto3
 Description: asynchronously synchronise local NSS databases with remote directory services
  Synchronises local NSS caches, such as those served by the
  libnss-cache module, against remote directory services, such as
