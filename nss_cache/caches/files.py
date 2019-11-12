@@ -431,7 +431,7 @@ class FilesShadowMapHandler(FilesCache):
 class FilesNetgroupMapHandler(FilesCache):
     """Concrete class for updating a nss_files module netgroup cache."""
     CACHE_FILENAME = 'netgroup'
-    _TUPLE_RE = re.compile('^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
+    _TUPLE_RE = re.compile(r'^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:

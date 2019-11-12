@@ -222,7 +222,7 @@ def Options(items, name):
       dictionary of option:value pairs
     """
     options = {}
-    option_re = re.compile('^%s_(.+)' % name)
+    option_re = re.compile(r'^%s_(.+)' % name)
     for item in items:
         match = option_re.match(item[0])
         if match:
@@ -280,7 +280,7 @@ def ParseNSSwitchConf(nsswitch_filename):
 
         nsswitch = {}
 
-        map_re = re.compile('^([a-z]+): *(.*)$')
+        map_re = re.compile(r'^([a-z]+): *(.*)$')
         for line in nsswitch_file:
             match = map_re.match(line)
             if match:

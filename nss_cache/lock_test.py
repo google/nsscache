@@ -195,7 +195,7 @@ class TestPidFile(mox.MoxTestBase):
         mock_re = self.mox.CreateMockAnything()
         mock_re.match('TEST').AndReturn(True)
         self.mox.StubOutWithMock(re, 'compile')
-        re.compile('.*nsscache').AndReturn(mock_re)
+        re.compile(r'.*nsscache').AndReturn(mock_re)
 
         self.mox.StubOutWithMock(os, 'kill')
         os.kill(1234, signal.SIGTERM)

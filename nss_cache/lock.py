@@ -200,7 +200,7 @@ class PidFile(object):
         proc_file.close()
 
         # See if it matches our program name regex.
-        cmd_re = re.compile('.*%s' % self.PROG_NAME)
+        cmd_re = re.compile(r'.*%s' % self.PROG_NAME)
         if not cmd_re.match(cmdline):
             self.log.debug('process is running but not %s, skipping signal',
                            self.PROG_NAME)
