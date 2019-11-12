@@ -55,12 +55,9 @@ for i in sys.argv:
     else:
         # Config in nsscache folder
         parser.read('nsscache.conf')
-try:
-    prefix = parser.get('suffix', 'prefix')
-    suffix = parser.get('suffix', 'suffix')
-except configparser.NoSectionError:
-    prefix = ''
-    suffix = ''
+prefix = parser.get('suffix', 'prefix', fallback='')
+suffix = parser.get('suffix', 'suffix', fallback='')
+
 
 def RegisterAllImplementations(register_callback):
     """Register our cache classes independently from the import scheme."""
