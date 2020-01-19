@@ -852,14 +852,14 @@ class TestStatusCommand(mox.MoxTestBase):
 
     def testGetSingleMapMetadataTimestampEpochFalse(self):
         # set the timezone so we get a consistent return value
-        os.environ['TZ'] = 'US/Pacific'
+        os.environ['TZ'] = 'MST'
         time.tzset()
 
         c = command.Status()
         values = c.GetSingleMapMetadata(config.MAP_PASSWORD,
                                         self.conf,
                                         epoch=False)
-        self.assertEqual('Wed Dec 31 16:00:02 1969', values[1]['value'])
+        self.assertEqual('Wed Dec 31 17:00:02 1969', values[1]['value'])
 
     def testGetAutomountMapMetadata(self):
         # need to stub out GetSingleMapMetadata (tested above) and then
