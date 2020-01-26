@@ -15,7 +15,8 @@ jobs:
       - python/load-cache
       - python/install-deps
       # CI-only deps, not in requirements.txt
-      - run: pip install --user python-coveralls yapf pylint
+      # TODO() remove coverage pinning when https://github.com/z4r/python-coveralls/issues/73 fixed.
+      - run: pip install --user coverage=4.5.4 python-coveralls yapf pylint
       - run: export PATH=$PATH:$(python -m site --user-base)/bin
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
