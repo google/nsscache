@@ -18,7 +18,7 @@ jobs:
       # TODO() remove coverage pinning when https://github.com/z4r/python-coveralls/issues/73 fixed.
       # pip can't install multiple packages if there's a dependency between some: https://github.com/pypa/pip/issues/1386
       - run: |
-          pip install --user python-coveralls yapf pylint
+          pip install --user --force-reinstall python-coveralls yapf pylint
           pip install --user coverage==4.5.4
       - run: export PATH=$PATH:$(python -m site --user-base)/bin
       - python/save-cache
