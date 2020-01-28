@@ -15,19 +15,12 @@ jobs:
       - python/load-cache
       - python/install-deps
       # CI-only deps, not in requirements.txt
-      # TODO() remove coverage pinning when https://github.com/z4r/python-coveralls/issues/73 fixed.
-      # pip can't install multiple packages if there's a dependency between some: https://github.com/pypa/pip/issues/1386
-      - run: |
-          pip install --user --force-reinstall python-coveralls yapf pylint
-          pip install --user coverage==4.5.4
+      - run: pip install --user coveralls-python yapf pylint
       - run: export PATH=$PATH:$(python -m site --user-base)/bin
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
       - run:
-          command: |
-            ls -al ~/.local/bin
-            echo $PATH
-            coveralls
+          command: coveralls --service=circleci
           when: always
       - store_test_results:
           path: test-results
