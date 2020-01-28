@@ -24,7 +24,10 @@ jobs:
       - python/save-cache
       - run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
       - run:
-          command: coveralls
+          command: |
+            ls -al ~/.local/bin
+            echo $PATH
+            coveralls
           when: always
       - store_test_results:
           path: test-results
