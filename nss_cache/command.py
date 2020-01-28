@@ -238,7 +238,10 @@ class Update(Command):
                                force_write=options.force_write,
                                force_lock=options.force_lock)
 
-    def UpdateMaps(self, conf, incremental, force_write=False,
+    def UpdateMaps(self,
+                   conf,
+                   incremental,
+                   force_write=False,
                    force_lock=False):
         """Update each configured map.
 
