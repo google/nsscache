@@ -13,7 +13,16 @@ else
     ARTIFACTS=${ADT_ARTIFACTS}
 fi
 
+slapd_apparmor_bkp="${WORKDIR}/slapd_profile.bkp"
+slapd_apparmor_override="/etc/apparmor.d/local/usr.sbin.slapd"
+slapd_apparmor="/etc/apparmor.d/usr.sbin.slapd"
+
 cleanup() {
+  if [[ -f "$slapd_apparmor_bkp" ]]; then
+    sudo cp -af "$slapd_apparmor_bkp" "$slapd_apparmor_override"
+    sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
+  fi
+  rm -f "$slapd_apparmor_bkp"
   if [[ -e "$WORKDIR/slapd.pid" ]]; then
      kill -TERM $(cat $WORKDIR/slapd.pid)
   fi
@@ -23,6 +32,28 @@ cleanup() {
 }
 
 trap cleanup 0 INT QUIT ABRT PIPE TERM
+
+apparmor_enabled() {
+  if [ -x /usr/sbin/aa-status ]; then
+    sudo /usr/sbin/aa-status --enabled && apparmor_enabled="0" || apparmor_enabled="1"
+  else
+    apparmor_enabled="1"
+  fi
+  return "$apparmor_enabled"
+}
+
+override_apparmor() {
+  slapd_apparmor_override="/etc/apparmor.d/local/usr.sbin.slapd"
+  slapd_apparmor="/etc/apparmor.d/usr.sbin.slapd"
+
+  # backup existing override
+  cp -af "$slapd_apparmor_override" "$slapd_apparmor_bkp"
+
+  # the test suite brings up a test slapd server running
+  # off /tmp/<tmpdir>.
+  echo "/tmp/** rwk," | sudo tee "$slapd_apparmor_override"
+  sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
+}
 
 setup_slapd() {
     set -e
@@ -101,6 +132,9 @@ check () {
 }
 
 check
+if apparmor_enabled; then
+  override_apparmor
+fi
 setup_slapd
 run_nsscache ldap nssdb
 run_nsscache ldap files
