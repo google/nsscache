@@ -42,9 +42,6 @@ apparmor_enabled() {
 }
 
 override_apparmor() {
-  slapd_apparmor_override="/etc/apparmor.d/local/usr.sbin.slapd"
-  slapd_apparmor="/etc/apparmor.d/usr.sbin.slapd"
-
   # backup existing override
   cp -af "$slapd_apparmor_override" "$slapd_apparmor_bkp"
 
