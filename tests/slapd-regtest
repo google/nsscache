@@ -16,10 +16,9 @@ slapd_apparmor="/etc/apparmor.d/usr.sbin.slapd"
 
 cleanup() {
   if [[ -f "$slapd_apparmor_bkp" ]]; then
-    sudo cp -af "$slapd_apparmor_bkp" "$slapd_apparmor_override"
+    sudo mv "$slapd_apparmor_bkp" "$slapd_apparmor_override"
     sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
   fi
-  rm -f "$slapd_apparmor_bkp"
   if [[ -e "$WORKDIR/slapd.pid" ]]; then
      kill -TERM $(cat $WORKDIR/slapd.pid)
   fi
