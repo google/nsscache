@@ -47,8 +47,8 @@ override_apparmor() {
 
   # the test suite brings up a test slapd server running
   # off /tmp/<tmpdir>.
-  echo "/tmp/${WORKDIR}/ rw," | sudo tee "$slapd_apparmor_override"
-  echo "/tmp/${WORKDIR}/** rwk," | sudo tee -a "$slapd_apparmor_override"
+  echo "${WORKDIR}/ rw," | sudo tee "$slapd_apparmor_override"
+  echo "${WORKDIR}/** rwk," | sudo tee -a "$slapd_apparmor_override"
   sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
 }
 
