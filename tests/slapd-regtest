@@ -5,12 +5,9 @@ set -x
 SLAPADD=/usr/sbin/slapadd
 SLAPD=/usr/sbin/slapd
 
-if [[ -z ${ADTTMP-} ]]; then
+if [[ -z ${WORKDIR-} ]]; then
     WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
     ARTIFACTS=${WORKDIR}
-else
-    WORKDIR=${ADTTMP}
-    ARTIFACTS=${ADT_ARTIFACTS}
 fi
 
 cleanup() {
@@ -24,12 +21,14 @@ cleanup() {
 
 trap cleanup 0 INT QUIT ABRT PIPE TERM
 
+TESTDIR=$(dirname -- "$0")
+
 setup_slapd() {
     set -e
     mkdir -p $WORKDIR/ldap
     sed -e "s!@workdir@!$WORKDIR!" \
-	< debian/tests/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
-    $SLAPADD -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l debian/tests/default.ldif
+	< ${TESTDIR}/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
+    $SLAPADD -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l ${TESTDIR}/default.ldif
     $SLAPD -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
     slappid=$!
     attempts=0
@@ -47,7 +46,7 @@ setup_slapd() {
 run_nsscache() {
     source=$1
     cache=$2
-    config_orig="debian/tests/nsscache.conf.tmpl"
+    config_orig="${TESTDIR}/slapd-nsscache.conf.tmpl"
     config=$(mktemp -p ${ARTIFACTS} nsscache.${source}.conf.XXXXXX)
     sed -e "s!@cache@!$cache!" \
 	-e "s!@source@!$source!" \
@@ -96,14 +95,22 @@ test_files() {
 }
 
 check () {
-  which nsscache
-  nsscache --version
+    which nsscache
+    if [[ $? -ne 0 ]]; then
+        (
+            cd ${TESTDIR}/..
+            pip3 install --target="${WORKDIR}" .
+        )
+        export PATH=$PATH:${WORKDIR}/bin
+    fi
+    set -e
+    nsscache --version
+    set +e
 }
 
 check
 setup_slapd
 run_nsscache ldap nssdb
 run_nsscache ldap files
-
 
 echo OK

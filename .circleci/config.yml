@@ -36,7 +36,7 @@ jobs:
           path: htmlcov
       - run: pip install --user .
       - run: sudo apt install -y slapd ldap-utils libnss-db db-util
-      - run: debian/tests/regtest
+      - run: tests/slapd-regtest
       - run:
           command: yapf --diff --recursive nss_cache nsscache
           no_output_timeout: 20m
