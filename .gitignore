@@ -29,3 +29,4 @@ debian/.debhelper/
 /.ghi.yml
 /.pytest_cache/
 nsscache.egg-info/
+/tmpconfig.yml
