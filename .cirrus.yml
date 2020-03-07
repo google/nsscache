@@ -6,7 +6,7 @@ test_task:
     populate_script: pip install --user -r requirements.txt
     fingerprint_script: cat requirements.txt
     folder: .local/lib
-    foler: .local/bin
+    folder: .local/bin
   setup_script: |
     apt-get update && apt-get install -y \
       libnss-db \
