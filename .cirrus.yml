@@ -1,5 +1,5 @@
 container:
-  image: python:slim
+  image: python:3
 
 test_task:
   env:
