@@ -239,7 +239,7 @@ class NssDbCache(caches.Cache):
 
     def _DecodeExitCode(self, code):
         """Helper function to compute if a child exited with code 0 or not."""
-        return os.WIFEXITED(code) and (os.WEXITSTATUS(code) is 0)
+        return os.WIFEXITED(code) and (os.WEXITSTATUS(code) == 0)
 
     # TODO(jaq): validate the unit tests for this code path, are we
     # verifying the temp cache or the real cache?

@@ -124,7 +124,7 @@ class FileMapUpdater(updater.Updater):
             if not entry.Verify():
                 raise error.InvalidMap('Map is not valid. Aborting')
 
-        if len(source_map) is 0 and not force_write:
+        if len(source_map) == 0 and not force_write:
             raise error.EmptyMap(
                 'Source map empty during full update, aborting. '
                 'Use --force-write to override.')
@@ -132,7 +132,7 @@ class FileMapUpdater(updater.Updater):
         return_val += cache.WriteMap(map_data=source_map)
 
         # We did an update, write our timestamps unless there is an error.
-        if return_val is 0:
+        if return_val == 0:
             mtime = os.stat(cache.GetCacheFilename()).st_mtime
             self.log.debug('Cache filename %s has mtime %d',
                            cache.GetCacheFilename(), mtime)

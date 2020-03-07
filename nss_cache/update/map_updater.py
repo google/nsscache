@@ -96,19 +96,19 @@ class MapUpdater(updater.Updater):
         """
         return_val = 0
 
-        if len(new_map) is 0:
+        if len(new_map) == 0:
             self.log.info('Empty map on incremental update, skipping')
             return 0
 
         self.log.debug('loading cache map, may be slow for large maps.')
         cache_map = cache.GetMap()
 
-        if len(cache_map) is 0:
+        if len(cache_map) == 0:
             raise error.EmptyMap
 
         if cache_map.Merge(new_map):
             return_val += cache.WriteMap(map_data=cache_map)
-            if return_val is 0:
+            if return_val == 0:
                 self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
         else:
             self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
@@ -116,7 +116,7 @@ class MapUpdater(updater.Updater):
 
         # We did an update, even if nothing was written, so write our
         # update timestamp unless there is an error.
-        if return_val is 0:
+        if return_val == 0:
             self.WriteUpdateTimestamp()
 
         return return_val
@@ -138,7 +138,7 @@ class MapUpdater(updater.Updater):
         """
         return_val = 0
 
-        if len(new_map) is 0 and not force_write:
+        if len(new_map) == 0 and not force_write:
             raise error.EmptyMap(
                 'Source map empty during full update, aborting. '
                 'Use --force-write to override.')
