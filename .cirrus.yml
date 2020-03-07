@@ -22,7 +22,6 @@ test_task:
       format: junit
       type: text/xml
   coverage_script:
-    - ls -al
     - pip install codecov
     - codecov
 
