@@ -4,8 +4,9 @@ container:
 test_task:
   env:
     - CODECOV_TOKEN: ENCRYPTED[73e0674b702504296fc4609d7be239ad6c06b7b380ad6fd1810baedba1f1fa7654638d0ea87ead8cc98a46a92d671f93]
-  setup_script: |
-    apt-get update && apt-get install -y \
+  setup_script:
+    - apt-get update
+    - apt-get install -y \
       libnss-db \
       libdb-dev \
       libcurl4-gnutls-dev \
@@ -17,17 +18,16 @@ test_task:
     populate_script: pip install -r requirements.txt
     fingerprint_script: echo $PYTHON_VERSION && cat requirements.txt
   build_script: pip install .
-  test_script: |
-    python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing"
+  test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing"
   always:
     junit_result_artifacts:
       path: "**/test-results/**/*.xml"
       format: junit
       type: text/xml
   coverage_script: bash <(curl -s https://codecov.io/bash) -f coverprofile
-  slapd_regtest_script: |
-    apt-get install -y slapd ldap-utils libnss-db db-util
-    tests/slapd-regtest
+  slapd_regtest_script:
+    - apt-get install -y slapd ldap-utils libnss-db db-util
+    - tests/slapd-regtest
 
 yapf_task:
   setup_script: pip install yapf
