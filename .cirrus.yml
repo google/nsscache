@@ -14,11 +14,14 @@ test_task:
       libgnutls28-dev \
       libldap2-dev \
       libsasl2-dev
-  packages_cache:
+  pip_debug_script: |
+    ls -al ~/.cache/pip
+    ls -al ~/.local
+    echo $XDG_CACHE_HOME
+  pip_cache:
     folder: ~/.cache/pip
     populate_script: pip install -r requirements.txt
     fingerprint_script: echo $PYTHON_VERSION && cat requirements.txt
-  build_script: python setup.py build
   test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing"
   always:
     junit_result_artifacts:
@@ -27,6 +30,7 @@ test_task:
       type: text/xml
   coverage_script: bash <(curl -s https://codecov.io/bash) -f .coverage
 
+build_package_test_task:
 slapd_regtest_task:
   depends_on:
     - test
