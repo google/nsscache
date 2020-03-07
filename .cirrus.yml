@@ -28,9 +28,13 @@ test_task:
   coverage_script: bash <(curl -s https://codecov.io/bash) -f .coverage
 
 slapd_regtest_task:
+  depends_on:
+    - test
   allow_failures: true
-  slapd_regtest_script:
+  setup_script:
+    - apt-get update
     - apt-get install -y slapd ldap-utils libnss-db db-util
+  slapd_regtest_script:
     - tests/slapd-regtest
 
 yapf_task:
