@@ -30,3 +30,5 @@ debian/.debhelper/
 /.pytest_cache/
 nsscache.egg-info/
 /tmpconfig.yml
+/.coverage
+/test-results/
