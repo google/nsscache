@@ -25,7 +25,7 @@ test_task:
       path: "**/test-results/**/*.xml"
       format: junit
       type: text/xml
-  coverage_script: ls -al  && bash <(curl -s https://codecov.io/bash)
+  coverage_script: ls -al  && bash <(curl -s https://codecov.io/bash) -f .coverage
   slapd_regtest_script:
     - apt-get install -y slapd ldap-utils libnss-db db-util
     - tests/slapd-regtest
