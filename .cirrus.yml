@@ -30,7 +30,6 @@ test_task:
       type: text/xml
   coverage_script: bash <(curl -s https://codecov.io/bash) -f .coverage
 
-build_package_test_task:
 slapd_regtest_task:
   depends_on:
     - test
