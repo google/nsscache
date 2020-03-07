@@ -1,14 +1,13 @@
 container:
-  image: python-3.8:slim
+  image: python:slim
 
 test_task:
   env:
     - CODECOV_TOKEN: ENCRYPTED[73e0674b702504296fc4609d7be239ad6c06b7b380ad6fd1810baedba1f1fa7654638d0ea87ead8cc98a46a92d671f93]
   packages_cache:
-    populate_script: pip install --user -r requirements.txt
-    fingerprint_script: cat requirements.txt
-    folder: .local/lib
-    folder: .local/bin
+    folder: ~/.cache/pip
+    populate_script: pip install -r requirements.txt
+    fingerprint_script: echo $PYTHON_VERSION && cat requirements.txt
   setup_script: |
     apt-get update && apt-get install -y \
       libnss-db \
@@ -19,8 +18,9 @@ test_task:
       libsasl2-dev
     python install --user --force-reinstall coveralls yapf pylint
     export PATH=$PATH:$(python -m site --user-base)/bin
-  build_script: pip install --user .
-  test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing" && ls -al
+  build_script: pip install .
+  test_script: |
+    python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing"
   always:
     junit_result_artifacts:
       path: "**/test-results/**/*.xml"
