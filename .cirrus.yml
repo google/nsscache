@@ -15,7 +15,7 @@ test_task:
       libldap2-dev \
       libsasl2-dev
   pip_setup_script: pip install -r requirements.txt
-  test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml"
+  test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
   always:
     junit_result_artifacts:
       path: "**/test-results/**/*.xml"
