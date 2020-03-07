@@ -1,0 +1,39 @@
+container:
+  image: python-3.8:slim
+
+test_task:
+  packages_cache:
+    populate_script: pip install --user -r requirements.txt
+    fingerprint_script: cat requirements.txt
+    folder: .local/lib
+    foler: .local/bin
+  setup_script: |
+    apt-get update && apt-get install -y \
+      libnss-db \
+      libdb-dev \
+      libcurl4-gnutls-dev \
+      libgnutls28-dev \
+      libldap2-dev \
+      libsasl2-dev
+    python install --user --force-reinstall coveralls yapf pylint
+    export PATH=$PATH:$(python -m site --user-base)/bin
+  build_script: pip install --user .
+  test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing" && ls -al
+  always:
+    junit_result_artifacts:
+      path: "**/test-results/**/*.xml"
+      format: junit
+      type: text/xml
+  coverage_script: bash <(curl -s https://codecov.io/bash) -f coverprofile
+  slapd_regtest_script: |
+    apt install slapd ldap-utils libnss-db db-util
+    tests/slapd-regtest
+
+yapf_task:
+  setup_script: pip install --user --force-reinstall yapf
+  yapf_task: yapf --diff --recursive nss_cache nsscache
+
+pylint_task:
+  setup_script: pip install --user --force-reinstall pylint
+  allow_failures: true
+  pylint_script: pylint nsscache nss_cache
