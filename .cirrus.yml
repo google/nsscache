@@ -31,7 +31,7 @@ test_task:
 
 yapf_task:
   setup_script: pip install --user --force-reinstall yapf
-  yapf_task: yapf --diff --recursive nss_cache nsscache
+  yapf_script: yapf --diff --recursive nss_cache nsscache
 
 pylint_task:
   setup_script: pip install --user --force-reinstall pylint
