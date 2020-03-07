@@ -18,14 +18,14 @@ test_task:
     folder: ~/.cache/pip
     populate_script: pip install -r requirements.txt
     fingerprint_script: echo $PYTHON_VERSION && cat requirements.txt
-  build_script: pip install .
+  build_script: python setup.py build
   test_script: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing"
   always:
     junit_result_artifacts:
       path: "**/test-results/**/*.xml"
       format: junit
       type: text/xml
-  coverage_script: bash <(curl -s https://codecov.io/bash) -f coverprofile
+  coverage_script: ls -al  && bash <(curl -s https://codecov.io/bash)
   slapd_regtest_script:
     - apt-get install -y slapd ldap-utils libnss-db db-util
     - tests/slapd-regtest
