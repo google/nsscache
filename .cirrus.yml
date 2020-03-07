@@ -21,7 +21,9 @@ test_task:
       path: "**/test-results/**/*.xml"
       format: junit
       type: text/xml
-  coverage_script: bash <(curl -s https://codecov.io/bash) -f .coverage
+  coverage_script:
+    - pip install codecov
+    - codecov
 
 slapd_regtest_task:
   depends_on:
