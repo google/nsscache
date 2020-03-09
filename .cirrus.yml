@@ -36,10 +36,12 @@ slapd_regtest_task:
     - tests/slapd-regtest
 
 yapf_task:
+  only_if: "changesInclude('setup.cfg', '**/*.py')"
   setup_script: pip install yapf
   yapf_script: yapf --diff --recursive nss_cache nsscache
 
 pylint_task:
+  only_if: "changesInclude('setup.cfg', '**/*.py')"
   setup_script: pip install pylint
   allow_failures: true
   pylint_script: pylint nsscache nss_cache
