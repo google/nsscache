@@ -129,7 +129,7 @@ class TestFilesCache(mox.MoxTestBase):
         cache = files.FilesNetgroupMapHandler(self.config)
         file_mock = self.mox.CreateMock(sys.stdout)
         file_mock.write(
-            'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
+            b'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
 
         map_entry = netgroup.NetgroupMapEntry()
         map_entry.name = 'administrators'
@@ -143,7 +143,7 @@ class TestFilesCache(mox.MoxTestBase):
         """We correctly write a typical entry in /etc/auto.* format."""
         cache = files.FilesAutomountMapHandler(self.config)
         file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write('scratch -tcp,rw,intr,bg fileserver:/scratch\n')
+        file_mock.write(b'scratch -tcp,rw,intr,bg fileserver:/scratch\n')
 
         map_entry = automount.AutomountMapEntry()
         map_entry.key = 'scratch'
