@@ -155,7 +155,7 @@ class TestFilesCache(mox.MoxTestBase):
         self.mox.VerifyAll()
 
         file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write('scratch fileserver:/scratch\n')
+        file_mock.write(b'scratch fileserver:/scratch\n')
 
         map_entry = automount.AutomountMapEntry()
         map_entry.key = 'scratch'
