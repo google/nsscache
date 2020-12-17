@@ -314,7 +314,7 @@ class FilesSshkeyMapHandler(FilesCache):
           Number of bytes written to the target.
         """
         sshkey_entry = '%s:%s' % (entry.name, entry.sshkey)
-        target.write(sshkey_entry + '\n')
+        target.write(sshkey_entry.encode() + b'\n')
         return len(sshkey_entry) + 1
 
 
@@ -459,7 +459,7 @@ class FilesNetgroupMapHandler(FilesCache):
             netgroup_entry = '%s %s' % (entry.name, entry.entries)
         else:
             netgroup_entry = entry.name
-        target.write(netgroup_entry + '\n')
+        target.write(netgroup_entry.encode() + b'\n')
         return len(netgroup_entry) + 1
 
 
@@ -510,7 +510,7 @@ class FilesAutomountMapHandler(FilesCache):
                                             entry.location)
         else:
             automount_entry = '%s %s' % (entry.key, entry.location)
-        target.write(automount_entry + '\n')
+        target.write(automount_entry.encode() + b'\n')
         return len(automount_entry) + 1
 
     def GetMapLocation(self):
