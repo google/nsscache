@@ -42,5 +42,5 @@ jobs:
         run: |
           pip install pylint
           pylint nsscache nss_cache
-      # TODO(jaq): eventually make this lint clean and remove this line
-      - continue-on-error: true
+        # TODO(jaq): eventually make this lint clean and remove this line
+        continue-on-error: true
