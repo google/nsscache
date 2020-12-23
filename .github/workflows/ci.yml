@@ -21,26 +21,14 @@ jobs:
       - uses: codecov/codecov-action@v1
       - name: Install
         run: pip install --user .
-
-  slapd_regtest:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
       - name: slapd Regression Test
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
-
-  yapf:
-    runs-on: ubuntu-latest
-    steps:
       - name: yapf
         run: |
           pip install yapf
           yapf --diff --recursive nss_cache nsscache
-  pylint:
-    runs-on: ubuntu-latest
-    steps:
       - name: pylint
         run: |
           pip install pylint
