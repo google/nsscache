@@ -17,7 +17,7 @@ slapd_apparmor="/etc/apparmor.d/usr.sbin.slapd"
 cleanup() {
   if [[ -f "$slapd_apparmor_bkp" ]]; then
     sudo mv "$slapd_apparmor_bkp" "$slapd_apparmor_override"
-    sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
+    sudo apparmor_parser -r -T -W "$slapd_apparmor"
   fi
   if [[ -e "$WORKDIR/slapd.pid" ]]; then
      kill -TERM $(cat $WORKDIR/slapd.pid)
@@ -50,7 +50,7 @@ override_apparmor() {
   echo "${WORKDIR}/** rwk," | sudo tee -a "$slapd_apparmor_override"
   echo "${ARTIFACTS}/ rw," | sudo tee -a "$slapd_apparmor_override"
   echo "${ARTIFACTS}/** rwk," | sudo tee -a "$slapd_apparmor_override"
-  sudo /usr/sbin/apparmor_parser -r -T -W "$slapd_apparmor"
+  sudo apparmor_parser -r -T -W "$slapd_apparmor"
 }
 
 setup_slapd() {

@@ -23,9 +23,9 @@ jobs:
       #     github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install
         run: pip install --user .
-      - name: Regression Test
+      - name: slapd Regression Test
         run: |
-          sudo apt install -y slapd ldap-utils libnss-db db-util
+          sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
       - name: yapf
         run: yapf --diff --recursive nss_cache nsscache
