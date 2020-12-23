@@ -23,21 +23,21 @@ jobs:
         run: pip install --user .
 
   slapd_regtest:
-    - needs: test
-    - steps:
+    needs: test
+    steps:
       - name: slapd Regression Test
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
 
   yapf:
-    - steps:
+    steps:
       - name: yapf
         run: |
           pip install yapf
           yapf --diff --recursive nss_cache nsscache
   pylint:
-    - steps:
+    steps:
       - name: pylint
         run: |
           pip install pylint
