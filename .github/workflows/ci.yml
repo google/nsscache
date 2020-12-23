@@ -3,31 +3,44 @@ on:
   push:
   pull_request:
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: '3.7'
-      - name: Install dependencies
+      - name: install dependencies
         run: |
           sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install coveralls yapf pylint
+          pip install pytest-github-actions-annotate-failures
       - name: Test
-        run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
-      # - uses: coverallsapp/github-action@master
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+        run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
+      - uses: codecov/codecov-action@v1
       - name: Install
         run: pip install --user .
+
+  slapd_regtest:
+    - needs: test
+    - steps:
       - name: slapd Regression Test
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
+
+  yapf:
+    - steps:
       - name: yapf
-        run: yapf --diff --recursive nss_cache nsscache
+        run: |
+          pip install yapf
+          yapf --diff --recursive nss_cache nsscache
+  pylint:
+    - steps:
       - name: pylint
-        run: pylint nsscache nss_cache || true
+        run: |
+          pip install pylint
+          pylint nsscache nss_cache
+      # TODO(jaq): eventually make this lint clean and remove this line
+      - continue-on-error: true
