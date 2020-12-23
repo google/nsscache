@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coveralls yapf pylint
+      - name: Test
+        run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache --cov-report term-missing --cov-report html"
+      - name: coveralls
+        run: coveralls --service=github-actions
+      - name: Install
+        run: pip install --user .
+      - name: Regression Test
+        run: |
+          sudo apt install -y slapd ldap-utils libnss-db db-util
+          tests/slapd-regtest
+      - name: yapf
+        run: yapf --diff --recursive nss_cache nsscache
+      - name: pylint
+        run: pylint nsscache nss_cache || true
