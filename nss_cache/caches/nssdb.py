@@ -44,7 +44,7 @@ def is_valid_unix_name(name):
     True otherwise.
 
     Unix has certain naming restrictions for user names in passwd, shadow, etc.
-    Here we take a conservative approach and only blacklist a few characters.
+    Here we take a conservative approach and only block a few characters.
 
     Args:
      name: name to test
