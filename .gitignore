@@ -6,7 +6,6 @@ debian/nsscache.postinst.debhelper
 debian/nsscache.prerm.debhelper
 debian/nsscache.substvars
 debian/nsscache
-debian/patches
 dist
 __pycache__/
 .pc
