@@ -1,3 +1,15 @@
+nsscache (0.41-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Move slapd regression test to the top level test for project consistency.
+  * Moved Debian packaging to salsa.debian.org: updated control.
+  * Indicate to gbp which branch is upstream.
+  * Bump standards-version to 4.4.0.
+  * Update debian/compat level to 10.
+  * Install conffile correctly.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Mon, 08 Feb 2021 10:52:13 +1100
+
 nsscache (0.39-2) unstable; urgency=medium
 
   * Make the tests execute correctly under pybuild by overriding the default local to search.
