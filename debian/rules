@@ -5,6 +5,8 @@ export DH_VERBOSE=1
 export PYBUILD_NAME=nsscache
 export PYBUILD_TEST_PYTEST=1
 export PYBUILD_TEST_ARGS=
+# data in setup.py is named 'config' and gets intalled to /usr/config by default.  Move the directory so that the conffile is put in the correct location, and avoids a mkdir.
+export PYBUILD_AFTER_INSTALL=mv {destdir}/usr/config {destdir}/etc
 
 %:
 	dh $@ --with=python3 --buildsystem=pybuild
