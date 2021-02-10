@@ -26,4 +26,5 @@ cleanup() {
 
 trap cleanup 0 INT QUIT ABRT PIPE TERM
 
-../../tests/slapd-regtest
+# CWD of each test is the root of the source package.
+./tests/slapd-regtest
