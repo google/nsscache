@@ -16,9 +16,6 @@ export WORKDIR ARTIFACTS
 
 
 cleanup() {
-  if [[ -e "$WORKDIR/slapd.pid" ]]; then
-     kill -TERM $(cat $WORKDIR/slapd.pid)
-  fi
   if [[ -z ${ADTTMP-}  ]]; then
 	rm -rf $WORKDIR
   fi
