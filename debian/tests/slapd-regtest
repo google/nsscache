@@ -2,12 +2,12 @@
 
 set -x
 
-if [[ -z ${ADTTMP-} ]]; then
+if [[ -z ${AUTOPKGTEST_TMP-} ]]; then
     WORKDIR=$(mktemp -d -t nsscache.regtest.XXXXXX)
     ARTIFACTS=${WORKDIR}
 else
-    WORKDIR=${ADTTMP}
-    ARTIFACTS=${ADT_ARTIFACTS}
+    WORKDIR=${AUTOPKGTEST_TMP}
+    ARTIFACTS=${AUTOPKGTEST_ARTIFACTS}
 fi
 
 
@@ -16,7 +16,7 @@ export WORKDIR ARTIFACTS
 
 
 cleanup() {
-  if [[ -z ${ADTTMP-}  ]]; then
+  if [[ -z ${AUTOPKGTEST_TMP-}  ]]; then
 	rm -rf $WORKDIR
   fi
 }
