@@ -1,3 +1,16 @@
+nsscache (0.41-2) unstable; urgency=medium
+
+  * Bump debian/compat to 12.
+  * Upstream branch renamed to main, updated gbp.conf.
+  * Do not look for the test in a relative path, fixing autopkgtest failure.
+  * No slapd.pid created in the ADT test wrapper, removed.
+  * Rename temp and artifact variables in autopkgtest.
+  * Update debian/watch format version.
+  * Bump standards version to 4.5.1.
+  * Remove acute accents from manpage.
+
+ -- Jamie Wilkinson <jaq@debian.org>  Thu, 11 Feb 2021 11:04:03 +1100
+
 nsscache (0.41-1) unstable; urgency=medium
 
   * New upstream release.
