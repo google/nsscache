@@ -782,7 +782,8 @@ class PasswdUpdateGetter(UpdateGetter):
         pw = passwd.PasswdMapEntry()
 
         if self.conf.get('ad'):
-            pw.gecos = obj['displayName'][0]
+            if 'displayName' in obj:
+                pw.gecos = obj['displayName'][0]
         elif 'gecos' in obj:
             pw.gecos = obj['gecos'][0]
         elif 'cn' in obj:
