@@ -19,7 +19,7 @@ jobs:
           pip install pytest-github-actions-annotate-failures
       - name: Test
         run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
-      - uses: codecov/codecov-action@v1.5.0
+      - uses: codecov/codecov-action@v2.0.3
       - name: Install
         run: pip install --user .
       - name: slapd Regression Test
