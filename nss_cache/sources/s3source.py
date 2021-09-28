@@ -110,6 +110,7 @@ class S3FilesSource(source.Source):
                                                self.conf['bucket'],
                                                self.conf['shadow_object'],
                                                since)
+
     def GetSshkeyMap(self, since=None):
         """Return the ssh map from this source.
 
@@ -124,7 +125,6 @@ class S3FilesSource(source.Source):
                                                self.conf['bucket'],
                                                self.conf['sshkey_object'],
                                                since)
-
 
 
 class S3UpdateGetter(object):
@@ -249,6 +249,7 @@ class ShadowUpdateGetter(S3UpdateGetter):
         it."""
         return shadow.ShadowMap()
 
+
 class SshkeyUpdateGetter(S3UpdateGetter):
     """Get ssh updates."""
 
@@ -260,7 +261,6 @@ class SshkeyUpdateGetter(S3UpdateGetter):
         """Returns a new SshMap instance to have SshMapEntries added to
         it."""
         return sshkey.SshkeyMap()
-
 
 
 class S3MapParser(object):
@@ -319,6 +319,7 @@ class S3PasswdMapParser(S3MapParser):
 
         return map_entry
 
+
 class S3SshkeyMapParser(S3MapParser):
     """Class for parsing nss_files module sshkey cache."""
 
@@ -331,6 +332,7 @@ class S3SshkeyMapParser(S3MapParser):
         map_entry.sshkey = entry.get('sshPublicKey', '')
 
         return map_entry
+
 
 class S3GroupMapParser(S3MapParser):
     """Class for parsing a nss_files module group cache."""
