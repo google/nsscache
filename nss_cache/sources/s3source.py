@@ -13,6 +13,7 @@ from botocore.exceptions import ClientError
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 from nss_cache.sources import source
 from nss_cache import error
 
@@ -29,6 +30,7 @@ class S3FilesSource(source.Source):
     PASSWD_OBJECT = ''
     GROUP_OBJECT = ''
     SHADOW_OBJECT = ''
+    SSH_OBJECT = ''
 
     # for registration
     name = 's3'
@@ -62,6 +64,8 @@ class S3FilesSource(source.Source):
             configuration['group_object'] = self.GROUP_OBJECT
         if 'shadow_object' not in configuration:
             configuration['shadow_object'] = self.SHADOW_OBJECT
+        if 'sshkey_object' not in configuration:
+            configuration['sshkey_object'] = self.SSH_OBJECT
 
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
@@ -105,6 +109,21 @@ class S3FilesSource(source.Source):
         return ShadowUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
                                                self.conf['shadow_object'],
+                                               since)
+
+    def GetSshkeyMap(self, since=None):
+        """Return the ssh map from this source.
+
+        Args:
+          since: Get data only changed since this timestamp (inclusive) or None
+          for all data.
+
+        Returns:
+          instance of shadow.SSHMap
+        """
+        return SshkeyUpdateGetter().GetUpdates(self._GetClient(),
+                                               self.conf['bucket'],
+                                               self.conf['sshkey_object'],
                                                since)
 
 
@@ -231,6 +250,19 @@ class ShadowUpdateGetter(S3UpdateGetter):
         return shadow.ShadowMap()
 
 
+class SshkeyUpdateGetter(S3UpdateGetter):
+    """Get ssh updates."""
+
+    def GetParser(self):
+        """Returns a MapParser to parse FilesSsh cache."""
+        return S3SshkeyMapParser()
+
+    def CreateMap(self):
+        """Returns a new SshMap instance to have SshMapEntries added to
+        it."""
+        return sshkey.SshkeyMap()
+
+
 class S3MapParser(object):
     """A base class for parsing nss_files module cache."""
 
@@ -284,6 +316,20 @@ class S3PasswdMapParser(S3MapParser):
         map_entry.gecos = entry.get('comment', '')
         map_entry.dir = entry.get('home', '/home/{}'.format(name))
         map_entry.shell = entry.get('shell', '/bin/bash')
+
+        return map_entry
+
+
+class S3SshkeyMapParser(S3MapParser):
+    """Class for parsing nss_files module sshkey cache."""
+
+    def _ReadEntry(self, name, entry):
+        """Return a sshkey from a record in the target cache."""
+
+        map_entry = sshkey.SshkeyMapEntry()
+        # maps expect strict typing, so convert to int as appropriate.
+        map_entry.name = name
+        map_entry.sshkey = entry.get('sshPublicKey', '')
 
         return map_entry
 
