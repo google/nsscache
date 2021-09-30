@@ -187,7 +187,7 @@ The uid-like attribute in your directory. Defaults to uid.
 
 .TP
 .B ldap_use_rid
-If enabled (set to 1) the relative identifier (RID) wll be used for mapping. 
+If enabled (set to 1) the relative identifier (RID) wll be used for mapping.
 By default \fBuidNumber\fP and \fBgidNumber\fP will be mapped when connecting to OpenLDAP with a POSIX-like schema.
 When using Samba4 AD, these attributes won't exist.
 Leave disabled for default.
@@ -249,9 +249,9 @@ source.
 .B s3_bucket
 AWS S3 bucket containing
 .I passwd, group, shadow
-objects. 
+objects.
 .B boto3
-python package should be installed to use this type of source. 
+python package should be installed to use this type of source.
 It is highly recommended to use s3 source only with AWS IAM role
 attached to the ec2 instance configured for read-only access to the bucket.
 So no extra configuration options like access_key and secret provided in config.
@@ -285,6 +285,15 @@ array of records in json format. E.g.
 .I [{"Value": {"passwd": "*"}, "Key": "user1"}].
 Valid attributes:
 .I "passwd", "lstchg", "min", "max", "warn", "inact", "expire"
+
+.TP
+.B s3_sshkey_object
+Object containing
+.B sshkey
+array of records in json format. E.g.
+.I [{"Value": {"sshPublicKey": "ssh-rsa ..."}, "Key": "user1"}].
+Valid attributes:
+.I "sshPublicKey"
 
 .SH nssdb CACHE OPTIONS
 
