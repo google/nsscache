@@ -25,4 +25,4 @@ nss_cache package.
 __author__ = ('jaq@google.com (Jamie Wilkinson)',
               'vasilios@google.com (Vasilios Hoffman)')
 
-__version__ = '0.42'
+__version__ = '0.43'
