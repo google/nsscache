@@ -38,6 +38,7 @@ from nss_cache.util import curl
 
 from io import StringIO
 
+
 def RegisterImplementation(registration_callback):
     registration_callback(HttpFilesSource)
 
@@ -268,7 +269,8 @@ class UpdateGetter(object):
         while retry_count < source.conf['retry_max']:
             try:
                 source.log.debug('fetching %s', url)
-                (resp_code, headers, body_bytes) = curl.CurlFetch(url, conn, self.log)
+                (resp_code, headers,
+                 body_bytes) = curl.CurlFetch(url, conn, self.log)
                 self.log.debug('response code: %s', resp_code)
             finally:
                 if resp_code < 400:

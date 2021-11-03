@@ -273,9 +273,13 @@ class TestShadowUpdateGetter(mox.MoxTestBase):
 
         self.mox.StubOutWithMock(curl, 'CurlFetch')
 
-        curl.CurlFetch('https://TEST_URL', mock_conn, self.updater.log).AndReturn([200,"",BytesIO(b"""usera:x:::::::
+        curl.CurlFetch('https://TEST_URL', mock_conn,
+                       self.updater.log).AndReturn([
+                           200, "",
+                           BytesIO(b"""usera:x:::::::
 userb:x:::::::
-""").getvalue()])
+""").getvalue()
+                       ])
 
         self.mox.ReplayAll()
         config = {}
@@ -294,7 +298,15 @@ userb:x:::::::
 
         self.mox.StubOutWithMock(curl, 'CurlFetch')
 
-        curl.CurlFetch('https://TEST_URL', mock_conn, self.updater.log).AndReturn([200,"",BytesIO(base64.b64decode("QlpoOTFBWSZTWfm+rXYAAAvJgAgQABAyABpAIAAhKm1GMoQAwRSpHIXejGQgz4u5IpwoSHzfVrsA")).getvalue()])
+        curl.CurlFetch(
+            'https://TEST_URL', mock_conn, self.updater.log
+        ).AndReturn([
+            200, "",
+            BytesIO(
+                base64.b64decode(
+                    "QlpoOTFBWSZTWfm+rXYAAAvJgAgQABAyABpAIAAhKm1GMoQAwRSpHIXejGQgz4u5IpwoSHzfVrsA"
+                )).getvalue()
+        ])
 
         self.mox.ReplayAll()
         config = {}

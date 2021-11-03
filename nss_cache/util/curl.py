@@ -42,7 +42,8 @@ def CurlFetch(url, conn=None, logger=None):
         HandleCurlError(e, logger)
         raise error.Error(e)
     resp_code = conn.getinfo(pycurl.RESPONSE_CODE)
-    return (resp_code, conn.headers.getvalue().decode('utf-8'), conn.body.getvalue())
+    return (resp_code, conn.headers.getvalue().decode('utf-8'),
+            conn.body.getvalue())
 
 
 def HandleCurlError(e, logger=None):
