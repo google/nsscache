@@ -36,6 +36,7 @@ from nss_cache.sources import source
 from nss_cache.util import file_formats
 from nss_cache.util import curl
 
+from io import StringIO
 
 def RegisterImplementation(registration_callback):
     registration_callback(HttpFilesSource)
@@ -267,7 +268,7 @@ class UpdateGetter(object):
         while retry_count < source.conf['retry_max']:
             try:
                 source.log.debug('fetching %s', url)
-                (resp_code, headers, body) = curl.CurlFetch(url, conn, self.log)
+                (resp_code, headers, body_bytes) = curl.CurlFetch(url, conn, self.log)
                 self.log.debug('response code: %s', resp_code)
             finally:
                 if resp_code < 400:
@@ -302,10 +303,12 @@ class UpdateGetter(object):
 
         # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
         try:
-            response = bz2.decompress(body)
+            body_bytes = bz2.decompress(body_bytes)
             self.log.debug('bzip encoding found')
         except IOError:
-            response = body
+            self.log.debug('bzip encoding not found')
+
+        response = StringIO(body_bytes.decode('utf-8'))
 
         data_map = self.GetMap(cache_info=response)
         if http_ts_string:

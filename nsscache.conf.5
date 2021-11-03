@@ -52,7 +52,7 @@ A complete list of configuration options follows.
 Specifies the source to use to retrieve NSS data from.
 
 Valid Options:
-.I ldap, s3
+.I ldap, s3, http
 
 .TP
 .B cache
@@ -294,6 +294,40 @@ array of records in json format. E.g.
 .I [{"Value": {"sshPublicKey": "ssh-rsa ..."}, "Key": "user1"}].
 Valid attributes:
 .I "sshPublicKey"
+
+.SH http SOURCE OPTIONS
+
+These options configure the behaviour of the
+.I http
+source.
+
+.TP
+.B http_passwd_url
+URL for an HTTP endpoint that returns a file containing
+.B passwd
+records in the standard format. E.g.
+.I root:*:0:0:System Administrator:/var/root:/bin/sh
+
+.TP
+.B http_group_url
+URL for an HTTP endpoint that returns a file containing
+.B group
+records in the standard format. E.g.
+.I users:x:100:memberships....
+
+.TP
+.B http_shadow_url
+URL for an HTTP endpoint that returns a file containing
+.B shadow
+records in the standard format. E.g.
+.I root:*:18866:0:99999:7:::
+
+.TP
+.B http_sshkey_url
+URL for an HTTP endpoint that returns a file containing
+.B sshkey
+records in the standard format. E.g.
+.I root:ssh-rsa ...
 
 .SH nssdb CACHE OPTIONS
 

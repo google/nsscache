@@ -17,10 +17,12 @@
 
 __author__ = 'blaedd@google.com (David MacKinnon)'
 
+import base64
 import time
 import unittest
 import pycurl
 from mox3 import mox
+from io import BytesIO
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -32,9 +34,10 @@ from nss_cache.maps import sshkey
 
 from nss_cache.sources import httpsource
 from nss_cache.util import file_formats
+from nss_cache.util import curl
 
 
-class TestHttpSource(unittest.TestCase):
+class TestHttpSource(mox.MoxTestBase):
 
     def setUp(self):
         """Initialize a basic config dict."""
@@ -229,7 +232,7 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
                           since=None)
 
 
-class TestPasswdUpdateGetter(unittest.TestCase):
+class TestPasswdUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestPasswdUpdateGetter, self).setUp()
@@ -245,7 +248,7 @@ class TestPasswdUpdateGetter(unittest.TestCase):
         self.assertTrue(isinstance(self.updater.CreateMap(), passwd.PasswdMap))
 
 
-class TestShadowUpdateGetter(unittest.TestCase):
+class TestShadowUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestShadowUpdateGetter, self).setUp()
@@ -260,8 +263,48 @@ class TestShadowUpdateGetter(unittest.TestCase):
     def testCreateMap(self):
         self.assertTrue(isinstance(self.updater.CreateMap(), shadow.ShadowMap))
 
+    def testShadowGetUpdatesWithContent(self):
+        mock_conn = self.mox.CreateMockAnything()
+        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
 
-class TestGroupUpdateGetter(unittest.TestCase):
+        self.mox.StubOutWithMock(pycurl, 'Curl')
+        pycurl.Curl().AndReturn(mock_conn)
+
+        self.mox.StubOutWithMock(curl, 'CurlFetch')
+
+        curl.CurlFetch('https://TEST_URL', mock_conn, self.updater.log).AndReturn([200,"",BytesIO(b"""usera:x:::::::
+userb:x:::::::
+""").getvalue()])
+
+        self.mox.ReplayAll()
+        config = {}
+        source = httpsource.HttpFilesSource(config)
+        result = self.updater.GetUpdates(source, 'https://TEST_URL', 1)
+        print(result)
+        self.assertEqual(len(result), 2)
+
+    def testShadowGetUpdatesWithBz2Content(self):
+        mock_conn = self.mox.CreateMockAnything()
+        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
+        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
+
+        self.mox.StubOutWithMock(pycurl, 'Curl')
+        pycurl.Curl().AndReturn(mock_conn)
+
+        self.mox.StubOutWithMock(curl, 'CurlFetch')
+
+        curl.CurlFetch('https://TEST_URL', mock_conn, self.updater.log).AndReturn([200,"",BytesIO(base64.b64decode("QlpoOTFBWSZTWfm+rXYAAAvJgAgQABAyABpAIAAhKm1GMoQAwRSpHIXejGQgz4u5IpwoSHzfVrsA")).getvalue()])
+
+        self.mox.ReplayAll()
+        config = {}
+        source = httpsource.HttpFilesSource(config)
+        result = self.updater.GetUpdates(source, 'https://TEST_URL', 1)
+        print(result)
+        self.assertEqual(len(result), 2)
+
+
+class TestGroupUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestGroupUpdateGetter, self).setUp()
@@ -277,7 +320,7 @@ class TestGroupUpdateGetter(unittest.TestCase):
         self.assertTrue(isinstance(self.updater.CreateMap(), group.GroupMap))
 
 
-class TestNetgroupUpdateGetter(unittest.TestCase):
+class TestNetgroupUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestNetgroupUpdateGetter, self).setUp()
@@ -294,7 +337,7 @@ class TestNetgroupUpdateGetter(unittest.TestCase):
             isinstance(self.updater.CreateMap(), netgroup.NetgroupMap))
 
 
-class TestAutomountUpdateGetter(unittest.TestCase):
+class TestAutomountUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestAutomountUpdateGetter, self).setUp()
@@ -311,7 +354,7 @@ class TestAutomountUpdateGetter(unittest.TestCase):
             isinstance(self.updater.CreateMap(), automount.AutomountMap))
 
 
-class TestSshkeyUpdateGetter(unittest.TestCase):
+class TestSshkeyUpdateGetter(mox.MoxTestBase):
 
     def setUp(self):
         super(TestSshkeyUpdateGetter, self).setUp()
