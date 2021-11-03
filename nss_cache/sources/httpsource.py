@@ -24,6 +24,7 @@ import os
 import pycurl
 import time
 from urllib.parse import urljoin
+from io import StringIO
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -35,8 +36,6 @@ from nss_cache.maps import sshkey
 from nss_cache.sources import source
 from nss_cache.util import file_formats
 from nss_cache.util import curl
-
-from io import StringIO
 
 
 def RegisterImplementation(registration_callback):
@@ -310,6 +309,7 @@ class UpdateGetter(object):
         except IOError:
             self.log.debug('bzip encoding not found')
 
+        # Wrap in a stringIO so that it can be looped on by newlines in the parser
         response = StringIO(body_bytes.decode('utf-8'))
 
         data_map = self.GetMap(cache_info=response)

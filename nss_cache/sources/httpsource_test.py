@@ -37,7 +37,7 @@ from nss_cache.util import file_formats
 from nss_cache.util import curl
 
 
-class TestHttpSource(mox.MoxTestBase):
+class TestHttpSource(unittest.TestCase):
 
     def setUp(self):
         """Initialize a basic config dict."""
@@ -232,7 +232,7 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
                           since=None)
 
 
-class TestPasswdUpdateGetter(mox.MoxTestBase):
+class TestPasswdUpdateGetter(unittest.TestCase):
 
     def setUp(self):
         super(TestPasswdUpdateGetter, self).setUp()
@@ -316,7 +316,7 @@ userb:x:::::::
         self.assertEqual(len(result), 2)
 
 
-class TestGroupUpdateGetter(mox.MoxTestBase):
+class TestGroupUpdateGetter(unittest.TestCase):
 
     def setUp(self):
         super(TestGroupUpdateGetter, self).setUp()
@@ -332,7 +332,7 @@ class TestGroupUpdateGetter(mox.MoxTestBase):
         self.assertTrue(isinstance(self.updater.CreateMap(), group.GroupMap))
 
 
-class TestNetgroupUpdateGetter(mox.MoxTestBase):
+class TestNetgroupUpdateGetter(unittest.TestCase):
 
     def setUp(self):
         super(TestNetgroupUpdateGetter, self).setUp()
@@ -349,7 +349,7 @@ class TestNetgroupUpdateGetter(mox.MoxTestBase):
             isinstance(self.updater.CreateMap(), netgroup.NetgroupMap))
 
 
-class TestAutomountUpdateGetter(mox.MoxTestBase):
+class TestAutomountUpdateGetter(unittest.TestCase):
 
     def setUp(self):
         super(TestAutomountUpdateGetter, self).setUp()
@@ -366,7 +366,7 @@ class TestAutomountUpdateGetter(mox.MoxTestBase):
             isinstance(self.updater.CreateMap(), automount.AutomountMap))
 
 
-class TestSshkeyUpdateGetter(mox.MoxTestBase):
+class TestSshkeyUpdateGetter(unittest.TestCase):
 
     def setUp(self):
         super(TestSshkeyUpdateGetter, self).setUp()
