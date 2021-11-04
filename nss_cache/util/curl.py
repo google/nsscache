@@ -19,7 +19,7 @@ __author__ = 'blaedd@google.com (David MacKinnon)'
 
 import logging
 import pycurl
-from io import StringIO
+from io import BytesIO
 
 from nss_cache import error
 
@@ -32,8 +32,8 @@ def CurlFetch(url, conn=None, logger=None):
         conn = pycurl.Curl()
 
     conn.setopt(pycurl.URL, url)
-    conn.body = StringIO()
-    conn.headers = StringIO()
+    conn.body = BytesIO()
+    conn.headers = BytesIO()
     conn.setopt(pycurl.WRITEFUNCTION, conn.body.write)
     conn.setopt(pycurl.HEADERFUNCTION, conn.headers.write)
     try:
@@ -42,7 +42,8 @@ def CurlFetch(url, conn=None, logger=None):
         HandleCurlError(e, logger)
         raise error.Error(e)
     resp_code = conn.getinfo(pycurl.RESPONSE_CODE)
-    return (resp_code, conn.headers.getvalue(), conn.body.getvalue())
+    return (resp_code, conn.headers.getvalue().decode('utf-8'),
+            conn.body.getvalue())
 
 
 def HandleCurlError(e, logger=None):
@@ -63,8 +64,8 @@ def HandleCurlError(e, logger=None):
     if not logger:
         logger = logging
 
-    code = e[0]
-    msg = e[1]
+    code = e.args[0]
+    msg = e.args[1]
 
     # Config errors
     if code in (pycurl.E_UNSUPPORTED_PROTOCOL, pycurl.E_URL_MALFORMAT,
