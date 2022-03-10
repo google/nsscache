@@ -1,6 +1,6 @@
 pytest
 boto3
-pycurl==7.44.1
+pycurl==7.45.0
 python3-ldap
 python-ldap
 bsddb3
