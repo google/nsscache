@@ -1,7 +1,19 @@
 name: CI
 on:
   push:
+    tags:
+      - v*
+    branches:
+      - main
   pull_request:
+
+permissions:
+  # none-all, which doesn't exist, but
+  # https://docs.github.com/en/actions/reference/authentication-in-a-workflow#using-the-github_token-in-a-workflow
+  # implies that the token still gets created.  Elsewhere we learn that any
+  # permission not mentioned here gets turned to `none`.
+  actions: none
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -9,7 +21,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3.1.2
         with:
-          python-version: '3.7'
+          python-version: '^3.x'
           cache: 'pip'
       - name: install dependencies
         run: |
@@ -21,12 +33,18 @@ jobs:
       - name: Test
         run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
       - uses: codecov/codecov-action@v3
+        if: always()
       - name: Install
         run: pip install --user .
       - name: slapd Regression Test
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
       - name: yapf
         run: |
           pip install yapf
