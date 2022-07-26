@@ -885,6 +885,8 @@ class GroupUpdateGetter(UpdateGetter):
         if self.conf.get('ad'):
             gr.name = obj['sAMAccountName'][0]
         # hack to map the users as the corresponding group with the same name
+        elif 'uidattr' in self.conf and self.conf['uidattr'] in obj:
+            gr.name = obj[self.conf['uidattr']][0]
         elif 'uid' in obj:
             gr.name = obj['uid'][0]
         else:
