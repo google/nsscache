@@ -31,7 +31,14 @@ jobs:
           pip install -r requirements.txt
           pip install pytest-github-actions-annotate-failures
       - name: Test
-        run: python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
+        run: |
+          mkdir -p test-results
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+             echo ${{ github.event.pull_request.head.sha }}  > test-results/sha-number
+          else
+             echo ${{ github.sha }} > test-results/sha-number
+          fi
+          python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
       - uses: codecov/codecov-action@v3
         if: always()
       - name: Install
