@@ -46,7 +46,7 @@ class TestCacheFactory(unittest.TestCase):
         cache_factory._cache_implementations = old_cache_implementations
 
     def testThatRegularImplementationsArePresent(self):
-        self.assertEqual(len(cache_factory._cache_implementations), 2)
+        self.assertEqual(len(cache_factory._cache_implementations), 1)
 
 
 if __name__ == '__main__':

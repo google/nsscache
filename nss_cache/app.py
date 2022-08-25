@@ -16,8 +16,7 @@
 """Main program body for nsscache.
 
 The nsscache program is the user interface to the nss_cache package,
-responsible for updating or building local persistent cache, e.g.
-nss_db.
+responsible for updating or building local persistent cache.
 """
 
 __author__ = ('jaq@google.com (Jamie Wilkinson)',

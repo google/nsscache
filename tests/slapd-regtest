@@ -97,18 +97,6 @@ run_nsscache() {
     nsscache -d -c "${config}" status
 }
 
-test_nssdb() {
-	ls -alR $WORKDIR/nssdb
-	
-	grep jaq $WORKDIR/nssdb/passwd.db
-
-	db_dump -da $WORKDIR/nssdb/passwd.db | grep jaq
-	db_dump -da $WORKDIR/nssdb/shadow.db | grep jaq
-	db_dump -da $WORKDIR/nssdb/group.db | grep jaq
-
-	[[ $(stat -c%A $WORKDIR/nssdb/shadow.db) == "-rw-r-----" ]] || exit 1
-}
-
 test_files() {
 	ls -alR $WORKDIR
 	set -e
@@ -143,7 +131,6 @@ if apparmor_enabled; then
   override_apparmor
 fi
 setup_slapd
-run_nsscache ldap nssdb
 run_nsscache ldap files
 
 echo OK

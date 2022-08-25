@@ -201,8 +201,8 @@ class TestClassMethods(unittest.TestCase):
         self.assertEqual(options, {})
 
         # create a list like from ConfigParser.items()
-        items = [('maps', 'foo, bar, foobar'), ('nssdb_dir', '/path/to/dir'),
-                 ('ldap_uri', 'TEST_URI'), ('source', 'foo'), ('cache', 'bar'),
+        items = [('maps', 'foo, bar, foobar'), ('ldap_uri', 'TEST_URI'),
+                 ('source', 'foo'), ('cache', 'bar'),
                  ('ldap_base', 'TEST_BASE'), ('ldap_filter', 'TEST_FILTER')]
 
         options = config.Options(items, 'ldap')
@@ -218,14 +218,14 @@ class TestClassMethods(unittest.TestCase):
     def testParseNSSwitchConf(self):
         nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
         nsswitch_file = open(nsswitch_filename, 'w')
-        nsswitch_file.write('passwd: files db\n')
-        nsswitch_file.write('group: files db\n')
-        nsswitch_file.write('shadow: files db\n')
+        nsswitch_file.write('passwd: files cache\n')
+        nsswitch_file.write('group: files cache\n')
+        nsswitch_file.write('shadow: files cache\n')
         nsswitch_file.close()
         expected_switch = {
-            'passwd': ['files', 'db'],
-            'group': ['files', 'db'],
-            'shadow': ['files', 'db']
+            'passwd': ['files', 'cache'],
+            'group': ['files', 'cache'],
+            'shadow': ['files', 'cache']
         }
         self.assertEqual(expected_switch,
                          config.ParseNSSwitchConf(nsswitch_filename))
@@ -242,9 +242,9 @@ class TestClassMethods(unittest.TestCase):
         config.LoadConfig(self.conf)
         nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
         nsswitch_file = open(nsswitch_filename, 'w')
-        nsswitch_file.write('passwd: files db\n')
-        nsswitch_file.write('group: files db\n')
-        nsswitch_file.write('shadow: files db\n')
+        nsswitch_file.write('passwd: files cache\n')
+        nsswitch_file.write('group: files cache\n')
+        nsswitch_file.write('shadow: files cache\n')
         nsswitch_file.close()
         self.assertEqual((0, 0),
                          config.VerifyConfiguration(self.conf,
@@ -325,8 +325,8 @@ class TestClassMethods(unittest.TestCase):
         nsswitch_filename = os.path.join(self.workdir, 'nsswitch.conf')
         nsswitch_file = open(nsswitch_filename, 'w')
         nsswitch_file.write('passwd: files ldap\n')
-        nsswitch_file.write('group: files db\n')
-        nsswitch_file.write('shadow: files db\n')
+        nsswitch_file.write('group: files cache\n')
+        nsswitch_file.write('shadow: files cache\n')
         nsswitch_file.close()
         self.assertEqual((1, 0),
                          config.VerifyConfiguration(self.conf,
