@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 if [ -z $1 ]; then
-    CURRENT_VERSION=$(PYTHONPATH=. python -c 'import nss_cache; print nss_cache.__version__')
+	CURRENT_VERSION=$(PYTHONPATH=. python3 -c 'import nss_cache; print(nss_cache.__version__)')
     a=( ${CURRENT_VERSION//./ } )
     (( a[${#a[@]}-1] += 1 ))
     NEW_VERSION=$(IFS=.; echo "${a[*]}")
