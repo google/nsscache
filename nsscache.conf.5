@@ -71,12 +71,6 @@ then not only will the files be created with a \fB.cache\fP suffix, but also an 
 .I nss-cache
 NSS module.  (See https://github.com/google/libnss-cache.)
 
-.I nssdb
-Store in a Berkeley DB file, for use with the
-.I nss_db
-NSS module.  Please note that this option is deprecated in favour of
-.I cache
-
 .TP
 .B maps
 Specifies the names of the maps that will be queried and cached by
@@ -329,31 +323,8 @@ URL for an HTTP endpoint that returns a file containing
 records in the standard format. E.g.
 .I root:ssh-rsa ...
 
-.SH nssdb CACHE OPTIONS
-
-These options configure the behaviour of the
-.I nssdb
-cache.
-
-.TP
-.B nssdb_dir
-Directory to store the Berkeley DB databases.  Defaults to the current
-directory.  Note that
-.B nss_db
-hardcodes the path to
-.I /var/lib/misc
-on Debian systems, and
-.I /var/db
-on Red Hat systems.
-
-.TP
-.B nssdb_makedb
-Path to the \fBmakedb\fP(1) command, which is used by the nssdb cache code
-to ensure that the Berkeley DB version created by the module matches
-that expected by the \fBnss_db\fP NSS module.
-
 .SH files CACHE OPTIONS
-These optiosn configure the behaviour of the
+These options configure the behaviour of the
 .I files
 cache.
 
@@ -388,12 +359,14 @@ A typical example might look like this:
 
   [DEFAULT]
   source = ldap
-  cache = nssdb
+  cache = files
   maps = passwd, group, shadow
   ldap_uri = ldap://ldap.example.com
   ldap_base = ou=People,dc=example,dc=com
   ldap_filter = (objectclass=posixAccount)
-  nssdb_dir = /var/lib/misc
+
+  files_dir = /etc
+  files_cache_filename_suffix = cache
 
   [group]
   ldap_base = ou=Group,dc=example,dc=com
@@ -405,9 +378,9 @@ A typical example might look like this:
 
 And a complementary \fI\|/etc/nsswitch.conf\|\fP might look like this:
 
-  passwd: files db
-  group: files db
-  shadow: files db
+  passwd: files cache
+  group: files cache
+  shadow: files cache
 
 .SH FILES
 .TP

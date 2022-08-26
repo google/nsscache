@@ -3,6 +3,4 @@ Restrictions: allow-stderr
 Depends: @,
 	slapd,
 	ldap-utils,
-	libnss-db,
-	db-util,
-	python3-bsddb3
+	db-util

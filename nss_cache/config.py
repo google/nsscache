@@ -315,7 +315,8 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
         if configured_map == 'sshkey':
             continue
         if conf.options[configured_map].cache['name'] == 'nssdb':
-            nss_module_name = 'db'
+            logging.error('nsscache no longer supports nssdb cache')
+            errors += 1
         if conf.options[configured_map].cache['name'] == 'files':
             nss_module_name = 'files'
             if ('cache_filename_suffix' in conf.options[configured_map].cache
@@ -325,8 +326,7 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
                 # We are configured for libnss-cache for this map.
                 nss_module_name = 'cache'
         else:
-            # TODO(jaq): default due to hysterical raisins
-            nss_module_name = 'db'
+            nss_module_name = 'cache'
 
         if nss_module_name not in nsswitch[configured_map]:
             logging.warning(('nsscache is configured to build maps for %r, '

@@ -1,6 +1,6 @@
 FROM python:3
 RUN apt-get update
-RUN apt-get install -y libnss-db libsasl2-dev libldap2-dev libssl-dev
+RUN apt-get install -y libsasl2-dev libldap2-dev libssl-dev
 RUN mkdir /code
 WORKDIR /code
 ADD requirements.txt /code/

@@ -51,7 +51,6 @@ as LDAP.""",
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'mox3', 'pytest-cov', 'python-coveralls'],
     extras_require={
-        'bdb': ['bsddb3'],
         'ldap': ['python3-ldap', 'python-ldap'],
         'http': ['pycurl'],
         's3': ['boto3'],

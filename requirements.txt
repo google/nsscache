@@ -3,5 +3,4 @@ boto3
 pycurl==7.45.1
 python3-ldap
 python-ldap
-bsddb3
 mox3
