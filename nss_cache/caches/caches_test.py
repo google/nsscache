@@ -22,7 +22,7 @@ import platform
 import stat
 import tempfile
 import unittest
-from mox3 import mox
+from unittest import mock
 
 from nss_cache import config
 from nss_cache.caches import caches
@@ -42,7 +42,7 @@ class FakeCacheCls(caches.Cache):
         return os.path.join(self.output_dir, self.CACHE_FILENAME + '.test')
 
 
-class TestCls(mox.MoxTestBase):
+class TestCls(unittest.TestCase):
 
     def setUp(self):
         self.workdir = tempfile.mkdtemp()
@@ -77,20 +77,15 @@ class TestCls(mox.MoxTestBase):
         os.unlink(cache.GetCacheFilename())
 
 
-class TestCache(mox.MoxTestBase):
+class TestCache(unittest.TestCase):
 
     def testWriteMap(self):
         cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
-        self.mox.StubOutWithMock(cache_map, '_Commit')
-        self.mox.StubOutWithMock(cache_map, 'Write')
-        self.mox.StubOutWithMock(cache_map, 'Verify')
-        cache_map._Commit()
-        cache_map.Write('writable_map').AndReturn('entries_written')
-        cache_map.Verify('entries_written').AndReturn(True)
-        self.mox.ReplayAll()
-
-        self.assertEqual(0, cache_map.WriteMap('writable_map'))
-
+        with mock.patch.object(cache_map, 'Write') as write, mock.patch.object(cache_map, 'Verify') as verify, mock.patch.object(cache_map, '_Commit') as commit:
+            write.return_value = 'entries_written'
+            verify.return_value = True
+            self.assertEqual(0, cache_map.WriteMap('writable_map'))
+            
 
 if __name__ == '__main__':
     unittest.main()
