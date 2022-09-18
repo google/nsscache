@@ -22,12 +22,12 @@ import shutil
 import tempfile
 import time
 import unittest
-from mox3 import mox
+from unittest import mock
 
 from nss_cache.util import timestamps
 
 
-class TestTimestamps(mox.MoxTestBase):
+class TestTimestamps(unittest.TestCase):
 
     def setUp(self):
         super(TestTimestamps, self).setUp()
@@ -64,12 +64,10 @@ class TestTimestamps(mox.MoxTestBase):
         ts_file.close()
 
         now = time.gmtime(1)
-        self.mox.StubOutWithMock(time, 'gmtime')
-        time.gmtime().AndReturn(now)
-        self.mox.ReplayAll()
-
-        ts = timestamps.ReadTimestamp(ts_filename)
-        self.assertEqual(now, ts)
+        with mock.patch('time.gmtime') as gmtime:
+            gmtime.return_value = now
+            ts = timestamps.ReadTimestamp(ts_filename)
+            self.assertEqual(now, ts)  
 
     def testWriteTimestamp(self):
         ts_filename = os.path.join(self.workdir, 'tsw')

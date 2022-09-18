@@ -28,12 +28,12 @@ import stat
 import sys
 import tempfile
 import unittest
-from mox3 import mox
+from unittest import mock
 
 from nss_cache import lock
 
 
-class TestPidFile(mox.MoxTestBase):
+class TestPidFile(unittest.TestCase):
     """Unit tests for PidFile class in lock.py."""
 
     # Note that we do not test whether fcntl actually works as expected.
@@ -82,22 +82,18 @@ class TestPidFile(mox.MoxTestBase):
 
     def testDestructorUnlocks(self):
         yes = lock.PidFile()
-        self.mox.StubOutWithMock(yes, 'Locked')
-        self.mox.StubOutWithMock(yes, 'Unlock')
-        yes.Locked().AndReturn(True)
-        yes.Unlock()
+        with mock.patch.object(yes, 'Locked') as locked, mock.patch.object(yes, 'Unlock') as unlock:
+            locked.return_value = True
+            yes.__del__()
+            # Destructor should unlock
+            unlock.assert_called_once()
 
         no = lock.PidFile()
-        self.mox.StubOutWithMock(no, 'Locked')
-        no.Locked().AndReturn(False)
-
-        self.mox.ReplayAll()
-
-        # test the case where locked returns True.
-        yes.__del__()
-
-        # test the case where self.Locked() returns False.
-        no.__del__()
+        with mock.patch.object(no, 'Locked') as locked,  mock.patch.object(yes, 'Unlock') as unlock:
+            locked.return_value = False
+            no.__del__()
+            # No unlock needed if already not locked.
+            unlock.assert_not_called()
 
     def testOpenCreatesAppropriateFileWithPerms(self):
         locker = lock.PidFile(filename=self.filename)
@@ -114,32 +110,20 @@ class TestPidFile(mox.MoxTestBase):
 
     def testLockCreatesPidfiles(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_Open')
-        locker._Open().AndRaise(NotImplementedError)
-        self.mox.ReplayAll()
-
-        self.assertRaises(NotImplementedError, locker.Lock)
+        with mock.patch.object(locker, '_Open') as open:
+            open.side_effect = NotImplementedError()
+            self.assertRaises(NotImplementedError, locker.Lock)
 
         # Note that testing when self._file is not None is covered below.
 
     def testLockLocksWithFcntl(self):
         locker = lock.PidFile(pid='PID')
 
-        self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
-        locker._file.truncate()
-        locker._file.write('PID\n')
-        locker._file.flush()
+        with mock.patch.object(locker, '_file') as f, mock.patch('fcntl.lockf') as lockf:
 
-        self.mox.StubOutWithMock(fcntl, 'lockf')
-        fcntl.lockf(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-        self.mox.ReplayAll()
-
-        locker.Lock()
-        self.assertTrue(locker._locked)
-
-        # force __del__ to skip Unlock()
-        locker._locked = False
+            locker.Lock()
+            self.assertTrue(locker._locked)
+            lockf.assert_called_once_with(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def testLockStoresPid(self):
         locker = lock.PidFile(filename=self.filename, pid='PID')
@@ -155,104 +139,85 @@ class TestPidFile(mox.MoxTestBase):
 
     def testLockTrapsPermissionDeniedOnly(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_Open')
-        locker._Open().AndRaise(IOError(errno.EACCES, ''))
-        locker._Open().AndRaise(IOError(errno.EIO, ''))
-        self.mox.ReplayAll()
+        with mock.patch.object(locker, '_Open') as open:
+            open.side_effect = [IOError(errno.EACCES, ''), IOError(errno.EIO, '')]
 
-        self.assertEqual(False, locker.Lock())
-        self.assertRaises(IOError, locker.Lock)
+            self.assertEqual(False, locker.Lock())
+            self.assertRaises(IOError, locker.Lock)
 
     def testForceLockTerminatesAndClearsLock(self):
         locker = lock.PidFile(pid='PID')
-        self.mox.StubOutWithMock(locker, 'SendTerm')
-        locker.SendTerm()
-        self.mox.StubOutWithMock(locker, 'ClearLock')
-        locker.ClearLock()
-        self.mox.StubOutWithMock(locker, '_file')
-        self.mox.StubOutWithMock(fcntl, 'lockf')
-        fcntl.lockf(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-            IOError(errno.EAGAIN, ''))
-        fcntl.lockf(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB).AndRaise(
-            IOError(errno.EAGAIN, ''))
-        self.mox.ReplayAll()
-
-        # This is a little weird due to recursion.
-        # The first time through lockf throws an error and we retry the lock.
-        # The 2nd time through we should fail, because lockf will still throw
-        # an error, so we expect False back and the above mock objects
-        # invoked.
-        self.assertFalse(locker.Lock(force=True))
+        with mock.patch.object(locker, 'SendTerm'), mock.patch.object(locker, 'ClearLock'), mock.patch.object(locker, '_file') as f:
+            with mock.patch('fcntl.lockf') as lockf:
+                # This is a little weird due to recursion.
+                # The first time through lockf throws an error and we retry the lock.
+                # The 2nd time through we should fail, because lockf will still throw
+                # an error, so we expect False back and the above mock objects
+                # invoked.
+                lockf.side_effect = [IOError(errno.EAGAIN, ''), IOError(errno.EAGAIN, '')]
+                self.assertFalse(locker.Lock(force=True))
+                lockf.assert_has_calls((mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB),
+                mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)))
 
     def testSendTermMatchesCommandAndSendsTerm(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
-        locker._file.read().AndReturn('1234')
-        locker._file.seek(0)
+        # Program mocks
+        mock_re = mock.create_autospec(re.Pattern)
+        mock_re.match.return_value = True
+        with mock.patch('re.compile') as regexp, mock.patch('os.kill') as kill, mock.patch.object(locker, '_file') as f:
+            f.read.return_value = '1234'
+            regexp.return_value = mock_re
 
-        # Mock used in place of an re.compile() pattern -- expects the contents
-        # of our proc_file!
-        mock_re = self.mox.CreateMockAnything()
-        mock_re.match('TEST').AndReturn(True)
-        self.mox.StubOutWithMock(re, 'compile')
-        re.compile(r'.*nsscache').AndReturn(mock_re)
+            # Create a file we open() in SendTerm().
+            proc_dir = '%s/1234' % self.workdir
+            proc_filename = '%s/cmdline' % proc_dir
+            os.mkdir(proc_dir)
+            proc_file = open(proc_filename, 'w')
+            proc_file.write('TEST')
+            proc_file.flush()
+            proc_file.close()
+            locker.PROC_DIR = self.workdir
 
-        self.mox.StubOutWithMock(os, 'kill')
-        os.kill(1234, signal.SIGTERM)
+            # Actually exercise the mocks
+            locker.SendTerm()
 
-        # Create a file we open() in SendTerm().
-        proc_dir = '%s/1234' % self.workdir
-        proc_filename = '%s/cmdline' % proc_dir
-        os.mkdir(proc_dir)
-        proc_file = open(proc_filename, 'w')
-        proc_file.write('TEST')
-        proc_file.flush()
-        proc_file.close()
-        locker.PROC_DIR = self.workdir
-
-        self.mox.ReplayAll()
-
-        locker.SendTerm()
-
-        os.remove(proc_filename)
-        os.rmdir(proc_dir)
+            # Assert the mocks
+            regexp.assert_called_with(r'.*nsscache')
+            kill.assert_called_once_with(1234, signal.SIGTERM)
+            f.read.assert_called()
+            f.seek.assert_called_with(0)
+            os.remove(proc_filename)
+            os.rmdir(proc_dir)
 
     def testSendTermNoPid(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
-        locker._file.read().AndReturn('\n')
-        locker.PROC = self.workdir
-
-        self.mox.ReplayAll()
-
-        locker.SendTerm()
+        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill:
+            f.read.return_value = '\n'
+            locker.PROC = self.workdir
+            locker.SendTerm()
+            f.read.assert_called()
+            kill.assert_not_called()
 
     def testSendTermNonePid(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
-        locker._file.read().AndReturn(None)
-        locker.PROC = self.workdir
-
-        self.mox.ReplayAll()
-
-        locker.SendTerm()
+        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill:
+            f.read.return_value = None
+            locker.PROC = self.workdir
+            locker.SendTerm()
+            f.read.assert_called()
+            kill.assert_not_called()
 
     def testSendTermTrapsENOENT(self):
         locker = lock.PidFile()
-        self.mox.StubOutWithMock(locker, '_file', use_mock_anything=True)
-        locker._file.read().AndReturn('1234\n')
-        locker._file.seek(0)
-        locker.PROC = self.workdir
-
-        self.mox.StubOutWithMock(builtins, 'open', use_mock_anything=True)
-        builtins.open(mox.IgnoreArg(), 'r').AndRaise(IOError(errno.ENOENT, ''))
-
-        self.mox.ReplayAll()
-
-        # self.workdir/1234/cmdline should not exist :)
-        self.assertFalse(os.path.exists('%s/1234/cmdline' % self.workdir))
-
-        locker.SendTerm()
+        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill, mock.patch('builtins.open') as mock_open:
+            f.read.return_value = '1234\n'
+            mock_open.side_effect = IOError(errno.ENOENT, '')
+            # self.workdir/1234/cmdline should not exist :)
+            self.assertFalse(os.path.exists('%s/1234/cmdline' % self.workdir))
+            locker.PROC = self.workdir
+            locker.SendTerm()
+            f.read.assert_called()
+            f.seek.assert_called_with(0)
 
     def testClearLockRemovesPidFile(self):
         # Create a pid file.
@@ -281,13 +246,10 @@ class TestPidFile(mox.MoxTestBase):
     def testUnlockReleasesFcntlLock(self):
         locker = lock.PidFile()
         locker._file = 'FILE_OBJECT'
-        self.mox.StubOutWithMock(fcntl, 'lockf')
-        fcntl.lockf('FILE_OBJECT', fcntl.LOCK_UN)
-
-        self.mox.ReplayAll()
-        locker.Unlock()
-
-        self.assertFalse(locker._locked)
+        with mock.patch('fcntl.lockf') as lockf:
+            locker.Unlock()
+            self.assertFalse(locker._locked)
+            lockf.assert_called_once_with('FILE_OBJECT', fcntl.LOCK_UN)
 
 
 if __name__ == '__main__':

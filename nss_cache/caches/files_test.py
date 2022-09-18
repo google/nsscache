@@ -22,8 +22,8 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 import sys
-from mox3 import mox
 
 from nss_cache import config
 from nss_cache.maps import automount
@@ -34,7 +34,7 @@ from nss_cache.maps import shadow
 from nss_cache.caches import files
 
 
-class TestFilesCache(mox.MoxTestBase):
+class TestFilesCache(unittest.TestCase):
 
     def setUp(self):
         super(TestFilesCache, self).setUp()
@@ -78,8 +78,7 @@ class TestFilesCache(mox.MoxTestBase):
     def testWritePasswdEntry(self):
         """We correctly write a typical entry in /etc/passwd format."""
         cache = files.FilesPasswdMapHandler(self.config)
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(b'root:x:0:0:Rootsy:/root:/bin/bash\n')
+        file_mock = mock.create_autospec(sys.stdout)
 
         map_entry = passwd.PasswdMapEntry()
         map_entry.name = 'root'
@@ -90,15 +89,13 @@ class TestFilesCache(mox.MoxTestBase):
         map_entry.dir = '/root'
         map_entry.shell = '/bin/bash'
 
-        self.mox.ReplayAll()
-
         cache._WriteData(file_mock, map_entry)
+        file_mock.write.assert_called_with(b'root:x:0:0:Rootsy:/root:/bin/bash\n')
 
     def testWriteGroupEntry(self):
         """We correctly write a typical entry in /etc/group format."""
         cache = files.FilesGroupMapHandler(self.config)
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(b'root:x:0:zero_cool,acid_burn\n')
+        file_mock = mock.create_autospec(sys.stdout)
 
         map_entry = group.GroupMapEntry()
         map_entry.name = 'root'
@@ -106,65 +103,54 @@ class TestFilesCache(mox.MoxTestBase):
         map_entry.gid = 0
         map_entry.members = ['zero_cool', 'acid_burn']
 
-        self.mox.ReplayAll()
-
         cache._WriteData(file_mock, map_entry)
+        file_mock.write.assert_called_with(b'root:x:0:zero_cool,acid_burn\n')
 
     def testWriteShadowEntry(self):
         """We correctly write a typical entry in /etc/shadow format."""
         cache = files.FilesShadowMapHandler(self.config)
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(b'root:$1$zomgmd5support:::::::\n')
+        file_mock = mock.create_autospec(sys.stdout)
 
         map_entry = shadow.ShadowMapEntry()
         map_entry.name = 'root'
         map_entry.passwd = '$1$zomgmd5support'
 
-        self.mox.ReplayAll()
-
         cache._WriteData(file_mock, map_entry)
+        file_mock.write.assert_called_with(b'root:$1$zomgmd5support:::::::\n')
 
     def testWriteNetgroupEntry(self):
         """We correctly write a typical entry in /etc/netgroup format."""
         cache = files.FilesNetgroupMapHandler(self.config)
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(
-            b'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
+        file_mock = mock.create_autospec(sys.stdout)
 
         map_entry = netgroup.NetgroupMapEntry()
         map_entry.name = 'administrators'
         map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
 
-        self.mox.ReplayAll()
-
         cache._WriteData(file_mock, map_entry)
+        file_mock.write.assert_called_with(b'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
 
     def testWriteAutomountEntry(self):
         """We correctly write a typical entry in /etc/auto.* format."""
         cache = files.FilesAutomountMapHandler(self.config)
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(b'scratch -tcp,rw,intr,bg fileserver:/scratch\n')
+        file_mock = mock.create_autospec(sys.stdout)
 
         map_entry = automount.AutomountMapEntry()
         map_entry.key = 'scratch'
         map_entry.options = '-tcp,rw,intr,bg'
         map_entry.location = 'fileserver:/scratch'
 
-        self.mox.ReplayAll()
         cache._WriteData(file_mock, map_entry)
-        self.mox.VerifyAll()
+        file_mock.write.assert_called_with(b'scratch -tcp,rw,intr,bg fileserver:/scratch\n')
 
-        file_mock = self.mox.CreateMock(sys.stdout)
-        file_mock.write(b'scratch fileserver:/scratch\n')
-
+        file_mock = mock.create_autospec(sys.stdout)
         map_entry = automount.AutomountMapEntry()
         map_entry.key = 'scratch'
         map_entry.options = None
         map_entry.location = 'fileserver:/scratch'
 
-        self.mox.ReplayAll()
-
         cache._WriteData(file_mock, map_entry)
+        file_mock.write.assert_called_with(b'scratch fileserver:/scratch\n')
 
     def testAutomountSetsFilename(self):
         """We set the correct filename based on mountpoint information."""
