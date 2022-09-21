@@ -81,11 +81,14 @@ class TestCache(unittest.TestCase):
 
     def testWriteMap(self):
         cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
-        with mock.patch.object(cache_map, 'Write') as write, mock.patch.object(cache_map, 'Verify') as verify, mock.patch.object(cache_map, '_Commit') as commit:
+        with mock.patch.object(cache_map, 'Write') as write, mock.patch.object(
+                cache_map,
+                'Verify') as verify, mock.patch.object(cache_map,
+                                                       '_Commit') as commit:
             write.return_value = 'entries_written'
             verify.return_value = True
             self.assertEqual(0, cache_map.WriteMap('writable_map'))
-            
+
 
 if __name__ == '__main__':
     unittest.main()

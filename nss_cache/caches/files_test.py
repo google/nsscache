@@ -90,7 +90,8 @@ class TestFilesCache(unittest.TestCase):
         map_entry.shell = '/bin/bash'
 
         cache._WriteData(file_mock, map_entry)
-        file_mock.write.assert_called_with(b'root:x:0:0:Rootsy:/root:/bin/bash\n')
+        file_mock.write.assert_called_with(
+            b'root:x:0:0:Rootsy:/root:/bin/bash\n')
 
     def testWriteGroupEntry(self):
         """We correctly write a typical entry in /etc/group format."""
@@ -128,7 +129,8 @@ class TestFilesCache(unittest.TestCase):
         map_entry.entries = 'unix_admins noc_monkeys (-,zero_cool,)'
 
         cache._WriteData(file_mock, map_entry)
-        file_mock.write.assert_called_with(b'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
+        file_mock.write.assert_called_with(
+            b'administrators unix_admins noc_monkeys (-,zero_cool,)\n')
 
     def testWriteAutomountEntry(self):
         """We correctly write a typical entry in /etc/auto.* format."""
@@ -141,7 +143,8 @@ class TestFilesCache(unittest.TestCase):
         map_entry.location = 'fileserver:/scratch'
 
         cache._WriteData(file_mock, map_entry)
-        file_mock.write.assert_called_with(b'scratch -tcp,rw,intr,bg fileserver:/scratch\n')
+        file_mock.write.assert_called_with(
+            b'scratch -tcp,rw,intr,bg fileserver:/scratch\n')
 
         file_mock = mock.create_autospec(sys.stdout)
         map_entry = automount.AutomountMapEntry()

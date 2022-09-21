@@ -67,7 +67,7 @@ class TestTimestamps(unittest.TestCase):
         with mock.patch('time.gmtime') as gmtime:
             gmtime.return_value = now
             ts = timestamps.ReadTimestamp(ts_filename)
-            self.assertEqual(now, ts)  
+            self.assertEqual(now, ts)
 
     def testWriteTimestamp(self):
         ts_filename = os.path.join(self.workdir, 'tsw')
