@@ -82,14 +82,16 @@ class TestPidFile(unittest.TestCase):
 
     def testDestructorUnlocks(self):
         yes = lock.PidFile()
-        with mock.patch.object(yes, 'Locked') as locked, mock.patch.object(yes, 'Unlock') as unlock:
+        with mock.patch.object(yes, 'Locked') as locked, mock.patch.object(
+                yes, 'Unlock') as unlock:
             locked.return_value = True
             yes.__del__()
             # Destructor should unlock
             unlock.assert_called_once()
 
         no = lock.PidFile()
-        with mock.patch.object(no, 'Locked') as locked,  mock.patch.object(yes, 'Unlock') as unlock:
+        with mock.patch.object(no, 'Locked') as locked, mock.patch.object(
+                yes, 'Unlock') as unlock:
             locked.return_value = False
             no.__del__()
             # No unlock needed if already not locked.
@@ -119,11 +121,13 @@ class TestPidFile(unittest.TestCase):
     def testLockLocksWithFcntl(self):
         locker = lock.PidFile(pid='PID')
 
-        with mock.patch.object(locker, '_file') as f, mock.patch('fcntl.lockf') as lockf:
+        with mock.patch.object(
+                locker, '_file') as f, mock.patch('fcntl.lockf') as lockf:
 
             locker.Lock()
             self.assertTrue(locker._locked)
-            lockf.assert_called_once_with(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lockf.assert_called_once_with(locker._file,
+                                          fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def testLockStoresPid(self):
         locker = lock.PidFile(filename=self.filename, pid='PID')
@@ -140,31 +144,40 @@ class TestPidFile(unittest.TestCase):
     def testLockTrapsPermissionDeniedOnly(self):
         locker = lock.PidFile()
         with mock.patch.object(locker, '_Open') as open:
-            open.side_effect = [IOError(errno.EACCES, ''), IOError(errno.EIO, '')]
+            open.side_effect = [
+                IOError(errno.EACCES, ''),
+                IOError(errno.EIO, '')
+            ]
 
             self.assertEqual(False, locker.Lock())
             self.assertRaises(IOError, locker.Lock)
 
     def testForceLockTerminatesAndClearsLock(self):
         locker = lock.PidFile(pid='PID')
-        with mock.patch.object(locker, 'SendTerm'), mock.patch.object(locker, 'ClearLock'), mock.patch.object(locker, '_file') as f:
+        with mock.patch.object(locker, 'SendTerm'), mock.patch.object(
+                locker, 'ClearLock'), mock.patch.object(locker, '_file') as f:
             with mock.patch('fcntl.lockf') as lockf:
                 # This is a little weird due to recursion.
                 # The first time through lockf throws an error and we retry the lock.
                 # The 2nd time through we should fail, because lockf will still throw
                 # an error, so we expect False back and the above mock objects
                 # invoked.
-                lockf.side_effect = [IOError(errno.EAGAIN, ''), IOError(errno.EAGAIN, '')]
+                lockf.side_effect = [
+                    IOError(errno.EAGAIN, ''),
+                    IOError(errno.EAGAIN, '')
+                ]
                 self.assertFalse(locker.Lock(force=True))
-                lockf.assert_has_calls((mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB),
-                mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)))
+                lockf.assert_has_calls(
+                    (mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB),
+                     mock.call(locker._file, fcntl.LOCK_EX | fcntl.LOCK_NB)))
 
     def testSendTermMatchesCommandAndSendsTerm(self):
         locker = lock.PidFile()
         # Program mocks
         mock_re = mock.create_autospec(re.Pattern)
         mock_re.match.return_value = True
-        with mock.patch('re.compile') as regexp, mock.patch('os.kill') as kill, mock.patch.object(locker, '_file') as f:
+        with mock.patch('re.compile') as regexp, mock.patch(
+                'os.kill') as kill, mock.patch.object(locker, '_file') as f:
             f.read.return_value = '1234'
             regexp.return_value = mock_re
 
@@ -191,7 +204,8 @@ class TestPidFile(unittest.TestCase):
 
     def testSendTermNoPid(self):
         locker = lock.PidFile()
-        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill:
+        with mock.patch.object(locker,
+                               '_file') as f, mock.patch('os.kill') as kill:
             f.read.return_value = '\n'
             locker.PROC = self.workdir
             locker.SendTerm()
@@ -200,7 +214,8 @@ class TestPidFile(unittest.TestCase):
 
     def testSendTermNonePid(self):
         locker = lock.PidFile()
-        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill:
+        with mock.patch.object(locker,
+                               '_file') as f, mock.patch('os.kill') as kill:
             f.read.return_value = None
             locker.PROC = self.workdir
             locker.SendTerm()
@@ -209,7 +224,8 @@ class TestPidFile(unittest.TestCase):
 
     def testSendTermTrapsENOENT(self):
         locker = lock.PidFile()
-        with mock.patch.object(locker, '_file') as f, mock.patch('os.kill') as kill, mock.patch('builtins.open') as mock_open:
+        with mock.patch.object(locker, '_file') as f, mock.patch(
+                'os.kill') as kill, mock.patch('builtins.open') as mock_open:
             f.read.return_value = '1234\n'
             mock_open.side_effect = IOError(errno.ENOENT, '')
             # self.workdir/1234/cmdline should not exist :)
