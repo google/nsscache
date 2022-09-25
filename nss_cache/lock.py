@@ -56,7 +56,7 @@ class PidFile(object):
     be configured to work, but your mileage can and will vary.
     """
 
-    STATE_DIR = '/var/run'
+    STATE_DIR = f'/var/run/user/{os.getuid()}'
     PROC_DIR = '/proc'
     PROG_NAME = 'nsscache'
 
