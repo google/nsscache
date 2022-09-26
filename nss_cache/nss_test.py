@@ -45,10 +45,10 @@ class TestNSS(unittest.TestCase):
             ('nss.GetShadowMap, "TEST_SHADOW', config.MAP_SHADOW),
         )
 
-        for t in maps:
-            with mock.patch(t[0]) as mock_map:
-                mock_map.return_value = t[1]
-                self.assertEqual(t[1], nss.GetMap(t[2]))
+        for map_type, retval, arg in maps:
+            with mock.patch(map_type) as mock_map:
+                mock_map.return_value = retval
+                self.assertEqual(retval, nss.GetMap(arg))
 
     def testGetMapException(self):
         """GetMap throws error.UnsupportedMap for unsupported maps."""
