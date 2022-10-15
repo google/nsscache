@@ -39,6 +39,8 @@ from nss_cache.util import file_formats
 
 
 def LongestLength(l):
+    if len(l) == 0:
+        return 0
     return len(max(l, key=len))
 
 
