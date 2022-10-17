@@ -63,7 +63,8 @@ class SingleMapUpdaterTest(mox.MoxTestBase):
         password_map.SetModifyTimestamp(new_modify_stamp)
 
         cache_mock = self.mox.CreateMock(files.FilesCache)
-        cache_mock.WriteMap(map_data=password_map, force_write=False).AndReturn(0)
+        cache_mock.WriteMap(map_data=password_map,
+                            force_write=False).AndReturn(0)
 
         source_mock = self.mox.CreateMock(source.Source)
         source_mock.GetMap(config.MAP_PASSWORD,

@@ -129,7 +129,8 @@ class FileMapUpdater(updater.Updater):
                 'Source map empty during full update, aborting. '
                 'Use --force-write to override.')
 
-        return_val += cache.WriteMap(map_data=source_map, force_write=force_write)
+        return_val += cache.WriteMap(map_data=source_map,
+                                     force_write=force_write)
 
         # We did an update, write our timestamps unless there is an error.
         if return_val == 0:

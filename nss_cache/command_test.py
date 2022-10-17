@@ -259,8 +259,10 @@ class TestUpdateCommand(mox.MoxTestBase):
 
         cache_mock = self.mox.CreateMock(caches.Cache)
         cache_mock.GetMapLocation().AndReturn('home')
-        cache_mock.WriteMap(map_data=automount_map, force_write=False).AndReturn(0)
-        cache_mock.WriteMap(map_data=automount_map, force_write=False).AndReturn(0)
+        cache_mock.WriteMap(map_data=automount_map,
+                            force_write=False).AndReturn(0)
+        cache_mock.WriteMap(map_data=automount_map,
+                            force_write=False).AndReturn(0)
 
         self.mox.StubOutWithMock(cache_factory, 'Create')
         cache_factory.Create(self.conf.options[config.MAP_AUTOMOUNT].cache,
