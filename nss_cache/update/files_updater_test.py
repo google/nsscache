@@ -22,7 +22,6 @@ __author__ = ('vasilios@google.com (V Hoffman)',
 import os
 import shutil
 import tempfile
-import time
 import unittest
 from mox3 import mox
 
@@ -175,11 +174,10 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
         self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
         self.assertEqual(None, self.updater.GetUpdateTimestamp())
 
-    @unittest.skip('disabled')
     def testFullUpdateOnEmptySourceForceWrite(self):
         """A full update as above, but instead, the initial source is empty."""
-        original_modify_stamp = time.gmtime(1)
-        new_modify_stamp = time.gmtime(2)
+        original_modify_stamp = 1
+        new_modify_stamp = 2
         # Construct an updater
         self.updater = files_updater.FileMapUpdater(config.MAP_PASSWORD,
                                                     self.workdir, {
@@ -196,25 +194,20 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
         password_map.Add(map_entry)
         cache.Write(password_map)
 
-        class MockSource(pmock.Mock):
-
-            def GetFile(self, map_name, dst_file, current_file, location=None):
-                assert location is None
-                assert map_name == config.MAP_PASSWORD
-                f = open(dst_file, 'w')
-                f.write('')
-                f.close()
-                os.utime(dst_file, (1, 2))
-                return dst_file
-
-        source_mock = MockSource()
+        source_mock = self.mox.CreateMock(source.FileSource)
+        source_mock.GetFile(config.MAP_PASSWORD,
+                            mox.IgnoreArg(),
+                            current_file=mox.IgnoreArg(),
+                            location=None).AndReturn(None)
+        self.mox.ReplayAll()
         self.assertEqual(
             0,
             self.updater.UpdateCacheFromSource(cache,
                                                source_mock,
                                                force_write=True,
                                                location=None))
-        self.assertEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
+        self.assertNotEqual(original_modify_stamp,
+                            self.updater.GetModifyTimestamp())
         self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
 
 
