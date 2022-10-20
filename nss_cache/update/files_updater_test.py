@@ -174,7 +174,6 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
         self.assertNotEqual(new_modify_stamp, self.updater.GetModifyTimestamp())
         self.assertEqual(None, self.updater.GetUpdateTimestamp())
 
-
     def testFullUpdateOnEmptySourceForceWrite(self):
         """A full update as above, but instead, the initial source is empty."""
         original_modify_stamp = 1
@@ -207,8 +206,10 @@ class SingleFileUpdaterTest(mox.MoxTestBase):
                                                source_mock,
                                                force_write=True,
                                                location=None))
-        self.assertNotEqual(original_modify_stamp, self.updater.GetModifyTimestamp())
+        self.assertNotEqual(original_modify_stamp,
+                            self.updater.GetModifyTimestamp())
         self.assertNotEqual(None, self.updater.GetUpdateTimestamp())
+
 
 @unittest.skip('disabled')
 class AutomountUpdaterTest(mox.MoxTestBase):
