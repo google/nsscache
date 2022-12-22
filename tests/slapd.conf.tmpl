@@ -6,8 +6,8 @@ loglevel -1
 pidfile @workdir@/slapd.pid
 
 
-moduleload back_bdb.la
+moduleload back_mdb.la
 
-database bdb
+database mdb
 suffix "dc=example,dc=com"
 directory @workdir@/ldap
