@@ -58,6 +58,7 @@ setup_slapd() {
     mkdir -p $WORKDIR/ldap
     sed -e "s!@workdir@!$WORKDIR!" \
 	< ${TESTDIR}/slapd.conf.tmpl > $ARTIFACTS/slapd.conf
+    $SLAPD -VVV || true
     $SLAPADD -d -1 -f $ARTIFACTS/slapd.conf -b dc=example,dc=com -l ${TESTDIR}/default.ldif
     $SLAPD -h ldapi://${WORKDIR//\//%2F}%2Fldapi -f $ARTIFACTS/slapd.conf &
     slappid=$!
