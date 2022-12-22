@@ -32,3 +32,9 @@ Issue history is at https://code.google.com/p/nsscache/issues/list
 # Contributions
 
 Please format your code with https://github.com/google/yapf (installable as `pip install yapf` or the `yapf3` package on Debian systems) before sending pull requests.
+
+# Testing
+
+The [`Dockerfile`](Dockerfile) sets up a container that then executes the python unit tests and [`tests/slapd-regtest`](tests/slapd-regtest) integration test.  Execute that with `podman build .` to get a reproducible test environment.
+
+The `Dockerfile` mimics the test environment used by the Github Actions workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
