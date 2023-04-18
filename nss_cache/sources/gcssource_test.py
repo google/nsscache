@@ -2,7 +2,6 @@
 
 import unittest
 
-from google.cloud import storage
 from mox3 import mox
 
 from nss_cache.maps import group
@@ -68,11 +67,13 @@ userb:x:::::::
 """)
         mock_bucket = self.mox.CreateMockAnything()
         mock_bucket.blob('passwd').AndReturn(mock_blob)
-        self.mox.StubOutWithMock(storage.Client, 'bucket')
-        storage.Client.bucket('test-bucket').AndReturn(mock_bucket)
+
+        mock_client = self.mox.CreateMockAnything()
+        mock_client.bucket('test-bucket').AndReturn(mock_bucket)
+
         self.mox.ReplayAll()
-        result = self.updater.GetUpdates(storage.Client(), 'test-bucket',
-                                         'passwd')
+
+        result = self.updater.GetUpdates(mock_client, 'test-bucket', 'passwd')
         self.assertEqual(len(result), 2)
 
 
