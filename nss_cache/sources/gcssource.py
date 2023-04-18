@@ -1,5 +1,6 @@
 """An implementation of a GCS data source for nsscache."""
 
+import io
 import logging
 
 from google.cloud import exceptions
@@ -102,7 +103,8 @@ class GcsUpdateGetter(object):
       try:
           bucket = gcs_client.bucket(bucket_name)
           blob = bucket.blob(obj)
-          contents = blob.download_as_text()
+          # Saving blob text in an IO object to reuse FilesMapParser as-is:
+          contents = io.StringIO(blob.download_as_text())
       except exceptions.NotFound as e:
           self.log.error('error getting GCS blob ({}): {}', obj, e)
           raise error.SourceUnavailable('unable to download blob from GCS')
@@ -138,6 +140,7 @@ class PasswdUpdateGetter(GcsUpdateGetter):
     def CreateMap(self):
         """Returns a new PasswdMap instance to have PasswdMapEntries added to it."""
         return passwd.PasswdMap()
+
 
 class GroupUpdateGetter(GcsUpdateGetter):
     """Get group updates."""

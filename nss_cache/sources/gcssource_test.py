@@ -2,7 +2,11 @@
 
 import unittest
 
+from google.cloud import storage
+from mox3 import mox
+
 from nss_cache.maps import group
+from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import gcssource
 from nss_cache.util import file_formats
@@ -40,8 +44,11 @@ class TestPasswdUpdateGetter(unittest.TestCase):
         self.assertIsInstance(self.updater.GetParser(),
                               file_formats.FilesPasswdMapParser)
 
+    def testCreateMap(self):
+        self.assertIsInstance(self.updater.CreateMap(), passwd.PasswdMap)
 
-class TestShadowUpdateGetter(unittest.TestCase):
+
+class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
 
     def setUp(self):
         super(TestShadowUpdateGetter, self).setUp()
@@ -53,6 +60,20 @@ class TestShadowUpdateGetter(unittest.TestCase):
 
     def testCreateMap(self):
         self.assertIsInstance(self.updater.CreateMap(), shadow.ShadowMap)
+
+    def testShadowGetUpdatesWithContent(self):
+        mock_blob = self.mox.CreateMockAnything()
+        mock_blob.download_as_text().AndReturn("""usera:x:::::::
+userb:x:::::::
+""")
+        mock_bucket = self.mox.CreateMockAnything()
+        mock_bucket.blob('passwd').AndReturn(mock_blob)
+        self.mox.StubOutWithMock(storage.Client, 'bucket')
+        storage.Client.bucket('test-bucket').AndReturn(mock_bucket)
+        self.mox.ReplayAll()
+        result = self.updater.GetUpdates(storage.Client(), 'test-bucket',
+                                         'passwd')
+        self.assertEqual(len(result), 2)
 
 
 class TestGroupUpdateGetter(unittest.TestCase):
@@ -67,7 +88,6 @@ class TestGroupUpdateGetter(unittest.TestCase):
 
     def testCreateMap(self):
         self.assertIsInstance(self.updater.CreateMap(), group.GroupMap)
-
 
 
 if __name__ == '__main__':
