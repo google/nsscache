@@ -87,39 +87,39 @@ class GcsFilesSource(source.Source):
 
 
 class GcsUpdateGetter(object):
-  """Base class that gets updates from GCS."""
+    """Base class that gets updates from GCS."""
 
-  def __init__(self):
-      self.log = logging.getLogger(__name__)
+    def __init__(self):
+        self.log = logging.getLogger(__name__)
 
-  def GetUpdates(self, gcs_client, bucket_name, obj):
-      """Gets updates from a source.
+    def GetUpdates(self, gcs_client, bucket_name, obj):
+        """Gets updates from a source.
 
       Args:
         gcs_client: initialized gcs client
         bucket_name: gcs bucket name
         obj: object with the data
       """
-      try:
-          bucket = gcs_client.bucket(bucket_name)
-          blob = bucket.blob(obj)
-          # Saving blob text in an IO object to reuse FilesMapParser as-is:
-          contents = io.StringIO(blob.download_as_text())
-      except exceptions.NotFound as e:
-          self.log.error('error getting GCS blob ({}): {}', obj, e)
-          raise error.SourceUnavailable('unable to download blob from GCS')
-      data_map = self.GetMap(cache_info=contents)
-      return data_map
+        try:
+            bucket = gcs_client.bucket(bucket_name)
+            blob = bucket.blob(obj)
+            # Saving blob text in an IO object to reuse FilesMapParser as-is:
+            contents = io.StringIO(blob.download_as_text())
+        except exceptions.NotFound as e:
+            self.log.error('error getting GCS blob ({}): {}', obj, e)
+            raise error.SourceUnavailable('unable to download blob from GCS')
+        data_map = self.GetMap(cache_info=contents)
+        return data_map
 
-  def GetParser(self):
-      """Return the approriate parser.
+    def GetParser(self):
+        """Return the approriate parser.
 
       Must be implemented by child class.
       """
-      raise NotImplementedError
+        raise NotImplementedError
 
-  def GetMap(self, cache_info):
-      """Creates a Map from the cache_info data.
+    def GetMap(self, cache_info):
+        """Creates a Map from the cache_info data.
 
       Args:
         cache_info: file-like object containing the data to parse
@@ -127,7 +127,7 @@ class GcsUpdateGetter(object):
       Returns:
         A child of Map containing the cache data.
       """
-      return self.GetParser().GetMap(cache_info, self.CreateMap())
+        return self.GetParser().GetMap(cache_info, self.CreateMap())
 
 
 class PasswdUpdateGetter(GcsUpdateGetter):

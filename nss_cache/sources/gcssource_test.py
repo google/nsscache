@@ -10,6 +10,7 @@ from nss_cache.maps import shadow
 from nss_cache.sources import gcssource
 from nss_cache.util import file_formats
 
+
 class TestGcsSource(unittest.TestCase):
 
     def setUp(self):
