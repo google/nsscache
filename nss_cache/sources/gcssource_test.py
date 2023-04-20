@@ -74,7 +74,8 @@ userb:x:::::::
 
         self.mox.ReplayAll()
 
-        result = self.updater.GetUpdates(mock_client, 'test-bucket', 'passwd')
+        result = self.updater.GetUpdates(mock_client, 'test-bucket', 'passwd',
+                                         None)
         self.assertEqual(len(result), 2)
 
 

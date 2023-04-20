@@ -46,6 +46,7 @@ class GcsFilesSource(source.Source):
     def _GetClient(self):
         if self._gcs_client is None:
             self._gcs_client = storage.Client()
+        return self._gcs_client
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
@@ -59,17 +60,18 @@ class GcsFilesSource(source.Source):
         if 'shadow_object' not in configuration:
             configuration['shadow_object'] = self.SHADOW_OBJECT
 
-    def GetPasswdMap(self):
+    def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
 
         Returns:
-          instnace of passwd.PasswdMap
+          instance of passwd.PasswdMap
         """
         return PasswdUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
-                                               self.conf['passwd_object'])
+                                               self.conf['passwd_object'],
+                                               since)
 
-    def GetGroupMap(self):
+    def GetGroupMap(self, since=None):
         """Return the group map from this source.
 
         Returns:
@@ -77,9 +79,10 @@ class GcsFilesSource(source.Source):
         """
         return GroupUpdateGetter().GetUpdates(self._GetClient(),
                                               self.conf['bucket'],
-                                              self.conf['group_object'])
+                                              self.conf['group_object'],
+                                              since)
 
-    def GetShadowMap(self):
+    def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
 
         Returns:
@@ -87,7 +90,8 @@ class GcsFilesSource(source.Source):
         """
         return ShadowUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
-                                               self.conf['shadow_object'])
+                                               self.conf['shadow_object'],
+                                               since)
 
 
 class GcsUpdateGetter(object):
@@ -96,7 +100,7 @@ class GcsUpdateGetter(object):
     def __init__(self):
         self.log = logging.getLogger(__name__)
 
-    def GetUpdates(self, gcs_client, bucket_name, obj):
+    def GetUpdates(self, gcs_client, bucket_name, obj, _):
         """Gets updates from a source.
 
       Args:
