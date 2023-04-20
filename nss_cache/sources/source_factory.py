@@ -71,6 +71,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from nss_cache.sources import gcssource
+    gcssource.RegisterImplementation(RegisterImplementation)
+except ImportError:
+    pass
+
 
 def Create(conf):
     """Source creation factory method.

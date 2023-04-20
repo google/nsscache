@@ -14,6 +14,10 @@ from nss_cache.sources import source
 from nss_cache.util import file_formats
 
 
+def RegisterImplementation(registration_callback):
+    registration_callback(GcsFilesSource)
+
+
 class GcsFilesSource(source.Source):
     """Source for data fetched from GCS."""
 
