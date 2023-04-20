@@ -79,8 +79,7 @@ class GcsFilesSource(source.Source):
         """
         return GroupUpdateGetter().GetUpdates(self._GetClient(),
                                               self.conf['bucket'],
-                                              self.conf['group_object'],
-                                              since)
+                                              self.conf['group_object'], since)
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
