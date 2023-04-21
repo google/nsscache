@@ -1,6 +1,5 @@
 """An implementation of a GCS data source for nsscache."""
 
-import io
 import logging
 
 from google.cloud import storage
@@ -131,11 +130,10 @@ class GcsUpdateGetter(object):
             raise error.SourceUnavailable('unable to download object from GCS.')
         # GCS doesn't return HTTP 304 like HTTP or S3 sources,
         # so return if updated timestamp is before 'since':
-        if since and timestamps.FromDateTimeToTimesamp(blob.updated) < since:
+        if since and timestamps.FromDateTimeToTimestamp(blob.updated) < since:
             return []
-        # Saving blob text in an IO object to reuse FilesMapParser as-is:
-        contents = io.StringIO(blob.download_as_text())
-        data_map = self.GetMap(cache_info=contents)
+
+        data_map = self.GetMap(cache_info=blob.open())
         data_map.SetModifyTimestamp(
             timestamps.FromDateTimeToTimestamp(blob.updated))
         return data_map

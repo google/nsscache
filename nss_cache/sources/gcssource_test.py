@@ -1,6 +1,7 @@
 """An implementation of a mock GCS data source for nsscache."""
 
 import datetime
+import io
 import unittest
 
 from mox3 import mox
@@ -65,9 +66,9 @@ class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
 
     def testShadowGetUpdatesWithContent(self):
         mock_blob = self.mox.CreateMockAnything()
-        mock_blob.download_as_text().AndReturn("""usera:x:::::::
+        mock_blob.open().AndReturn(io.StringIO("""usera:x:::::::
 userb:x:::::::
-""")
+"""))
         mock_blob.updated = datetime.datetime.now()
 
         mock_bucket = self.mox.CreateMockAnything()
