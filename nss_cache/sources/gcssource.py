@@ -3,7 +3,6 @@
 import io
 import logging
 
-from google.cloud import exceptions
 from google.cloud import storage
 
 from nss_cache import error
@@ -12,6 +11,11 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import source
 from nss_cache.util import file_formats
+from nss_cache.util import timestamps
+
+
+def RegisterImplementation(registration_callback):
+    registration_callback(GcsFilesSource)
 
 
 class GcsFilesSource(source.Source):
@@ -42,6 +46,7 @@ class GcsFilesSource(source.Source):
     def _GetClient(self):
         if self._gcs_client is None:
             self._gcs_client = storage.Client()
+        return self._gcs_client
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
@@ -55,17 +60,18 @@ class GcsFilesSource(source.Source):
         if 'shadow_object' not in configuration:
             configuration['shadow_object'] = self.SHADOW_OBJECT
 
-    def GetPasswdMap(self):
+    def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
 
         Returns:
-          instnace of passwd.PasswdMap
+          instance of passwd.PasswdMap
         """
         return PasswdUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
-                                               self.conf['passwd_object'])
+                                               self.conf['passwd_object'],
+                                               since)
 
-    def GetGroupMap(self):
+    def GetGroupMap(self, since=None):
         """Return the group map from this source.
 
         Returns:
@@ -73,9 +79,9 @@ class GcsFilesSource(source.Source):
         """
         return GroupUpdateGetter().GetUpdates(self._GetClient(),
                                               self.conf['bucket'],
-                                              self.conf['group_object'])
+                                              self.conf['group_object'], since)
 
-    def GetShadowMap(self):
+    def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
 
         Returns:
@@ -83,7 +89,8 @@ class GcsFilesSource(source.Source):
         """
         return ShadowUpdateGetter().GetUpdates(self._GetClient(),
                                                self.conf['bucket'],
-                                               self.conf['shadow_object'])
+                                               self.conf['shadow_object'],
+                                               since)
 
 
 class GcsUpdateGetter(object):
@@ -92,7 +99,7 @@ class GcsUpdateGetter(object):
     def __init__(self):
         self.log = logging.getLogger(__name__)
 
-    def GetUpdates(self, gcs_client, bucket_name, obj):
+    def GetUpdates(self, gcs_client, bucket_name, obj, _):
         """Gets updates from a source.
 
       Args:
@@ -100,15 +107,17 @@ class GcsUpdateGetter(object):
         bucket_name: gcs bucket name
         obj: object with the data
       """
-        try:
-            bucket = gcs_client.bucket(bucket_name)
-            blob = bucket.blob(obj)
-            # Saving blob text in an IO object to reuse FilesMapParser as-is:
-            contents = io.StringIO(blob.download_as_text())
-        except exceptions.NotFound as e:
-            self.log.error('error getting GCS blob ({}): {}', obj, e)
-            raise error.SourceUnavailable('unable to download blob from GCS')
+        bucket = gcs_client.bucket(bucket_name)
+        blob = bucket.get_blob(obj)
+        # get_blob captures NotFound error and returns None:
+        if blob is None:
+            self.log.error('GCS object {}/{} not found', bucket_name, obj)
+            raise error.SourceUnavailable('unable to download object form GCS.')
+        # Saving blob text in an IO object to reuse FilesMapParser as-is:
+        contents = io.StringIO(blob.download_as_text())
         data_map = self.GetMap(cache_info=contents)
+        data_map.SetModifyTimestamp(
+            timestamps.FromDateTimeToTimestamp(blob.updated))
         return data_map
 
     def GetParser(self):

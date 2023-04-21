@@ -55,5 +55,6 @@ as LDAP.""",
         'http': ['pycurl'],
         's3': ['boto3'],
         'consul': ['pycurl'],
+        'gcs': ['google-cloud-storage'],
     },
 )

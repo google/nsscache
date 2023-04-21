@@ -52,7 +52,7 @@ A complete list of configuration options follows.
 Specifies the source to use to retrieve NSS data from.
 
 Valid Options:
-.I ldap, s3, http
+.I ldap, s3, http, gcs
 
 .TP
 .B cache
@@ -381,6 +381,36 @@ And a complementary \fI\|/etc/nsswitch.conf\|\fP might look like this:
   passwd: files cache
   group: files cache
   shadow: files cache
+
+.SH gcs SOURCE OPTIONS
+
+These options configure the behaviour of the
+.I gcs
+source.
+
+.TP
+.B gcs_bucket
+Google Cloud Storage bucket containing
+.I passwd, group, shadow
+blobs.
+
+.B gcs_passwd_object
+Name for a object containing
+.B passwd
+records in the standard format. E.g.
+.I root:*:0:0:System Administrator:/var/root:/bin/sh
+
+.B gcs_group_object
+Name for a object containing
+.B group
+records in the standard format E.g.
+.I users:x:100:memberships....
+
+.B gcs_shadow_object
+Name of the object containing
+.B shadow
+records in the standard format. E.g.
+.I root:*:18866:0:99999:7:::
 
 .SH FILES
 .TP
