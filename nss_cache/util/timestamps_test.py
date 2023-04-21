@@ -17,6 +17,8 @@
 
 __author__ = 'jaq@google.com (Jamie Wilkinson)'
 
+import datetime
+from datetime import timezone
 import os
 import shutil
 import tempfile
@@ -80,6 +82,17 @@ class TestTimestamps(unittest.TestCase):
         ts_file = open(ts_filename, 'r')
         self.assertEqual('1970-01-01T00:00:01Z\n', ts_file.read())
         ts_file.close()
+
+    def testTimestampToDateTime(self):
+        now = datetime.datetime.now(timezone.utc)
+        self.assertEqual(timestamps.FromTimestampToDateTime(now.timestamp()),
+                         now.replace(tzinfo=None))
+
+    def testDateTimeToTimestamp(self):
+        now = datetime.datetime.now(timezone.utc)
+        self.assertEqual(
+            now.replace(microsecond=0).timestamp(),
+            timestamps.FromDateTimeToTimestamp(now))
 
 
 if __name__ == '__main__':

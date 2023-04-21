@@ -15,7 +15,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
-from nss_cache.sources import util
+from nss_cache.util import timestamps
 from nss_cache import error
 
 
@@ -154,12 +154,12 @@ class S3UpdateGetter(object):
             if since is not None:
                 response = s3_client.get_object(
                     Bucket=bucket,
-                    IfModifiedSince=util.FromTimestampToDateTime(since),
+                    IfModifiedSince=timestamps.FromTimestampToDateTime(since),
                     Key=obj)
             else:
                 response = s3_client.get_object(Bucket=bucket, Key=obj)
             body = response['Body']
-            last_modified_ts = util.FromDateTimeToTimestamp(
+            last_modified_ts = timestamps.FromDateTimeToTimestamp(
                 response['LastModified'])
         except ClientError as e:
             error_code = int(e.response['Error']['Code'])
