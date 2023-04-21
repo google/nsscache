@@ -15,6 +15,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
+from nss_cache.sources import util
 from nss_cache import error
 
 
@@ -133,27 +134,6 @@ class S3UpdateGetter(object):
     def __init__(self):
         self.log = logging.getLogger(__name__)
 
-    def FromTimestampToDateTime(self, ts):
-        """Converts internal nss_cache timestamp to datetime object.
-
-        Args:
-          ts: number of seconds since epoch
-        Returns:
-          datetime object
-        """
-        return datetime.datetime.utcfromtimestamp(ts)
-
-    def FromDateTimeToTimestamp(self, datetime_obj):
-        """Converts datetime object to internal nss_cache timestamp.
-
-        Args:
-          datetime object
-        Returns:
-          number of seconds since epoch
-        """
-        dt = datetime_obj.replace(tzinfo=None)
-        return int((dt - datetime.datetime(1970, 1, 1)).total_seconds())
-
     def GetUpdates(self, s3_client, bucket, obj, since):
         """Get updates from a source.
 
@@ -174,12 +154,12 @@ class S3UpdateGetter(object):
             if since is not None:
                 response = s3_client.get_object(
                     Bucket=bucket,
-                    IfModifiedSince=self.FromTimestampToDateTime(since),
+                    IfModifiedSince=util.FromTimestampToDateTime(since),
                     Key=obj)
             else:
                 response = s3_client.get_object(Bucket=bucket, Key=obj)
             body = response['Body']
-            last_modified_ts = self.FromDateTimeToTimestamp(
+            last_modified_ts = util.FromDateTimeToTimestamp(
                 response['LastModified'])
         except ClientError as e:
             error_code = int(e.response['Error']['Code'])
