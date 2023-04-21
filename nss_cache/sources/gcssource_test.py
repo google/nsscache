@@ -66,7 +66,8 @@ class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
 
     def testShadowGetUpdatesWithContent(self):
         mock_blob = self.mox.CreateMockAnything()
-        mock_blob.open().AndReturn(io.StringIO("""usera:x:::::::
+        mock_blob.open().AndReturn(
+            io.StringIO("""usera:x:::::::
 userb:x:::::::
 """))
         mock_blob.updated = datetime.datetime.now()
