@@ -3,7 +3,6 @@
 import io
 import logging
 
-from google.cloud import exceptions
 from google.cloud import storage
 
 from nss_cache import error
@@ -12,6 +11,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import source
 from nss_cache.util import file_formats
+from nss_cache.util import timestamps
 
 
 def RegisterImplementation(registration_callback):
@@ -107,15 +107,17 @@ class GcsUpdateGetter(object):
         bucket_name: gcs bucket name
         obj: object with the data
       """
-        try:
-            bucket = gcs_client.bucket(bucket_name)
-            blob = bucket.blob(obj)
-            # Saving blob text in an IO object to reuse FilesMapParser as-is:
-            contents = io.StringIO(blob.download_as_text())
-        except exceptions.NotFound as e:
-            self.log.error('error getting GCS blob ({}): {}', obj, e)
-            raise error.SourceUnavailable('unable to download blob from GCS')
+        bucket = gcs_client.bucket(bucket_name)
+        blob = bucket.get_blob(obj)
+        # get_blob captures NotFound error and returns None:
+        if blob is None:
+            self.log.error('GCS object {}/{} not found', bucket_name, obj)
+            raise error.SourceUnavailable('unable to download object form GCS.')
+        # Saving blob text in an IO object to reuse FilesMapParser as-is:
+        contents = io.StringIO(blob.download_as_text())
         data_map = self.GetMap(cache_info=contents)
+        data_map.SetModifyTimestamp(
+            timestamps.FromDateTimeToTimestamp(blob.updated))
         return data_map
 
     def GetParser(self):
