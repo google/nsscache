@@ -63,6 +63,10 @@ class GcsFilesSource(source.Source):
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
 
+        Args:
+          since: Get data only changed since this timestamp (inclusive) or None
+          for all data.
+
         Returns:
           instance of passwd.PasswdMap
         """
@@ -74,6 +78,10 @@ class GcsFilesSource(source.Source):
     def GetGroupMap(self, since=None):
         """Return the group map from this source.
 
+        Args:
+          since: Get data only changed since this timestamp (inclusive) or None
+          for all data.
+
         Returns:
           instance of group.GroupMap
         """
@@ -83,6 +91,10 @@ class GcsFilesSource(source.Source):
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
+
+        Args:
+          since: Get data only changed since this timestamp (inclusive) or None
+          for all data.
 
         Returns:
           instance of shadow.ShadowMap
@@ -99,20 +111,28 @@ class GcsUpdateGetter(object):
     def __init__(self):
         self.log = logging.getLogger(__name__)
 
-    def GetUpdates(self, gcs_client, bucket_name, obj, _):
+    def GetUpdates(self, gcs_client, bucket_name, obj, since):
         """Gets updates from a source.
 
       Args:
         gcs_client: initialized gcs client
         bucket_name: gcs bucket name
         obj: object with the data
+        since: a timestamp representing the last change (None to force-get)
+
+      Returns:
+          A tuple containing the map of updates and a maximum timestamp
       """
         bucket = gcs_client.bucket(bucket_name)
         blob = bucket.get_blob(obj)
         # get_blob captures NotFound error and returns None:
         if blob is None:
             self.log.error('GCS object {}/{} not found', bucket_name, obj)
-            raise error.SourceUnavailable('unable to download object form GCS.')
+            raise error.SourceUnavailable('unable to download object from GCS.')
+        # GCS doesn't return HTTP 304 like HTTP or S3 sources,
+        # so return if updated timestamp is before 'since':
+        if since and timestamps.FromDateTimeToTimesamp(blob.updated) < since:
+            return []
         # Saving blob text in an IO object to reuse FilesMapParser as-is:
         contents = io.StringIO(blob.download_as_text())
         data_map = self.GetMap(cache_info=contents)
