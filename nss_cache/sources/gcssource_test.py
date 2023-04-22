@@ -1,6 +1,7 @@
 """An implementation of a mock GCS data source for nsscache."""
 
 import datetime
+import io
 import unittest
 
 from mox3 import mox
@@ -10,6 +11,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import gcssource
 from nss_cache.util import file_formats
+from nss_cache.util import timestamps
 
 
 class TestGcsSource(unittest.TestCase):
@@ -64,9 +66,10 @@ class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
 
     def testShadowGetUpdatesWithContent(self):
         mock_blob = self.mox.CreateMockAnything()
-        mock_blob.download_as_text().AndReturn("""usera:x:::::::
+        mock_blob.open().AndReturn(
+            io.StringIO("""usera:x:::::::
 userb:x:::::::
-""")
+"""))
         mock_blob.updated = datetime.datetime.now()
 
         mock_bucket = self.mox.CreateMockAnything()
@@ -80,6 +83,24 @@ userb:x:::::::
         result = self.updater.GetUpdates(mock_client, 'test-bucket', 'passwd',
                                          None)
         self.assertEqual(len(result), 2)
+
+    def testShadowGetUpdatesSinceAfterUpdatedTime(self):
+        mock_blob = self.mox.CreateMockAnything()
+        mock_blob.updated = datetime.datetime.now()
+
+        mock_bucket = self.mox.CreateMockAnything()
+        mock_bucket.get_blob('passwd').AndReturn(mock_blob)
+
+        mock_client = self.mox.CreateMockAnything()
+        mock_client.bucket('test-bucket').AndReturn(mock_bucket)
+
+        self.mox.ReplayAll()
+
+        result = self.updater.GetUpdates(
+            mock_client, 'test-bucket', 'passwd',
+            timestamps.FromDateTimeToTimestamp(mock_blob.updated +
+                                               datetime.timedelta(days=1)))
+        self.assertEqual(len(result), 0)
 
 
 class TestGroupUpdateGetter(unittest.TestCase):
