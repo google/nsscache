@@ -1,6 +1,7 @@
 """An implementation of a GCS data source for nsscache."""
 
 import logging
+import warnings
 
 from google.cloud import storage
 
@@ -11,6 +12,9 @@ from nss_cache.maps import shadow
 from nss_cache.sources import source
 from nss_cache.util import file_formats
 from nss_cache.util import timestamps
+
+warnings.filterwarnings(
+    "ignore", "Your application has authenticated using end user credentials")
 
 
 def RegisterImplementation(registration_callback):
