@@ -25,8 +25,8 @@ import ldap
 import ldap.sasl
 import re
 from binascii import b2a_hex
+from packaging import version
 from urllib.parse import quote
-from distutils.version import StrictVersion
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -37,7 +37,7 @@ from nss_cache.maps import shadow
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
 
-IS_LDAP24_OR_NEWER = StrictVersion(ldap.__version__) >= StrictVersion('2.4')
+IS_LDAP24_OR_NEWER = version.parse(ldap.__version__) >= version.parse('2.4')
 
 # ldap.LDAP_CONTROL_PAGE_OID is unavailable on some systems, so we define it here
 LDAP_CONTROL_PAGE_OID = '1.2.840.113556.1.4.319'
