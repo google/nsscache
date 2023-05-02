@@ -5,3 +5,4 @@ pycurl==7.45.2
 python3-ldap
 python-ldap
 mox3
+packaging
