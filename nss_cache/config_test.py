@@ -53,8 +53,8 @@ class TestClassMethods(unittest.TestCase):
         # create a directory with a writeable copy of nsscache.conf in it
         self.workdir = tempfile.mkdtemp()
         # nsscache.conf is in the parent dir of this test.
-        self.srcdir = os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                                    '..'))
+        self.srcdir = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), '..'))
         conf_filename = 'nsscache.conf'
         self.conf_filename = os.path.join(self.workdir, conf_filename)
         shutil.copy(os.path.join(self.srcdir, conf_filename),
