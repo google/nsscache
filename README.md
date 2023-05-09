@@ -38,3 +38,13 @@ Please format your code with https://github.com/google/yapf (installable as `pip
 The [`Dockerfile`](Dockerfile) sets up a container that then executes the python unit tests and [`tests/slapd-regtest`](tests/slapd-regtest) integration test.  Execute that with `podman build .` to get a reproducible test environment.
 
 The `Dockerfile` mimics the test environment used by the Github Actions workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+
+# Setup
+
+## `gcs` source
+
+Install `google-cloud-storage`: `sudo pip install google-cloud-storage`
+
+The compute instance's attached service account must have the _Storage Object Viewer_ role on the
+GCS Bucket storing the passwd, group, and shadow objects, or on the objects themselves if using
+fine-grained access controls.
