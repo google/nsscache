@@ -43,8 +43,11 @@ The `Dockerfile` mimics the test environment used by the Github Actions workflow
 
 ## `gcs` source
 
-Install `google-cloud-storage`: `sudo pip install google-cloud-storage`
+Install
+[Google Cloud Storage Python Client](https://cloud.google.com/python/docs/reference/storage/latest):
+`sudo pip install google-cloud-storage`
 
-The compute instance's attached service account must have the _Storage Object Viewer_ role on the
-GCS Bucket storing the passwd, group, and shadow objects, or on the objects themselves if using
-fine-grained access controls.
+For Compute Engine Instances to use the `gcs` source, their attached service
+account must have the _Storage Object Viewer_ role on the GCS bucket storing
+the `passwd`, `group`, and `shadow` objects, or on the objects themselves
+if using find-grained access controls.
