@@ -130,7 +130,7 @@ class GcsUpdateGetter(object):
         blob = bucket.get_blob(obj)
         # get_blob captures NotFound error and returns None:
         if blob is None:
-            self.log.error('GCS object {}/{} not found', bucket_name, obj)
+            self.log.error('GCS object gs://%s/%s not found', bucket_name, obj)
             raise error.SourceUnavailable('unable to download object from GCS.')
         # GCS doesn't return HTTP 304 like HTTP or S3 sources,
         # so return if updated timestamp is before 'since':
