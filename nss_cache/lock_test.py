@@ -118,16 +118,14 @@ class TestPidFile(unittest.TestCase):
 
         # Note that testing when self._file is not None is covered below.
 
-    def testLockLocksWithFcntl(self):
+    @mock.patch('fcntl.lockf')
+    def testLockLocksWithFcntl(self, lockf):
         locker = lock.PidFile(pid='PID')
 
-        with mock.patch.object(
-                locker, '_file') as f, mock.patch('fcntl.lockf') as lockf:
-
+        with mock.patch.object(locker, '_file') as f:
             locker.Lock()
             self.assertTrue(locker._locked)
-            lockf.assert_called_once_with(locker._file,
-                                          fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lockf.assert_called_once_with(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def testLockStoresPid(self):
         locker = lock.PidFile(filename=self.filename, pid='PID')

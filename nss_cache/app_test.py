@@ -33,6 +33,9 @@ class TestNssCacheApp(unittest.TestCase):
         dev_null = io.StringIO()
         self.stdout = sys.stdout
         sys.stdout = dev_null
+        self.srcdir = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), '..'))
+        self.conf_filename = os.path.join(self.srcdir, 'nsscache.conf')
 
     def tearDown(self):
         sys.stdout = self.stdout
@@ -119,16 +122,16 @@ class TestNssCacheApp(unittest.TestCase):
         self.assertTrue(
             stdout_buffer.getvalue().find('nsscache synchronises') >= 0)
 
-    @unittest.skip('cant pass unless theres a valid config')
     def testRunBadArgsPrintsGlobalHelp(self):
         # trap stdout into a StringIO
         stdout_buffer = io.StringIO()
         old_stdout = sys.stdout
         sys.stdout = stdout_buffer
         # verify bad arguments calls help
-        return_code = app.NssCacheApp().Run(['blarg'], {})
+        return_code = app.NssCacheApp().Run(
+            ['blarg'], {'NSSCACHE_CONFIG': self.conf_filename})
         sys.stdout = old_stdout
-        assert return_code == 1
+        assert return_code == 70  # EX_SOFTWARE
         assert stdout_buffer.getvalue().find('enable debugging') >= 0
 
 
