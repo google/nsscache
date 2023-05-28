@@ -624,7 +624,7 @@ class UpdateGetter(object):
                 t = time.strptime(ldap_ts_string, '%Y%m%d%H%M%SZ')
         except ValueError:
             # Some systems add a decimal component; try to filter it:
-            m = re.match('([0-9]*)(\.[0-9]*)?(Z)', ldap_ts_string)
+            m = re.match(r'([0-9]*)(\.[0-9]*)?(Z)', ldap_ts_string)
             if m:
                 ldap_ts_string = m.group(1) + m.group(3)
             if self.conf.get('ad'):
