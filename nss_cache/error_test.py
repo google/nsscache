@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for nss_cache/error.py."""
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 import unittest
 
@@ -119,5 +119,5 @@ class TestError(unittest.TestCase):
         self.assertRaises(error.SourceUnavailable, Ooops)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

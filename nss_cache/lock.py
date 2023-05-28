@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Lock management for nss_cache module."""
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 import errno
 import fcntl
@@ -56,9 +56,9 @@ class PidFile(object):
     be configured to work, but your mileage can and will vary.
     """
 
-    STATE_DIR = '/var/run'
-    PROC_DIR = '/proc'
-    PROG_NAME = 'nsscache'
+    STATE_DIR = "/var/run"
+    PROC_DIR = "/proc"
+    PROG_NAME = "nsscache"
 
     def __init__(self, filename=None, pid=None):
         """Initialize the PidFile object."""
@@ -81,11 +81,11 @@ class PidFile(object):
                 # We were invoked from a python interpreter with
                 # bad arguments, or otherwise loaded without sys.argv
                 # being set.
-                self.log.critical('Can not determine lock file name!')
-                raise TypeError('missing required argument: filename')
-            self.filename = '%s/%s' % (self.STATE_DIR, basename)
+                self.log.critical("Can not determine lock file name!")
+                raise TypeError("missing required argument: filename")
+            self.filename = "%s/%s" % (self.STATE_DIR, basename)
 
-        self.log.debug('using %s for lock file', self.filename)
+        self.log.debug("using %s for lock file", self.filename)
 
     def __del__(self):
         """Release our pid file on object destruction."""
@@ -101,12 +101,11 @@ class PidFile(object):
         # will truncate, so we use 'a+' and seek.  We don't truncate
         # the file because we haven't tested if it is locked by
         # another program yet, this is done later by fcntl module.
-        self._file = open(filename, 'a+')
+        self._file = open(filename, "a+")
         self._file.seek(0)
 
         # Set permissions.
-        os.chmod(filename,
-                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
     def Lock(self, force=False):
         """Open our pid file and lock it.
@@ -123,8 +122,9 @@ class PidFile(object):
                 self._Open()
             except IOError as e:
                 if e.errno == errno.EACCES:
-                    self.log.warning('Permission denied opening lock file: %s',
-                                     self.filename)
+                    self.log.warning(
+                        "Permission denied opening lock file: %s", self.filename
+                    )
                     return False
                 raise
 
@@ -137,7 +137,7 @@ class PidFile(object):
             if e.errno in [errno.EACCES, errno.EAGAIN]:
                 # Catch the error raised when the file is locked.
                 if not force:
-                    self.log.debug('%s already locked!', self.filename)
+                    self.log.debug("%s already locked!", self.filename)
                     return False
             else:
                 # Otherwise re-raise it.
@@ -145,7 +145,7 @@ class PidFile(object):
 
         # Check if we need to forcibly re-try the lock.
         if not return_val and force:
-            self.log.debug('retrying lock.')
+            self.log.debug("retrying lock.")
             # Try to kill the process with the lock.
             self.SendTerm()
             # Clear the lock.
@@ -155,10 +155,10 @@ class PidFile(object):
 
         # Store the pid.
         self._file.truncate()
-        self._file.write('%s\n' % self.pid)
+        self._file.write("%s\n" % self.pid)
         self._file.flush()
 
-        self.log.debug('successfully locked %s', self.filename)
+        self.log.debug("successfully locked %s", self.filename)
 
         self._locked = True
         return return_val
@@ -175,11 +175,11 @@ class PidFile(object):
             pid = int(pid_content.strip())
         except (AttributeError, ValueError) as e:
             self.log.warning(
-                'Not sending TERM, could not parse pid file content: %r',
-                pid_content)
+                "Not sending TERM, could not parse pid file content: %r", pid_content
+            )
             return
 
-        self.log.debug('retrieved pid %d' % pid)
+        self.log.debug("retrieved pid %d" % pid)
 
         # Reset the filehandle just in case.
         self._file.seek(0)
@@ -187,12 +187,12 @@ class PidFile(object):
         # By reading cmdline out of /proc we establish:
         # a)  if a process with that pid exists.
         # b)  what the command line is, to see if it included 'nsscache'.
-        proc_path = '%s/%i/cmdline' % (self.PROC_DIR, pid)
+        proc_path = "%s/%i/cmdline" % (self.PROC_DIR, pid)
         try:
-            proc_file = open(proc_path, 'r')
+            proc_file = open(proc_path, "r")
         except IOError as e:
             if e.errno == errno.ENOENT:
-                self.log.debug('process does not exist, skipping signal.')
+                self.log.debug("process does not exist, skipping signal.")
                 return
             raise
 
@@ -200,14 +200,15 @@ class PidFile(object):
         proc_file.close()
 
         # See if it matches our program name regex.
-        cmd_re = re.compile(r'.*%s' % self.PROG_NAME)
+        cmd_re = re.compile(r".*%s" % self.PROG_NAME)
         if not cmd_re.match(cmdline):
-            self.log.debug('process is running but not %s, skipping signal',
-                           self.PROG_NAME)
+            self.log.debug(
+                "process is running but not %s, skipping signal", self.PROG_NAME
+            )
             return
 
         # Send a SIGTERM.
-        self.log.debug('sending SIGTERM to %i', pid)
+        self.log.debug("sending SIGTERM to %i", pid)
         os.kill(pid, signal.SIGTERM)
 
         # We are not paranoid about success, so we're done!
@@ -215,7 +216,7 @@ class PidFile(object):
 
     def ClearLock(self):
         """Delete the pid file to remove any locks on it."""
-        self.log.debug('clearing old pid file: %s', self.filename)
+        self.log.debug("clearing old pid file: %s", self.filename)
         self._file.close()
         self._file = None
         os.remove(self.filename)

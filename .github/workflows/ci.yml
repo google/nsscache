@@ -52,10 +52,6 @@ jobs:
         with:
           name: test-results
           path: test-results/
-      - name: yapf
-        run: |
-          pip install yapf
-          yapf --diff --recursive nss_cache nsscache
       - name: pylint
         run: |
           pip install pylint

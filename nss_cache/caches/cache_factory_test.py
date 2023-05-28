@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for out cache factory."""
 
-__author__ = 'springer@google.com (Matthew Springer)'
+__author__ = "springer@google.com (Matthew Springer)"
 
 import unittest
 
@@ -24,30 +24,29 @@ from nss_cache.caches import cache_factory
 
 
 class TestCacheFactory(unittest.TestCase):
-
     def testRegister(self):
-
         class DummyCache(caches.Cache):
             pass
 
         old_cache_implementations = cache_factory._cache_implementations
         cache_factory._cache_implementations = {}
-        cache_factory.RegisterImplementation('dummy', 'dummy', DummyCache)
+        cache_factory.RegisterImplementation("dummy", "dummy", DummyCache)
         self.assertEqual(1, len(cache_factory._cache_implementations))
-        self.assertEqual(1, len(cache_factory._cache_implementations['dummy']))
-        self.assertEqual(DummyCache,
-                         cache_factory._cache_implementations['dummy']['dummy'])
+        self.assertEqual(1, len(cache_factory._cache_implementations["dummy"]))
+        self.assertEqual(
+            DummyCache, cache_factory._cache_implementations["dummy"]["dummy"]
+        )
         cache_factory._cache_implementations = old_cache_implementations
 
     def testCreateWithNoImplementations(self):
         old_cache_implementations = cache_factory._cache_implementations
         cache_factory._cache_implementations = {}
-        self.assertRaises(RuntimeError, cache_factory.Create, {}, 'map_name')
+        self.assertRaises(RuntimeError, cache_factory.Create, {}, "map_name")
         cache_factory._cache_implementations = old_cache_implementations
 
     def testThatRegularImplementationsArePresent(self):
         self.assertEqual(len(cache_factory._cache_implementations), 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

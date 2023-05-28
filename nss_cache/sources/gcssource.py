@@ -14,7 +14,8 @@ from nss_cache.util import file_formats
 from nss_cache.util import timestamps
 
 warnings.filterwarnings(
-    "ignore", "Your application has authenticated using end user credentials")
+    "ignore", "Your application has authenticated using end user credentials"
+)
 
 
 def RegisterImplementation(registration_callback):
@@ -25,13 +26,13 @@ class GcsFilesSource(source.Source):
     """Source for data fetched from GCS."""
 
     # GCS Defaults
-    BUCKET = ''
-    PASSWD_OBJECT = ''
-    GROUP_OBJECT = ''
-    SHADOW_OBJECT = ''
+    BUCKET = ""
+    PASSWD_OBJECT = ""
+    GROUP_OBJECT = ""
+    SHADOW_OBJECT = ""
 
     # for registration
-    name = 'gcs'
+    name = "gcs"
 
     def __init__(self, conf):
         """Initialize the GcsFilesSource object.
@@ -54,14 +55,14 @@ class GcsFilesSource(source.Source):
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
 
-        if 'bucket' not in configuration:
-            configuration['bucket'] = self.BUCKET
-        if 'passwd_object' not in configuration:
-            configuration['passwd_object'] = self.PASSWD_OBJECT
-        if 'group_object' not in configuration:
-            configuration['group_object'] = self.GROUP_OBJECT
-        if 'shadow_object' not in configuration:
-            configuration['shadow_object'] = self.SHADOW_OBJECT
+        if "bucket" not in configuration:
+            configuration["bucket"] = self.BUCKET
+        if "passwd_object" not in configuration:
+            configuration["passwd_object"] = self.PASSWD_OBJECT
+        if "group_object" not in configuration:
+            configuration["group_object"] = self.GROUP_OBJECT
+        if "shadow_object" not in configuration:
+            configuration["shadow_object"] = self.SHADOW_OBJECT
 
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
@@ -73,10 +74,9 @@ class GcsFilesSource(source.Source):
         Returns:
           instance of passwd.PasswdMap
         """
-        return PasswdUpdateGetter().GetUpdates(self._GetClient(),
-                                               self.conf['bucket'],
-                                               self.conf['passwd_object'],
-                                               since)
+        return PasswdUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["passwd_object"], since
+        )
 
     def GetGroupMap(self, since=None):
         """Return the group map from this source.
@@ -88,9 +88,9 @@ class GcsFilesSource(source.Source):
         Returns:
           instance of group.GroupMap
         """
-        return GroupUpdateGetter().GetUpdates(self._GetClient(),
-                                              self.conf['bucket'],
-                                              self.conf['group_object'], since)
+        return GroupUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["group_object"], since
+        )
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
@@ -102,10 +102,9 @@ class GcsFilesSource(source.Source):
         Returns:
           instance of shadow.ShadowMap
         """
-        return ShadowUpdateGetter().GetUpdates(self._GetClient(),
-                                               self.conf['bucket'],
-                                               self.conf['shadow_object'],
-                                               since)
+        return ShadowUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["shadow_object"], since
+        )
 
 
 class GcsUpdateGetter(object):
@@ -117,47 +116,46 @@ class GcsUpdateGetter(object):
     def GetUpdates(self, gcs_client, bucket_name, obj, since):
         """Gets updates from a source.
 
-      Args:
-        gcs_client: initialized gcs client
-        bucket_name: gcs bucket name
-        obj: object with the data
-        since: a timestamp representing the last change (None to force-get)
+        Args:
+          gcs_client: initialized gcs client
+          bucket_name: gcs bucket name
+          obj: object with the data
+          since: a timestamp representing the last change (None to force-get)
 
-      Returns:
-          A tuple containing the map of updates and a maximum timestamp
-      """
+        Returns:
+            A tuple containing the map of updates and a maximum timestamp
+        """
         bucket = gcs_client.bucket(bucket_name)
         blob = bucket.get_blob(obj)
         # get_blob captures NotFound error and returns None:
         if blob is None:
-            self.log.error('GCS object gs://%s/%s not found', bucket_name, obj)
-            raise error.SourceUnavailable('unable to download object from GCS.')
+            self.log.error("GCS object gs://%s/%s not found", bucket_name, obj)
+            raise error.SourceUnavailable("unable to download object from GCS.")
         # GCS doesn't return HTTP 304 like HTTP or S3 sources,
         # so return if updated timestamp is before 'since':
         if since and timestamps.FromDateTimeToTimestamp(blob.updated) < since:
             return []
 
         data_map = self.GetMap(cache_info=blob.open())
-        data_map.SetModifyTimestamp(
-            timestamps.FromDateTimeToTimestamp(blob.updated))
+        data_map.SetModifyTimestamp(timestamps.FromDateTimeToTimestamp(blob.updated))
         return data_map
 
     def GetParser(self):
         """Return the approriate parser.
 
-      Must be implemented by child class.
-      """
+        Must be implemented by child class.
+        """
         raise NotImplementedError
 
     def GetMap(self, cache_info):
         """Creates a Map from the cache_info data.
 
-      Args:
-        cache_info: file-like object containing the data to parse
+        Args:
+          cache_info: file-like object containing the data to parse
 
-      Returns:
-        A child of Map containing the cache data.
-      """
+        Returns:
+          A child of Map containing the cache data.
+        """
         return self.GetParser().GetMap(cache_info, self.CreateMap())
 
 

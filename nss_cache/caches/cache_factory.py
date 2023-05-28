@@ -20,7 +20,7 @@ register cache implementations at import time.  This is much more
 reliable.
 """
 
-__author__ = 'springer@google.com (Matthew Springer)'
+__author__ = "springer@google.com (Matthew Springer)"
 
 import logging
 
@@ -44,7 +44,7 @@ def RegisterImplementation(cache_name, map_name, cache):
     """
     global _cache_implementations
     if cache_name not in _cache_implementations:
-        logging.info('Registering [%s] cache for [%s].', cache_name, map_name)
+        logging.info("Registering [%s] cache for [%s].", cache_name, map_name)
         _cache_implementations[cache_name] = {}
     _cache_implementations[cache_name][map_name] = cache
 
@@ -67,17 +67,17 @@ def Create(conf, map_name, automount_mountpoint=None):
     """
     global _cache_implementations
     if not _cache_implementations:
-        raise RuntimeError('no cache implementations exist')
-    cache_name = conf['name']
+        raise RuntimeError("no cache implementations exist")
+    cache_name = conf["name"]
 
     if cache_name not in _cache_implementations:
-        raise RuntimeError('cache not implemented: %r' % (cache_name,))
+        raise RuntimeError("cache not implemented: %r" % (cache_name,))
     if map_name not in _cache_implementations[cache_name]:
-        raise RuntimeError('map %r not supported by cache %r' %
-                           (map_name, cache_name))
+        raise RuntimeError("map %r not supported by cache %r" % (map_name, cache_name))
 
     return _cache_implementations[cache_name][map_name](
-        conf, map_name, automount_mountpoint=automount_mountpoint)
+        conf, map_name, automount_mountpoint=automount_mountpoint
+    )
 
 
 files.RegisterAllImplementations(RegisterImplementation)

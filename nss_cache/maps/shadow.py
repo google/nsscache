@@ -21,7 +21,7 @@ class.
 ShadowMapEntry:  A shadow map entry based on the MapEntry class.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 from nss_cache.maps import maps
 
@@ -46,11 +46,30 @@ class ShadowMap(maps.Map):
 
 class ShadowMapEntry(maps.MapEntry):
     """This class represents NSS shadow map entries."""
-    __slots__ = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
-                 'expire', 'flag')
-    _KEY = 'name'
-    _ATTRS = ('name', 'passwd', 'lstchg', 'min', 'max', 'warn', 'inact',
-              'expire', 'flag')
+
+    __slots__ = (
+        "name",
+        "passwd",
+        "lstchg",
+        "min",
+        "max",
+        "warn",
+        "inact",
+        "expire",
+        "flag",
+    )
+    _KEY = "name"
+    _ATTRS = (
+        "name",
+        "passwd",
+        "lstchg",
+        "min",
+        "max",
+        "warn",
+        "inact",
+        "expire",
+        "flag",
+    )
 
     def __init__(self, data=None):
         """Construct a ShadowMapEntry, setting reasonable defaults."""
@@ -68,4 +87,4 @@ class ShadowMapEntry(maps.MapEntry):
 
         # Seed data with defaults if needed
         if self.passwd is None:
-            self.passwd = '!!'
+            self.passwd = "!!"

@@ -1,0 +1,25 @@
+name: lint
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  # none-all, which doesn't exist, but
+  # https://docs.github.com/en/actions/reference/authentication-in-a-workflow#using-the-github_token-in-a-workflow
+  # implies that the token still gets created.  Elsewhere we learn that any
+  # permission not mentioned here gets turned to `none`.
+  actions: none
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: psf/black@stable
+        with:
+          version: "~= 22.0"

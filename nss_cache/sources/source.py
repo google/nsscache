@@ -15,8 +15,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Base class of data source object for nss_cache."""
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 import logging
 
@@ -39,7 +41,7 @@ class Source(object):
           RuntimeError: object wasn't initialised with a dict
         """
         if not isinstance(conf, dict):
-            raise RuntimeError('Source constructor not passed a dictionary')
+            raise RuntimeError("Source constructor not passed a dictionary")
 
         self.conf = conf
 
@@ -73,7 +75,7 @@ class Source(object):
         elif map_name == config.MAP_AUTOMOUNT:
             return self.GetAutomountMap(since, location=location)
 
-        raise error.UnsupportedMap('Source can not fetch %s' % map_name)
+        raise error.UnsupportedMap("Source can not fetch %s" % map_name)
 
     def GetAutomountMap(self, since=None, location=None):
         """Get an automount map from this source."""
@@ -105,7 +107,7 @@ class FileSource(object):
           RuntimeError: object wasn't initialised with a dict
         """
         if not isinstance(conf, dict):
-            raise RuntimeError('Source constructor not passed a dictionary')
+            raise RuntimeError("Source constructor not passed a dictionary")
 
         self.conf = conf
 
@@ -136,8 +138,6 @@ class FileSource(object):
         elif map_name == config.MAP_NETGROUP:
             return self.GetNetgroupFile(dst_file, current_file)
         elif map_name == config.MAP_AUTOMOUNT:
-            return self.GetAutomountFile(dst_file,
-                                         current_file,
-                                         location=location)
+            return self.GetAutomountFile(dst_file, current_file, location=location)
 
-        raise error.UnsupportedMap('Source can not fetch %s' % map_name)
+        raise error.UnsupportedMap("Source can not fetch %s" % map_name)

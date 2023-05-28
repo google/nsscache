@@ -1,6 +1,6 @@
 """An implementation of a S3 data source for nsscache."""
 
-__author__ = 'alexey.pikin@gmail.com'
+__author__ = "alexey.pikin@gmail.com"
 
 import base64
 import collections
@@ -27,14 +27,14 @@ class S3FilesSource(source.Source):
     """Source for data fetched from S3."""
 
     # S3 defaults
-    BUCKET = ''
-    PASSWD_OBJECT = ''
-    GROUP_OBJECT = ''
-    SHADOW_OBJECT = ''
-    SSH_OBJECT = ''
+    BUCKET = ""
+    PASSWD_OBJECT = ""
+    GROUP_OBJECT = ""
+    SHADOW_OBJECT = ""
+    SSH_OBJECT = ""
 
     # for registration
-    name = 's3'
+    name = "s3"
 
     def __init__(self, conf):
         """Initialise the S3FilesSource object.
@@ -51,22 +51,22 @@ class S3FilesSource(source.Source):
 
     def _GetClient(self):
         if self.s3_client is None:
-            self.s3_client = boto3.client('s3')
+            self.s3_client = boto3.client("s3")
         return self.s3_client
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
 
-        if 'bucket' not in configuration:
-            configuration['bucket'] = self.BUCKET
-        if 'passwd_object' not in configuration:
-            configuration['passwd_object'] = self.PASSWD_OBJECT
-        if 'group_object' not in configuration:
-            configuration['group_object'] = self.GROUP_OBJECT
-        if 'shadow_object' not in configuration:
-            configuration['shadow_object'] = self.SHADOW_OBJECT
-        if 'sshkey_object' not in configuration:
-            configuration['sshkey_object'] = self.SSH_OBJECT
+        if "bucket" not in configuration:
+            configuration["bucket"] = self.BUCKET
+        if "passwd_object" not in configuration:
+            configuration["passwd_object"] = self.PASSWD_OBJECT
+        if "group_object" not in configuration:
+            configuration["group_object"] = self.GROUP_OBJECT
+        if "shadow_object" not in configuration:
+            configuration["shadow_object"] = self.SHADOW_OBJECT
+        if "sshkey_object" not in configuration:
+            configuration["sshkey_object"] = self.SSH_OBJECT
 
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
@@ -78,10 +78,9 @@ class S3FilesSource(source.Source):
         Returns:
           instance of passwd.PasswdMap
         """
-        return PasswdUpdateGetter().GetUpdates(self._GetClient(),
-                                               self.conf['bucket'],
-                                               self.conf['passwd_object'],
-                                               since)
+        return PasswdUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["passwd_object"], since
+        )
 
     def GetGroupMap(self, since=None):
         """Return the group map from this source.
@@ -93,9 +92,9 @@ class S3FilesSource(source.Source):
         Returns:
           instance of group.GroupMap
         """
-        return GroupUpdateGetter().GetUpdates(self._GetClient(),
-                                              self.conf['bucket'],
-                                              self.conf['group_object'], since)
+        return GroupUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["group_object"], since
+        )
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
@@ -107,10 +106,9 @@ class S3FilesSource(source.Source):
         Returns:
           instance of shadow.ShadowMap
         """
-        return ShadowUpdateGetter().GetUpdates(self._GetClient(),
-                                               self.conf['bucket'],
-                                               self.conf['shadow_object'],
-                                               since)
+        return ShadowUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["shadow_object"], since
+        )
 
     def GetSshkeyMap(self, since=None):
         """Return the ssh map from this source.
@@ -122,10 +120,9 @@ class S3FilesSource(source.Source):
         Returns:
           instance of shadow.SSHMap
         """
-        return SshkeyUpdateGetter().GetUpdates(self._GetClient(),
-                                               self.conf['bucket'],
-                                               self.conf['sshkey_object'],
-                                               since)
+        return SshkeyUpdateGetter().GetUpdates(
+            self._GetClient(), self.conf["bucket"], self.conf["sshkey_object"], since
+        )
 
 
 class S3UpdateGetter(object):
@@ -155,18 +152,20 @@ class S3UpdateGetter(object):
                 response = s3_client.get_object(
                     Bucket=bucket,
                     IfModifiedSince=timestamps.FromTimestampToDateTime(since),
-                    Key=obj)
+                    Key=obj,
+                )
             else:
                 response = s3_client.get_object(Bucket=bucket, Key=obj)
-            body = response['Body']
+            body = response["Body"]
             last_modified_ts = timestamps.FromDateTimeToTimestamp(
-                response['LastModified'])
+                response["LastModified"]
+            )
         except ClientError as e:
-            error_code = int(e.response['Error']['Code'])
+            error_code = int(e.response["Error"]["Code"])
             if error_code == 304:
                 return []
-            self.log.error('error getting S3 object ({}): {}'.format(obj, e))
-            raise error.SourceUnavailable('unable to download object from S3')
+            self.log.error("error getting S3 object ({}): {}".format(obj, e))
+            raise error.SourceUnavailable("unable to download object from S3")
 
         data_map = self.GetMap(cache_info=body)
         data_map.SetModifyTimestamp(last_modified_ts)
@@ -259,20 +258,22 @@ class S3MapParser(object):
           A child of Map containing the cache data.
         """
         for obj in json.loads(cache_info.read()):
-            key = obj.get('Key', '')
-            value = obj.get('Value', '')
+            key = obj.get("Key", "")
+            value = obj.get("Value", "")
             if not value or not key:
                 continue
             map_entry = self._ReadEntry(key, value)
             if map_entry is None:
                 self.log.warning(
-                    'Could not create entry from line %r in cache, skipping',
-                    value)
+                    "Could not create entry from line %r in cache, skipping", value
+                )
                 continue
             if not data.Add(map_entry):
                 self.log.warning(
-                    'Could not add entry %r read from line %r in cache',
-                    map_entry, value)
+                    "Could not add entry %r read from line %r in cache",
+                    map_entry,
+                    value,
+                )
         return data
 
 
@@ -285,17 +286,17 @@ class S3PasswdMapParser(S3MapParser):
         map_entry = passwd.PasswdMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', 'x')
+        map_entry.passwd = entry.get("passwd", "x")
 
         try:
-            map_entry.uid = int(entry['uid'])
-            map_entry.gid = int(entry['gid'])
+            map_entry.uid = int(entry["uid"])
+            map_entry.gid = int(entry["gid"])
         except (ValueError, KeyError):
             return None
 
-        map_entry.gecos = entry.get('comment', '')
-        map_entry.dir = entry.get('home', '/home/{}'.format(name))
-        map_entry.shell = entry.get('shell', '/bin/bash')
+        map_entry.gecos = entry.get("comment", "")
+        map_entry.dir = entry.get("home", "/home/{}".format(name))
+        map_entry.shell = entry.get("shell", "/bin/bash")
 
         return map_entry
 
@@ -309,7 +310,7 @@ class S3SshkeyMapParser(S3MapParser):
         map_entry = sshkey.SshkeyMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = name
-        map_entry.sshkey = entry.get('sshPublicKey', '')
+        map_entry.sshkey = entry.get("sshPublicKey", "")
 
         return map_entry
 
@@ -323,17 +324,17 @@ class S3GroupMapParser(S3MapParser):
         map_entry = group.GroupMapEntry()
         # map entries expect strict typing, so convert as appropriate
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', 'x')
+        map_entry.passwd = entry.get("passwd", "x")
 
         try:
-            map_entry.gid = int(entry['gid'])
+            map_entry.gid = int(entry["gid"])
         except (ValueError, KeyError):
             return None
 
         try:
-            members = entry.get('members', '').split('\n')
+            members = entry.get("members", "").split("\n")
         except (ValueError, TypeError):
-            members = ['']
+            members = [""]
         map_entry.members = members
         return map_entry
 
@@ -347,9 +348,9 @@ class S3ShadowMapParser(S3MapParser):
         map_entry = shadow.ShadowMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', '*')
+        map_entry.passwd = entry.get("passwd", "*")
 
-        for attr in ['lstchg', 'min', 'max', 'warn', 'inact', 'expire']:
+        for attr in ["lstchg", "min", "max", "warn", "inact", "expire"]:
             try:
                 setattr(map_entry, attr, int(entry[attr]))
             except (ValueError, KeyError):

@@ -15,8 +15,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """Parsing methods for file cache types."""
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 import logging
 
@@ -31,6 +33,7 @@ try:
     SetType = set
 except NameError:
     import sets
+
     SetType = sets.Set
 
 
@@ -50,19 +53,19 @@ class FilesMapParser(object):
           A child of Map containing the cache data.
         """
         for line in cache_info:
-            line = line.rstrip('\n')
-            if not line or line[0] == '#':
+            line = line.rstrip("\n")
+            if not line or line[0] == "#":
                 continue
             entry = self._ReadEntry(line)
             if entry is None:
                 self.log.warning(
-                    'Could not create entry from line %r in cache, skipping',
-                    line)
+                    "Could not create entry from line %r in cache, skipping", line
+                )
                 continue
             if not data.Add(entry):
                 self.log.warning(
-                    'Could not add entry %r read from line %r in cache', entry,
-                    line)
+                    "Could not add entry %r read from line %r in cache", entry, line
+                )
         return data
 
 
@@ -71,7 +74,7 @@ class FilesSshkeyMapParser(FilesMapParser):
 
     def _ReadEntry(self, entry):
         """Return a SshkeyMapEntry from a record in the target cache."""
-        entry = entry.split(':')
+        entry = entry.split(":")
         map_entry = sshkey.SshkeyMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = entry[0]
@@ -84,7 +87,7 @@ class FilesPasswdMapParser(FilesMapParser):
 
     def _ReadEntry(self, entry):
         """Return a PasswdMapEntry from a record in the target cache."""
-        entry = entry.split(':')
+        entry = entry.split(":")
         map_entry = passwd.PasswdMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = entry[0]
@@ -102,13 +105,13 @@ class FilesGroupMapParser(FilesMapParser):
 
     def _ReadEntry(self, line):
         """Return a GroupMapEntry from a record in the target cache."""
-        line = line.split(':')
+        line = line.split(":")
         map_entry = group.GroupMapEntry()
         # map entries expect strict typing, so convert as appropriate
         map_entry.name = line[0]
         map_entry.passwd = line[1]
         map_entry.gid = int(line[2])
-        map_entry.members = line[3].split(',')
+        map_entry.members = line[3].split(",")
         return map_entry
 
 
@@ -117,7 +120,7 @@ class FilesShadowMapParser(FilesMapParser):
 
     def _ReadEntry(self, line):
         """Return a ShadowMapEntry from a record in the target cache."""
-        line = line.split(':')
+        line = line.split(":")
         map_entry = shadow.ShadowMapEntry()
         # map entries expect strict typing, so convert as appropriate
         map_entry.name = line[0]
@@ -148,20 +151,20 @@ class FilesNetgroupMapParser(FilesMapParser):
 
         # the first word is our name, but since the whole line is space delimited
         # avoid .split(' ') since groups can have thousands of members.
-        index = line.find(' ')
+        index = line.find(" ")
 
         if index == -1:
             if line:
                 # empty group is OK, as long as the line isn't blank
                 map_entry.name = line
                 return map_entry
-            raise RuntimeError('Failed to parse entry: %s' % line)
+            raise RuntimeError("Failed to parse entry: %s" % line)
 
         map_entry.name = line[0:index]
 
         # the rest is our entries, and for better or for worse this preserves extra
         # leading spaces
-        map_entry.entries = line[index + 1:]
+        map_entry.entries = line[index + 1 :]
 
         return map_entry
 

@@ -20,7 +20,7 @@ functionality is in base.py and tested in passwd_test.py since a
 subclass is required to test the abstract class functionality.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 import unittest
 
@@ -35,33 +35,35 @@ class TestNetgroupMap(unittest.TestCase):
         """Set some default avalible data for testing."""
         super(TestNetgroupMap, self).__init__(obj)
         self._good_entry = netgroup.NetgroupMapEntry()
-        self._good_entry.name = 'foo'
-        self._good_entry.entries = [('-', 'bob', None), 'othernetgroup']
+        self._good_entry.name = "foo"
+        self._good_entry.entries = [("-", "bob", None), "othernetgroup"]
 
     def testInit(self):
         """Construct an empty or seeded NetgroupMap."""
-        self.assertEqual(netgroup.NetgroupMap,
-                         type(netgroup.NetgroupMap()),
-                         msg='failed to create an empty NetgroupMap')
+        self.assertEqual(
+            netgroup.NetgroupMap,
+            type(netgroup.NetgroupMap()),
+            msg="failed to create an empty NetgroupMap",
+        )
         nmap = netgroup.NetgroupMap([self._good_entry])
-        self.assertEqual(self._good_entry,
-                         nmap.PopItem(),
-                         msg='failed to seed NetgroupMap with list')
-        self.assertRaises(TypeError, netgroup.NetgroupMap, ['string'])
+        self.assertEqual(
+            self._good_entry, nmap.PopItem(), msg="failed to seed NetgroupMap with list"
+        )
+        self.assertRaises(TypeError, netgroup.NetgroupMap, ["string"])
 
     def testAdd(self):
         """Add throws an error for objects it can't verify."""
         nmap = netgroup.NetgroupMap()
         entry = self._good_entry
-        self.assertTrue(nmap.Add(entry), msg='failed to append new entry.')
+        self.assertTrue(nmap.Add(entry), msg="failed to append new entry.")
 
-        self.assertEqual(1, len(nmap), msg='unexpected size for Map.')
+        self.assertEqual(1, len(nmap), msg="unexpected size for Map.")
 
         ret_entry = nmap.PopItem()
-        self.assertEqual(ret_entry, entry, msg='failed to pop correct entry.')
+        self.assertEqual(ret_entry, entry, msg="failed to pop correct entry.")
 
         pentry = passwd.PasswdMapEntry()
-        pentry.name = 'foo'
+        pentry.name = "foo"
         pentry.uid = 10
         pentry.gid = 10
         self.assertRaises(TypeError, nmap.Add, pentry)
@@ -72,30 +74,26 @@ class TestNetgroupMapEntry(unittest.TestCase):
 
     def testInit(self):
         """Construct an empty and seeded NetgroupMapEntry."""
-        self.assertTrue(netgroup.NetgroupMapEntry(),
-                        msg='Could not create empty NetgroupMapEntry')
-        entries = ['bar', ('baz', '-', None)]
-        seed = {'name': 'foo', 'entries': entries}
+        self.assertTrue(
+            netgroup.NetgroupMapEntry(), msg="Could not create empty NetgroupMapEntry"
+        )
+        entries = ["bar", ("baz", "-", None)]
+        seed = {"name": "foo", "entries": entries}
         entry = netgroup.NetgroupMapEntry(seed)
-        self.assertTrue(entry.Verify(),
-                        msg='Could not verify seeded NetgroupMapEntry')
-        self.assertEqual(entry.name,
-                         'foo',
-                         msg='Entry returned wrong value for name')
-        self.assertEqual(entry.entries,
-                         entries,
-                         msg='Entry returned wrong value for entries')
+        self.assertTrue(entry.Verify(), msg="Could not verify seeded NetgroupMapEntry")
+        self.assertEqual(entry.name, "foo", msg="Entry returned wrong value for name")
+        self.assertEqual(
+            entry.entries, entries, msg="Entry returned wrong value for entries"
+        )
 
     def testAttributes(self):
         """Test that we can get and set all expected attributes."""
         entry = netgroup.NetgroupMapEntry()
-        entry.name = 'foo'
-        self.assertEqual(entry.name, 'foo', msg='Could not set attribute: name')
-        entries = ['foo', '(-,bar,)']
+        entry.name = "foo"
+        self.assertEqual(entry.name, "foo", msg="Could not set attribute: name")
+        entries = ["foo", "(-,bar,)"]
         entry.entries = entries
-        self.assertEqual(entry.entries,
-                         entries,
-                         msg='Could not set attribute: entries')
+        self.assertEqual(entry.entries, entries, msg="Could not set attribute: entries")
 
     def testVerify(self):
         """Test that the object can verify it's attributes and itself."""
@@ -107,9 +105,9 @@ class TestNetgroupMapEntry(unittest.TestCase):
     def testKey(self):
         """Key() should return the value of the 'name' attribute."""
         entry = netgroup.NetgroupMapEntry()
-        entry.name = 'foo'
+        entry.name = "foo"
         self.assertEqual(entry.Key(), entry.name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

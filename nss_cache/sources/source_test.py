@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for sources/source.py."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = "jaq@google.com (Jamie Wilkinson)"
 
 import unittest
 
@@ -33,7 +33,7 @@ class TestSource(unittest.TestCase):
 
         self.assertRaises(RuntimeError, source.Source, None)
 
-        config = 'foo'
+        config = "foo"
 
         self.assertRaises(RuntimeError, source.Source, config)
 
@@ -42,5 +42,5 @@ class TestSource(unittest.TestCase):
         self.assertRaises(NotImplementedError, s.Verify)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

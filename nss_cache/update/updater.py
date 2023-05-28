@@ -24,8 +24,7 @@ AutomountMapUpdater:  Class used for updating automount map caches.
 """
 import errno
 
-__author__ = ('vasilios@google.com (V Hoffman)',
-              'jaq@google.com (Jamie Wilkinson)')
+__author__ = ("vasilios@google.com (V Hoffman)", "jaq@google.com (Jamie Wilkinson)")
 
 import calendar
 import logging
@@ -53,12 +52,14 @@ class Updater(object):
       update_file: A string with our last updated timestamp filename.
     """
 
-    def __init__(self,
-                 map_name,
-                 timestamp_dir,
-                 cache_options,
-                 automount_mountpoint=None,
-                 can_do_incremental=False):
+    def __init__(
+        self,
+        map_name,
+        timestamp_dir,
+        cache_options,
+        automount_mountpoint=None,
+        can_do_incremental=False,
+    ):
         """Construct an updater object.
 
         Args:
@@ -82,15 +83,18 @@ class Updater(object):
 
         # Calculate our timestamp files
         if automount_mountpoint is None:
-            timestamp_prefix = '%s/timestamp-%s' % (timestamp_dir, map_name)
+            timestamp_prefix = "%s/timestamp-%s" % (timestamp_dir, map_name)
         else:
             # turn /auto into auto.auto, and /usr/local into /auto.usr_local
-            automount_mountpoint = automount_mountpoint.lstrip('/')
-            automount_mountpoint = automount_mountpoint.replace('/', '_')
-            timestamp_prefix = '%s/timestamp-%s-%s' % (timestamp_dir, map_name,
-                                                       automount_mountpoint)
-        self.modify_file = '%s-modify' % timestamp_prefix
-        self.update_file = '%s-update' % timestamp_prefix
+            automount_mountpoint = automount_mountpoint.lstrip("/")
+            automount_mountpoint = automount_mountpoint.replace("/", "_")
+            timestamp_prefix = "%s/timestamp-%s-%s" % (
+                timestamp_dir,
+                map_name,
+                automount_mountpoint,
+            )
+        self.modify_file = "%s-modify" % timestamp_prefix
+        self.update_file = "%s-update" % timestamp_prefix
 
         # Timestamp info is cached here
         self.modify_time = None
@@ -120,37 +124,42 @@ class Updater(object):
             return None
 
         try:
-            timestamp_file = open(filename, 'r')
+            timestamp_file = open(filename, "r")
             timestamp_string = timestamp_file.read().strip()
         except IOError as e:
-            self.log.warning('error opening timestamp file: %s', e)
+            self.log.warning("error opening timestamp file: %s", e)
             timestamp_string = None
         else:
             timestamp_file.close()
 
-        self.log.debug('read timestamp %s from file %r', timestamp_string,
-                       filename)
+        self.log.debug("read timestamp %s from file %r", timestamp_string, filename)
 
         if timestamp_string is not None:
             try:
                 # Append UTC to force the timezone to parse the string in.
                 timestamp = int(
                     calendar.timegm(
-                        time.strptime(timestamp_string + ' UTC',
-                                      '%Y-%m-%dT%H:%M:%SZ %Z')))
+                        time.strptime(
+                            timestamp_string + " UTC", "%Y-%m-%dT%H:%M:%SZ %Z"
+                        )
+                    )
+                )
             except ValueError as e:
-                self.log.error('cannot parse timestamp file %r: %s', filename,
-                               e)
+                self.log.error("cannot parse timestamp file %r: %s", filename, e)
                 timestamp = None
         else:
             timestamp = None
 
         now = self._GetCurrentTime()
         if timestamp and timestamp > now:
-            self.log.warning('timestamp %r from %r is in the future, now is %r',
-                             timestamp_string, filename, now)
+            self.log.warning(
+                "timestamp %r from %r is in the future, now is %r",
+                timestamp_string,
+                filename,
+                now,
+            )
             if timestamp - now >= 60 * 60:
-                self.log.info('Resetting timestamp to now.')
+                self.log.info("Resetting timestamp to now.")
                 timestamp = now
 
         return timestamp
@@ -179,24 +188,25 @@ class Updater(object):
             else:
                 raise
 
-        (filedesc, temp_filename) = tempfile.mkstemp(prefix='nsscache-update-',
-                                                     dir=self.timestamp_dir)
-        time_string = time.strftime('%Y-%m-%dT%H:%M:%SZ',
-                                    time.gmtime(timestamp))
+        (filedesc, temp_filename) = tempfile.mkstemp(
+            prefix="nsscache-update-", dir=self.timestamp_dir
+        )
+        time_string = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(timestamp))
 
         try:
-            os.write(filedesc, b'%s\n' % time_string.encode())
+            os.write(filedesc, b"%s\n" % time_string.encode())
             os.fsync(filedesc)
             os.close(filedesc)
         except OSError:
             os.unlink(temp_filename)
-            self.log.warning('writing timestamp failed!')
+            self.log.warning("writing timestamp failed!")
             return False
 
-        os.chmod(temp_filename,
-                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(
+            temp_filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        )
         os.rename(temp_filename, filename)
-        self.log.debug('wrote timestamp %s to file %r', time_string, filename)
+        self.log.debug("wrote timestamp %s to file %r", time_string, filename)
         return True
 
     def GetUpdateTimestamp(self):
@@ -278,8 +288,6 @@ class Updater(object):
         # Create the single cache we write to
         cache = cache_factory.Create(self.cache_options, self.map_name)
 
-        return self.UpdateCacheFromSource(cache,
-                                          source,
-                                          incremental,
-                                          force_write,
-                                          location=None)
+        return self.UpdateCacheFromSource(
+            cache, source, incremental, force_write, location=None
+        )

@@ -21,7 +21,7 @@ class.
 SshkeyMapEntry:  A sshkey map entry based on the MapEntry class.
 """
 
-__author__ = 'mimianddaniel@gmail.com'
+__author__ = "mimianddaniel@gmail.com"
 
 from nss_cache.maps import maps
 
@@ -52,10 +52,11 @@ class SshkeyMap(maps.Map):
 
 class SshkeyMapEntry(maps.MapEntry):
     """This class represents NSS sshkey map entries."""
+
     # Using slots saves us over 2x memory on large maps.
-    __slots__ = ('name', 'sshkey')
-    _KEY = 'name'
-    _ATTRS = ('name', 'sshkey')
+    __slots__ = ("name", "sshkey")
+    _KEY = "name"
+    _ATTRS = ("name", "sshkey")
 
     def __init__(self, data=None):
         """Construct a SshkeyMapEntry, setting reasonable defaults."""
@@ -65,4 +66,4 @@ class SshkeyMapEntry(maps.MapEntry):
         super(SshkeyMapEntry, self).__init__(data)
         # Seed data with defaults if still empty
         if self.sshkey is None:
-            self.sshkey = ''
+            self.sshkey = ""

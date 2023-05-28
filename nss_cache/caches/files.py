@@ -21,8 +21,10 @@ that look similar to the standard ones used by nss_files, but with
 format created here.
 """
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 import configparser
 import errno
@@ -47,28 +49,28 @@ def LongestLength(l):
 # Load suffix config variables
 parser = configparser.ConfigParser()
 for i in sys.argv:
-    if ('nsscache.conf') in i:
+    if ("nsscache.conf") in i:
         # Remove '--config-file=' from the string
-        if ('--config-file') in i:
+        if ("--config-file") in i:
             i = i[14:]
         parser.read(i)
-    elif os.path.isfile('/etc/nsscache.conf'):
-        parser.read('/etc/nsscache.conf')
+    elif os.path.isfile("/etc/nsscache.conf"):
+        parser.read("/etc/nsscache.conf")
     else:
         # Config in nsscache folder
-        parser.read('nsscache.conf')
-prefix = parser.get('suffix', 'prefix', fallback='')
-suffix = parser.get('suffix', 'suffix', fallback='')
+        parser.read("nsscache.conf")
+prefix = parser.get("suffix", "prefix", fallback="")
+suffix = parser.get("suffix", "suffix", fallback="")
 
 
 def RegisterAllImplementations(register_callback):
     """Register our cache classes independently from the import scheme."""
-    register_callback('files', 'passwd', FilesPasswdMapHandler)
-    register_callback('files', 'sshkey', FilesSshkeyMapHandler)
-    register_callback('files', 'group', FilesGroupMapHandler)
-    register_callback('files', 'shadow', FilesShadowMapHandler)
-    register_callback('files', 'netgroup', FilesNetgroupMapHandler)
-    register_callback('files', 'automount', FilesAutomountMapHandler)
+    register_callback("files", "passwd", FilesPasswdMapHandler)
+    register_callback("files", "sshkey", FilesSshkeyMapHandler)
+    register_callback("files", "group", FilesGroupMapHandler)
+    register_callback("files", "shadow", FilesShadowMapHandler)
+    register_callback("files", "netgroup", FilesNetgroupMapHandler)
+    register_callback("files", "automount", FilesAutomountMapHandler)
 
 
 class FilesCache(caches.Cache):
@@ -91,17 +93,16 @@ class FilesCache(caches.Cache):
          automount_mountpoint: A string containing the automount mountpoint, used
            only by automount maps.
         """
-        super(FilesCache,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesCache, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
 
         # Documented in nsscache.conf example.
-        self.cache_filename_suffix = conf.get('cache_filename_suffix', 'cache')
+        self.cache_filename_suffix = conf.get("cache_filename_suffix", "cache")
         # Store a dict of indexes, each containing a dict of keys to line, position
         # tuples.
         self._indices = {}
-        if hasattr(self, '_INDEX_ATTRIBUTES'):
+        if hasattr(self, "_INDEX_ATTRIBUTES"):
             for index in self._INDEX_ATTRIBUTES:
                 self._indices[index] = {}
 
@@ -121,10 +122,9 @@ class FilesCache(caches.Cache):
         if cache_filename is None:
             cache_filename = self.GetCacheFilename()
 
-        self.log.debug('Opening %r for reading existing cache', cache_filename)
+        self.log.debug("Opening %r for reading existing cache", cache_filename)
         if not os.path.exists(cache_filename):
-            self.log.warning(
-                'Cache file does not exist, using an empty map instead')
+            self.log.warning("Cache file does not exist, using an empty map instead")
         else:
             cache_file = open(cache_filename)
             data = self.map_parser.GetMap(cache_file, data)
@@ -146,18 +146,20 @@ class FilesCache(caches.Cache):
         Raises:
           EmptyMap: The cache being verified is empty.
         """
-        self.log.debug('verification starting on %r', self.temp_cache_filename)
+        self.log.debug("verification starting on %r", self.temp_cache_filename)
 
         cache_data = self.GetMap(self.temp_cache_filename)
         map_entry_count = len(cache_data)
-        self.log.debug('entry count: %d', map_entry_count)
+        self.log.debug("entry count: %d", map_entry_count)
 
         if map_entry_count <= 0:
             # We have read in an empty map, yet we expect that earlier we
             # should have written more. Uncaught disk full or other error?
-            self.log.error('The files cache being verified "%r" is empty.',
-                           self.temp_cache_filename)
-            raise error.EmptyMap(self.temp_cache_filename + ' is empty')
+            self.log.error(
+                'The files cache being verified "%r" is empty.',
+                self.temp_cache_filename,
+            )
+            raise error.EmptyMap(self.temp_cache_filename + " is empty")
 
         cache_keys = set()
         # Use PopItem() so we free our memory if multiple maps are Verify()ed.
@@ -171,27 +173,31 @@ class FilesCache(caches.Cache):
 
         missing_from_cache = written_keys - cache_keys
         if missing_from_cache:
-            self.log.warning('verify failed: %d missing from the on-disk cache',
-                             len(missing_from_cache))
+            self.log.warning(
+                "verify failed: %d missing from the on-disk cache",
+                len(missing_from_cache),
+            )
             if len(missing_from_cache) < 1000:
-                self.log.debug('keys missing from the on-disk cache: %r',
-                               missing_from_cache)
+                self.log.debug(
+                    "keys missing from the on-disk cache: %r", missing_from_cache
+                )
             else:
-                self.log.debug('More than 1000 keys missing from cache. '
-                               'Not printing.')
+                self.log.debug(
+                    "More than 1000 keys missing from cache. " "Not printing."
+                )
             self._Rollback()
             return False
 
         missing_from_map = cache_keys - written_keys
         if missing_from_map:
             self.log.warning(
-                'verify failed: %d keys found, unexpected in the on-disk '
-                'cache', len(missing_from_map))
+                "verify failed: %d keys found, unexpected in the on-disk " "cache",
+                len(missing_from_map),
+            )
             if len(missing_from_map) < 1000:
-                self.log.debug('keys missing from map: %r', missing_from_map)
+                self.log.debug("keys missing from map: %r", missing_from_map)
             else:
-                self.log.debug(
-                    'More than 1000 keys missing from map.  Not printing.')
+                self.log.debug("More than 1000 keys missing from map.  Not printing.")
             self._Rollback()
             return False
 
@@ -218,8 +224,7 @@ class FilesCache(caches.Cache):
             while 1:
                 entry = map_data.PopItem()
                 for index in self._indices:
-                    self._indices[index][str(getattr(
-                        entry, index))] = str(write_offset)
+                    self._indices[index][str(getattr(entry, index))] = str(write_offset)
                 write_offset += self._WriteData(self.temp_cache_file, entry)
                 written_keys.update(self._ExpectedKeysForEntry(entry))
         except KeyError:
@@ -235,23 +240,22 @@ class FilesCache(caches.Cache):
         """Return the final destination pathname of the cache file."""
         cache_filename_target = self.CACHE_FILENAME
         if self.cache_filename_suffix:
-            cache_filename_target += '.' + self.cache_filename_suffix
+            cache_filename_target += "." + self.cache_filename_suffix
         return os.path.join(self.output_dir, cache_filename_target)
 
     def WriteIndex(self):
         """Generate an index for libnss-cache from this map."""
         for index_name in self._indices:
             # index file write to tmp file first, magic string ".ix"
-            tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(),
-                                                  index_name)
-            self.log.debug('Writing index %s', tmp_index_filename)
+            tmp_index_filename = "%s.ix%s.tmp" % (self.GetCacheFilename(), index_name)
+            self.log.debug("Writing index %s", tmp_index_filename)
 
             index = self._indices[index_name]
             key_length = LongestLength(list(index.keys()))
             pos_length = LongestLength(list(index.values()))
             max_length = key_length + pos_length
             # Open for write/truncate
-            index_file = open(tmp_index_filename, 'w')
+            index_file = open(tmp_index_filename, "w")
             # setup permissions
             try:
                 shutil.copymode(self.GetCompatFilename(), tmp_index_filename)
@@ -262,36 +266,38 @@ class FilesCache(caches.Cache):
             except OSError as e:
                 if e.errno == errno.ENOENT:
                     os.chmod(
-                        tmp_index_filename, stat.S_IRUSR | stat.S_IWUSR |
-                        stat.S_IRGRP | stat.S_IROTH)
+                        tmp_index_filename,
+                        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH,
+                    )
             for key in sorted(index):
                 pos = index[key]
-                index_line = ('%s\0%s\0%s\n' %
-                              (key, pos, '\0' *
-                               (max_length - len(key) - len(pos))))
+                index_line = "%s\0%s\0%s\n" % (
+                    key,
+                    pos,
+                    "\0" * (max_length - len(key) - len(pos)),
+                )
                 index_file.write(index_line)
             index_file.close()
         for index_name in self._indices:
             # rename tmp index file to target index file in order to
             # prevent getting user info fail during update index.
-            tmp_index_filename = '%s.ix%s.tmp' % (self.GetCacheFilename(),
-                                                  index_name)
-            index_filename = '%s.ix%s' % (self.GetCacheFilename(), index_name)
+            tmp_index_filename = "%s.ix%s.tmp" % (self.GetCacheFilename(), index_name)
+            index_filename = "%s.ix%s" % (self.GetCacheFilename(), index_name)
             os.rename(tmp_index_filename, index_filename)
 
 
 class FilesSshkeyMapHandler(FilesCache):
     """Concrete class for updating a nss_files module sshkey cache."""
-    CACHE_FILENAME = 'sshkey'
-    _INDEX_ATTRIBUTES = ('name',)
+
+    CACHE_FILENAME = "sshkey"
+    _INDEX_ATTRIBUTES = ("name",)
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_SSHKEY
-        super(FilesSshkeyMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesSshkeyMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesSshkeyMapParser()
 
     def _ExpectedKeysForEntry(self, entry):
@@ -315,23 +321,23 @@ class FilesSshkeyMapHandler(FilesCache):
         Returns:
           Number of bytes written to the target.
         """
-        sshkey_entry = '%s:%s' % (entry.name, entry.sshkey)
-        target.write(sshkey_entry.encode() + b'\n')
+        sshkey_entry = "%s:%s" % (entry.name, entry.sshkey)
+        target.write(sshkey_entry.encode() + b"\n")
         return len(sshkey_entry) + 1
 
 
 class FilesPasswdMapHandler(FilesCache):
     """Concrete class for updating a nss_files module passwd cache."""
-    CACHE_FILENAME = 'passwd'
-    _INDEX_ATTRIBUTES = ('name', 'uid')
+
+    CACHE_FILENAME = "passwd"
+    _INDEX_ATTRIBUTES = ("name", "uid")
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_PASSWORD
-        super(FilesPasswdMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesPasswdMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesPasswdMapParser()
 
     def _ExpectedKeysForEntry(self, entry):
@@ -355,25 +361,31 @@ class FilesPasswdMapHandler(FilesCache):
         Returns:
           Number of bytes written to the target.
         """
-        password_entry = '%s:%s:%d:%d:%s:%s:%s' % (
-            entry.name, entry.passwd, entry.uid, entry.gid, entry.gecos,
-            entry.dir, entry.shell)
-        target.write(password_entry.encode() + b'\n')
+        password_entry = "%s:%s:%d:%d:%s:%s:%s" % (
+            entry.name,
+            entry.passwd,
+            entry.uid,
+            entry.gid,
+            entry.gecos,
+            entry.dir,
+            entry.shell,
+        )
+        target.write(password_entry.encode() + b"\n")
         return len(password_entry) + 1
 
 
 class FilesGroupMapHandler(FilesCache):
     """Concrete class for updating a nss_files module group cache."""
-    CACHE_FILENAME = 'group'
-    _INDEX_ATTRIBUTES = ('name', 'gid')
+
+    CACHE_FILENAME = "group"
+    _INDEX_ATTRIBUTES = ("name", "gid")
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_GROUP
-        super(FilesGroupMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesGroupMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesGroupMapParser()
 
     def _ExpectedKeysForEntry(self, entry):
@@ -389,24 +401,28 @@ class FilesGroupMapHandler(FilesCache):
 
     def _WriteData(self, target, entry):
         """Write a GroupMapEntry to the target cache."""
-        group_entry = '%s:%s:%d:%s' % (entry.name, entry.passwd, entry.gid,
-                                       ','.join(entry.members))
-        target.write(group_entry.encode() + b'\n')
+        group_entry = "%s:%s:%d:%s" % (
+            entry.name,
+            entry.passwd,
+            entry.gid,
+            ",".join(entry.members),
+        )
+        target.write(group_entry.encode() + b"\n")
         return len(group_entry) + 1
 
 
 class FilesShadowMapHandler(FilesCache):
     """Concrete class for updating a nss_files module shadow cache."""
-    CACHE_FILENAME = 'shadow'
-    _INDEX_ATTRIBUTES = ('name',)
+
+    CACHE_FILENAME = "shadow"
+    _INDEX_ATTRIBUTES = ("name",)
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_SHADOW
-        super(FilesShadowMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesShadowMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesShadowMapParser()
 
     def _ExpectedKeysForEntry(self, entry):
@@ -422,26 +438,33 @@ class FilesShadowMapHandler(FilesCache):
 
     def _WriteData(self, target, entry):
         """Write a ShadowMapEntry to the target cache."""
-        shadow_entry = '%s:%s:%s:%s:%s:%s:%s:%s:%s' % (
-            entry.name, entry.passwd, entry.lstchg or '', entry.min or
-            '', entry.max or '', entry.warn or '', entry.inact or
-            '', entry.expire or '', entry.flag or '')
-        target.write(shadow_entry.encode() + b'\n')
+        shadow_entry = "%s:%s:%s:%s:%s:%s:%s:%s:%s" % (
+            entry.name,
+            entry.passwd,
+            entry.lstchg or "",
+            entry.min or "",
+            entry.max or "",
+            entry.warn or "",
+            entry.inact or "",
+            entry.expire or "",
+            entry.flag or "",
+        )
+        target.write(shadow_entry.encode() + b"\n")
         return len(shadow_entry) + 1
 
 
 class FilesNetgroupMapHandler(FilesCache):
     """Concrete class for updating a nss_files module netgroup cache."""
-    CACHE_FILENAME = 'netgroup'
-    _TUPLE_RE = re.compile(r'^\((.*?),(.*?),(.*?)\)$')  # Do this only once.
+
+    CACHE_FILENAME = "netgroup"
+    _TUPLE_RE = re.compile(r"^\((.*?),(.*?),(.*?)\)$")  # Do this only once.
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_NETGROUP
-        super(FilesNetgroupMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesNetgroupMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesNetgroupMapParser()
 
     def _ExpectedKeysForEntry(self, entry):
@@ -458,34 +481,33 @@ class FilesNetgroupMapHandler(FilesCache):
     def _WriteData(self, target, entry):
         """Write a NetgroupMapEntry to the target cache."""
         if entry.entries:
-            netgroup_entry = '%s %s' % (entry.name, entry.entries)
+            netgroup_entry = "%s %s" % (entry.name, entry.entries)
         else:
             netgroup_entry = entry.name
-        target.write(netgroup_entry.encode() + b'\n')
+        target.write(netgroup_entry.encode() + b"\n")
         return len(netgroup_entry) + 1
 
 
 class FilesAutomountMapHandler(FilesCache):
     """Concrete class for updating a nss_files module automount cache."""
+
     CACHE_FILENAME = None  # we have multiple files, set as we update.
 
     def __init__(self, conf, map_name=None, automount_mountpoint=None):
         if map_name is None:
             map_name = config.MAP_AUTOMOUNT
-        super(FilesAutomountMapHandler,
-              self).__init__(conf,
-                             map_name,
-                             automount_mountpoint=automount_mountpoint)
+        super(FilesAutomountMapHandler, self).__init__(
+            conf, map_name, automount_mountpoint=automount_mountpoint
+        )
         self.map_parser = file_formats.FilesAutomountMapParser()
 
         if automount_mountpoint is None:
             # we are dealing with the master map
-            self.CACHE_FILENAME = 'auto.master'
+            self.CACHE_FILENAME = "auto.master"
         else:
             # turn /auto into auto.auto, and /usr/local into /auto.usr_local
-            automount_mountpoint = automount_mountpoint.lstrip('/')
-            self.CACHE_FILENAME = 'auto.%s' % automount_mountpoint.replace(
-                '/', '_')
+            automount_mountpoint = automount_mountpoint.lstrip("/")
+            self.CACHE_FILENAME = "auto.%s" % automount_mountpoint.replace("/", "_")
 
     def _ExpectedKeysForEntry(self, entry):
         """Generate a list of expected cache keys for this type of map.
@@ -503,16 +525,15 @@ class FilesAutomountMapHandler(FilesCache):
         # Modify suffix after mountpoint for autofs
         pattern = re.compile(prefix)
         if entry.options is not None:
-            if prefix != '':
-                if (pattern.match(entry.location)):  # Found string with regex
-                    entry.location = re.sub(r'({0})'.format(prefix),
-                                            r'{0}'.format(suffix),
-                                            entry.location)
-            automount_entry = '%s %s %s' % (entry.key, entry.options,
-                                            entry.location)
+            if prefix != "":
+                if pattern.match(entry.location):  # Found string with regex
+                    entry.location = re.sub(
+                        r"({0})".format(prefix), r"{0}".format(suffix), entry.location
+                    )
+            automount_entry = "%s %s %s" % (entry.key, entry.options, entry.location)
         else:
-            automount_entry = '%s %s' % (entry.key, entry.location)
-        target.write(automount_entry.encode() + b'\n')
+            automount_entry = "%s %s" % (entry.key, entry.location)
+        target.write(automount_entry.encode() + b"\n")
         return len(automount_entry) + 1
 
     def GetMapLocation(self):

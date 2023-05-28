@@ -15,21 +15,20 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for nss_cache/update/base.py."""
 
-__author__ = ('vasilios@google.com (V Hoffman)',
-              'jaq@google.com (Jamie Wilkinson)')
+__author__ = ("vasilios@google.com (V Hoffman)", "jaq@google.com (Jamie Wilkinson)")
 
 import os
 import shutil
 import tempfile
 import time
 import unittest
-from mox3 import mox
+from unittest import mock
 
 from nss_cache import config
 from nss_cache.update import updater
 
 
-class TestUpdater(mox.MoxTestBase):
+class TestUpdater(unittest.TestCase):
     """Unit tests for the Updater class."""
 
     def setUp(self):
@@ -56,13 +55,19 @@ class TestUpdater(mox.MoxTestBase):
         self.assertEqual(
             update_time,
             update_stamp,
-            msg=('retrieved a different update time than we stored: '
-                 'Expected: %r, observed: %r' % (update_time, update_stamp)))
+            msg=(
+                "retrieved a different update time than we stored: "
+                "Expected: %r, observed: %r" % (update_time, update_stamp)
+            ),
+        )
         self.assertEqual(
             modify_time,
             modify_stamp,
-            msg=('retrieved a different modify time than we stored: '
-                 'Expected %r, observed: %r' % (modify_time, modify_stamp)))
+            msg=(
+                "retrieved a different modify time than we stored: "
+                "Expected %r, observed: %r" % (modify_time, modify_stamp)
+            ),
+        )
 
     def testWriteWhenTimestampIsNone(self):
         update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
@@ -76,16 +81,12 @@ class TestUpdater(mox.MoxTestBase):
         update_stamp = update_obj.GetUpdateTimestamp()
         modify_stamp = update_obj.GetModifyTimestamp()
 
-        self.assertEqual(None,
-                         update_stamp,
-                         msg='update time did not default to None')
-        self.assertEqual(None,
-                         modify_stamp,
-                         msg='modify time did not default to None')
+        self.assertEqual(None, update_stamp, msg="update time did not default to None")
+        self.assertEqual(None, modify_stamp, msg="modify time did not default to None")
 
         # touch a file, make it unreadable
-        update_file = open(update_obj.update_file, 'w')
-        modify_file = open(update_obj.modify_file, 'w')
+        update_file = open(update_obj.update_file, "w")
+        modify_file = open(update_obj.modify_file, "w")
         update_file.close()
         modify_file.close()
         os.chmod(update_obj.update_file, 0000)
@@ -94,26 +95,27 @@ class TestUpdater(mox.MoxTestBase):
         update_stamp = update_obj.GetUpdateTimestamp()
         modify_stamp = update_obj.GetModifyTimestamp()
 
-        self.assertEqual(None,
-                         update_stamp,
-                         msg='unreadable update time did not default to None')
-        self.assertEqual(None,
-                         modify_stamp,
-                         msg='unreadable modify time did not default to None')
+        self.assertEqual(
+            None, update_stamp, msg="unreadable update time did not default to None"
+        )
+        self.assertEqual(
+            None, modify_stamp, msg="unreadable modify time did not default to None"
+        )
 
     def testTimestampInTheFuture(self):
         """Timestamps in the future are turned into now."""
         update_obj = updater.Updater(config.MAP_PASSWORD, self.workdir, {})
         expected_time = 1
         update_time = 3601
-        update_file = open(update_obj.update_file, 'w')
+        update_file = open(update_obj.update_file, "w")
         update_obj.WriteUpdateTimestamp(update_time)
         update_file.close()
-        self.mox.StubOutWithMock(update_obj, '_GetCurrentTime')
-        update_obj._GetCurrentTime().AndReturn(expected_time)
-        self.mox.ReplayAll()
-        self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
+
+        with mock.patch.object(
+            update_obj, "_GetCurrentTime", return_value=expected_time
+        ) as ct:
+            self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

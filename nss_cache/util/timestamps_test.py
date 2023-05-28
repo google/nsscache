@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """Unit tests for nss_cache/util/timestamps.py."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = "jaq@google.com (Jamie Wilkinson)"
 
 import datetime
 from datetime import timezone
@@ -30,7 +30,6 @@ from nss_cache.util import timestamps
 
 
 class TestTimestamps(unittest.TestCase):
-
     def setUp(self):
         super(TestTimestamps, self).setUp()
         self.workdir = tempfile.mkdtemp()
@@ -40,9 +39,9 @@ class TestTimestamps(unittest.TestCase):
         shutil.rmtree(self.workdir)
 
     def testReadTimestamp(self):
-        ts_filename = os.path.join(self.workdir, 'tsr')
-        ts_file = open(ts_filename, 'w')
-        ts_file.write('1970-01-01T00:00:01Z\n')
+        ts_filename = os.path.join(self.workdir, "tsr")
+        ts_file = open(ts_filename, "w")
+        ts_file.write("1970-01-01T00:00:01Z\n")
         ts_file.close()
 
         ts = timestamps.ReadTimestamp(ts_filename)
@@ -51,49 +50,52 @@ class TestTimestamps(unittest.TestCase):
     def testReadTimestamp(self):
         # TZ=UTC date -d @1306428781
         # Thu May 26 16:53:01 UTC 2011
-        ts_filename = os.path.join(self.workdir, 'tsr')
-        ts_file = open(ts_filename, 'w')
-        ts_file.write('2011-05-26T16:53:01Z\n')
+        ts_filename = os.path.join(self.workdir, "tsr")
+        ts_file = open(ts_filename, "w")
+        ts_file.write("2011-05-26T16:53:01Z\n")
         ts_file.close()
 
         ts = timestamps.ReadTimestamp(ts_filename)
         self.assertEqual(time.gmtime(1306428781), ts)
 
     def testReadTimestampInFuture(self):
-        ts_filename = os.path.join(self.workdir, 'tsr')
-        ts_file = open(ts_filename, 'w')
-        ts_file.write('2011-05-26T16:02:00Z')
+        ts_filename = os.path.join(self.workdir, "tsr")
+        ts_file = open(ts_filename, "w")
+        ts_file.write("2011-05-26T16:02:00Z")
         ts_file.close()
 
         now = time.gmtime(1)
-        with mock.patch('time.gmtime') as gmtime:
+        with mock.patch("time.gmtime") as gmtime:
             gmtime.return_value = now
             ts = timestamps.ReadTimestamp(ts_filename)
             self.assertEqual(now, ts)
 
     def testWriteTimestamp(self):
-        ts_filename = os.path.join(self.workdir, 'tsw')
+        ts_filename = os.path.join(self.workdir, "tsw")
 
         good_ts = time.gmtime(1)
         timestamps.WriteTimestamp(good_ts, ts_filename)
 
         self.assertEqual(good_ts, timestamps.ReadTimestamp(ts_filename))
 
-        ts_file = open(ts_filename, 'r')
-        self.assertEqual('1970-01-01T00:00:01Z\n', ts_file.read())
+        ts_file = open(ts_filename, "r")
+        self.assertEqual("1970-01-01T00:00:01Z\n", ts_file.read())
         ts_file.close()
 
     def testTimestampToDateTime(self):
         now = datetime.datetime.now(timezone.utc)
-        self.assertEqual(timestamps.FromTimestampToDateTime(now.timestamp()),
-                         now.replace(tzinfo=None))
+        self.assertEqual(
+            timestamps.FromTimestampToDateTime(now.timestamp()),
+            now.replace(tzinfo=None),
+        )
 
     def testDateTimeToTimestamp(self):
         now = datetime.datetime.now(timezone.utc)
         self.assertEqual(
             now.replace(microsecond=0).timestamp(),
-            timestamps.FromDateTimeToTimestamp(now))
+            timestamps.FromDateTimeToTimestamp(now),
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
