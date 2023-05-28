@@ -40,8 +40,8 @@ class TestNSS(unittest.TestCase):
 
         # stub, retval, arg
         maps = (
-            ('nss.GetPasswdMap', 'TEST_PASSWORD', config.MAP_PASSWORD),
-            ('nss.GetGroupMap', 'TEST_GROUP', config.MAP_GROUP),
+            ("nss.GetPasswdMap", "TEST_PASSWORD", config.MAP_PASSWORD),
+            ("nss.GetGroupMap", "TEST_GROUP", config.MAP_GROUP),
             ('nss.GetShadowMap, "TEST_SHADOW', config.MAP_SHADOW),
         )
 
@@ -69,14 +69,14 @@ class TestNSS(unittest.TestCase):
         entry2.name = "bar"
         entry2.uid = 20
         entry2.gid = 20
-        entry2.gecos = 'foo bar'
-        entry2.dir = '/home/monkeyboy'
-        entry2.shell = '/bin/shell'
-        foo = ('foo', 'x', 10, 10, 'foo bar', '/home/foo', '/bin/shell')
-        bar = ('bar', 'x', 20, 20, 'foo bar', '/home/monkeyboy', '/bin/shell')
+        entry2.gecos = "foo bar"
+        entry2.dir = "/home/monkeyboy"
+        entry2.shell = "/bin/shell"
+        foo = ("foo", "x", 10, 10, "foo bar", "/home/foo", "/bin/shell")
+        bar = ("bar", "x", 20, 20, "foo bar", "/home/monkeyboy", "/bin/shell")
 
         # stubs
-        with mock.patch('pwd.getpwall') as mock_pwall:
+        with mock.patch("pwd.getpwall") as mock_pwall:
             mock_pwall.return_value = [foo, bar]
             password_map = nss.GetPasswdMap()
             self.assertTrue(isinstance(password_map, passwd.PasswdMap))
@@ -92,17 +92,17 @@ class TestNSS(unittest.TestCase):
         entry1.name = "foo"
         entry1.passwd = "*"
         entry1.gid = 10
-        entry1.members = ['']
+        entry1.members = [""]
         entry2 = group.GroupMapEntry()
         entry2.name = "bar"
         entry2.passwd = "*"
         entry2.gid = 20
-        entry2.members = ['foo', 'bar']
-        foo = ('foo', '*', 10, [])
-        bar = ('bar', '*', 20, ['foo', 'bar'])
+        entry2.members = ["foo", "bar"]
+        foo = ("foo", "*", 10, [])
+        bar = ("bar", "*", 20, ["foo", "bar"])
 
         # stubs
-        with mock.patch('grp.getgrall') as mock_grpall:
+        with mock.patch("grp.getgrall") as mock_grpall:
             mock_grpall.return_value = [foo, bar]
             group_map = nss.GetGroupMap()
             self.assertTrue(isinstance(group_map, group.GroupMap))
@@ -112,19 +112,19 @@ class TestNSS(unittest.TestCase):
 
     def testGetShadowMap(self):
         """Verify we build a correct shadow map from nss calls."""
-        line1 = b'foo:!!::::::::'
-        line2 = b'bar:!!::::::::'
+        line1 = b"foo:!!::::::::"
+        line2 = b"bar:!!::::::::"
 
         entry1 = shadow.ShadowMapEntry()
         entry1.name = "foo"
         entry2 = shadow.ShadowMapEntry()
         entry2.name = "bar"
 
-        with mock.patch('nss._SpawnGetent') as mock_getent:
+        with mock.patch("nss._SpawnGetent") as mock_getent:
             # stub
             mock_process = mock.create_autospec(subprocess.Popen)
             mock_getent.return_value = mock_process
-            mock_process.communicate.return_value = [b'\n'.join([line1, line2]), b'']
+            mock_process.communicate.return_value = [b"\n".join([line1, line2]), b""]
             mock_process.return_code = 0
             # test
             shadow_map = nss.GetShadowMap()
