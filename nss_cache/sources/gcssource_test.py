@@ -3,8 +3,7 @@
 import datetime
 import io
 import unittest
-
-from mox3 import mox
+from unittest import mock
 
 from nss_cache.maps import group
 from nss_cache.maps import passwd
@@ -51,7 +50,7 @@ class TestPasswdUpdateGetter(unittest.TestCase):
         self.assertIsInstance(self.updater.CreateMap(), passwd.PasswdMap)
 
 
-class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
+class TestShadowUpdateGetter(unittest.TestCase):
     def setUp(self):
         super(TestShadowUpdateGetter, self).setUp()
         self.updater = gcssource.ShadowUpdateGetter()
@@ -65,48 +64,39 @@ class TestShadowUpdateGetter(mox.MoxTestBase, unittest.TestCase):
         self.assertIsInstance(self.updater.CreateMap(), shadow.ShadowMap)
 
     def testShadowGetUpdatesWithContent(self):
-        mock_blob = self.mox.CreateMockAnything()
-        mock_blob.open().AndReturn(
-            io.StringIO(
-                """usera:x:::::::
+        mock_client = mock.Mock()
+        mock_bucket = mock_client.bucket.return_value
+        mock_blob = mock_bucket.get_blob.return_value
+        mock_blob.open.return_value = io.StringIO(
+            """usera:x:::::::
 userb:x:::::::
 """
-            )
         )
         mock_blob.updated = datetime.datetime.now()
 
-        mock_bucket = self.mox.CreateMockAnything()
-        mock_bucket.get_blob("passwd").AndReturn(mock_blob)
-
-        mock_client = self.mox.CreateMockAnything()
-        mock_client.bucket("test-bucket").AndReturn(mock_bucket)
-
-        self.mox.ReplayAll()
-
         result = self.updater.GetUpdates(mock_client, "test-bucket", "passwd", None)
+
         self.assertEqual(len(result), 2)
+        mock_bucket.get_blob.assert_called_with("passwd")
+        mock_client.bucket.assert_called_with("test-bucket")
 
     def testShadowGetUpdatesSinceAfterUpdatedTime(self):
-        mock_blob = self.mox.CreateMockAnything()
-        mock_blob.updated = datetime.datetime.now()
-
-        mock_bucket = self.mox.CreateMockAnything()
-        mock_bucket.get_blob("passwd").AndReturn(mock_blob)
-
-        mock_client = self.mox.CreateMockAnything()
-        mock_client.bucket("test-bucket").AndReturn(mock_bucket)
-
-        self.mox.ReplayAll()
+        mock_client = mock.Mock()
+        mock_bucket = mock_client.bucket.return_value
+        mock_blob = mock_bucket.get_blob.return_value
+        now = datetime.datetime.now()
+        mock_blob.updated = now
 
         result = self.updater.GetUpdates(
             mock_client,
             "test-bucket",
             "passwd",
-            timestamps.FromDateTimeToTimestamp(
-                mock_blob.updated + datetime.timedelta(days=1)
-            ),
+            timestamps.FromDateTimeToTimestamp(now + datetime.timedelta(days=1)),
         )
+
         self.assertEqual(len(result), 0)
+        mock_bucket.get_blob.assert_called_with("passwd")
+        mock_client.bucket.assert_called_with("test-bucket")
 
 
 class TestGroupUpdateGetter(unittest.TestCase):
