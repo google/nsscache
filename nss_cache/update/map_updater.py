@@ -49,7 +49,7 @@ class MapUpdater(updater.Updater):
         Returns:
           An int indicating the success of an update (0 == good, fail otherwise).
         """
-        return_val = 0
+        error_count = 0
         incremental = incremental and self.can_do_incremental
 
         timestamp = self.GetModifyTimestamp()
@@ -62,7 +62,7 @@ class MapUpdater(updater.Updater):
                 self.map_name, since=timestamp, location=location
             )
             try:
-                return_val += self._IncrementalUpdateFromMap(cache, source_map)
+                error_count += self._IncrementalUpdateFromMap(cache, source_map)
             except (error.CacheNotFound, error.EmptyMap):
                 self.log.warning("Local cache is invalid, faulting to a full sync.")
                 incremental = False
@@ -71,9 +71,9 @@ class MapUpdater(updater.Updater):
         # fail through to a full sync.
         if not incremental:
             source_map = source.GetMap(self.map_name, location=location)
-            return_val += self.FullUpdateFromMap(cache, source_map, force_write)
+            error_count += self.FullUpdateFromMap(cache, source_map, force_write)
 
-        return return_val
+        return error_count
 
     def _IncrementalUpdateFromMap(self, cache, new_map):
         """Merge a given map into the provided cache.
@@ -88,7 +88,7 @@ class MapUpdater(updater.Updater):
         Raises:
           EmptyMap: We're trying to merge into cache with an emtpy map.
         """
-        return_val = 0
+        error_count = 0
 
         if len(new_map) == 0:
             self.log.info("Empty map on incremental update, skipping")
@@ -101,8 +101,8 @@ class MapUpdater(updater.Updater):
             raise error.EmptyMap
 
         if cache_map.Merge(new_map):
-            return_val += cache.WriteMap(map_data=cache_map)
-            if return_val == 0:
+            error_count += cache.WriteMap(map_data=cache_map)
+            if error_count == 0:
                 self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
         else:
             self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
@@ -110,10 +110,10 @@ class MapUpdater(updater.Updater):
 
         # We did an update, even if nothing was written, so write our
         # update timestamp unless there is an error.
-        if return_val == 0:
+        if error_count == 0:
             self.WriteUpdateTimestamp()
 
-        return return_val
+        return error_count
 
     def FullUpdateFromMap(self, cache, new_map, force_write=False):
         """Write a new map into the provided cache (overwrites).
@@ -130,7 +130,7 @@ class MapUpdater(updater.Updater):
         Raises:
           EmptyMap: Update is an empty map, not raised if force_write=True.
         """
-        return_val = 0
+        error_count = 0
 
         if len(new_map) == 0 and not force_write:
             raise error.EmptyMap(
@@ -138,14 +138,14 @@ class MapUpdater(updater.Updater):
                 "Use --force-write to override."
             )
 
-        return_val = cache.WriteMap(map_data=new_map, force_write=force_write)
+        error_count = cache.WriteMap(map_data=new_map, force_write=force_write)
 
         # We did an update, write our timestamps unless there is an error.
-        if return_val == 0:
+        if error_count == 0:
             self.WriteModifyTimestamp(new_map.GetModifyTimestamp())
             self.WriteUpdateTimestamp()
 
-        return return_val
+        return error_count
 
 
 class AutomountUpdater(updater.Updater):
@@ -218,7 +218,7 @@ class AutomountUpdater(updater.Updater):
         Returns:
           An int indicating success of update (0 == good, fail otherwise).
         """
-        return_val = 0
+        error_count = 0
 
         self.log.info("Retrieving automount master map.")
         master_map = source.GetAutomountMasterMap()
@@ -236,7 +236,7 @@ class AutomountUpdater(updater.Updater):
                     "Local master map specified but no map found! "
                     "No maps will update."
                 )
-                return return_val + 1
+                return error_count + 1
 
         # update specific maps, e.g. auto.home and auto.auto
         for map_entry in master_map:
@@ -269,7 +269,7 @@ class AutomountUpdater(updater.Updater):
                 self.cache_options,
                 automount_mountpoint=automount_mountpoint,
             )
-            return_val += update_obj.UpdateCacheFromSource(
+            error_count += update_obj.UpdateCacheFromSource(
                 cache, source, incremental, force_write, source_location
             )
         # with sub-maps updated, write modified master map to disk if configured to
@@ -281,6 +281,6 @@ class AutomountUpdater(updater.Updater):
             update_obj = MapUpdater(
                 self.map_name, self.timestamp_dir, self.cache_options
             )
-            return_val += update_obj.FullUpdateFromMap(cache, master_map)
+            error_count += update_obj.FullUpdateFromMap(cache, master_map)
 
-        return return_val
+        return error_count
