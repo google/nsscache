@@ -36,7 +36,7 @@ classes and datastores such as /etc/netgroup actually allow for those
 and similar cases.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 from nss_cache.maps import maps
 
@@ -68,9 +68,10 @@ class NetgroupMapEntry(maps.MapEntry):
     tuple is the equivalent of a null pointer from getnetgrent(),
     specifically a wildcard.
     """
-    __slots__ = ('name', 'entries')
-    _KEY = 'name'
-    _ATTRS = ('name', 'entries')
+
+    __slots__ = ("name", "entries")
+    _KEY = "name"
+    _ATTRS = ("name", "entries")
 
     def __init__(self, data=None):
         """Construct a NetgroupMapEntry."""
@@ -81,4 +82,4 @@ class NetgroupMapEntry(maps.MapEntry):
 
         # Seed data with defaults if needed
         if self.entries is None:
-            self.entries = ''
+            self.entries = ""

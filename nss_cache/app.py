@@ -19,8 +19,10 @@ The nsscache program is the user interface to the nss_cache package,
 responsible for updating or building local persistent cache.
 """
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 import logging
 import logging.handlers
@@ -52,9 +54,9 @@ class NssCacheLogger(BaseLoggingClass):
     def __init__(self, name):
         logging.Logger.__init__(self, name)
         logging.VERBOSE = logging.INFO - 1
-        logging.addLevelName(logging.VERBOSE, 'VERBOSE')
+        logging.addLevelName(logging.VERBOSE, "VERBOSE")
         logging.DEBUG2 = logging.DEBUG - 1
-        logging.addLevelName(logging.DEBUG2, 'DEBUG2')
+        logging.addLevelName(logging.DEBUG2, "DEBUG2")
 
     def verbose(self, msg, *args, **kwargs):
         self.log(logging.VERBOSE, msg, args, kwargs)
@@ -80,10 +82,12 @@ class NssCacheApp(object):
         except ValueError:
             is_tty = False
         if is_tty:
-            format_str = ('%(levelname)-8s %(asctime)-15s '
-                          '%(filename)s:%(lineno)d: '
-                          '%(funcName)s: '
-                          '%(message)s')
+            format_str = (
+                "%(levelname)-8s %(asctime)-15s "
+                "%(filename)s:%(lineno)d: "
+                "%(funcName)s: "
+                "%(message)s"
+            )
             logging.basicConfig(format=format_str)
             # python2.3's basicConfig doesn't let you set the default level
             logger = logging.getLogger()
@@ -91,15 +95,18 @@ class NssCacheApp(object):
         else:
             facility = logging.handlers.SysLogHandler.LOG_DAEMON
             try:
-                handler = logging.handlers.SysLogHandler(address='/dev/log',
-                                                         facility=facility)
+                handler = logging.handlers.SysLogHandler(
+                    address="/dev/log", facility=facility
+                )
             except socket.error:
-                print('/dev/log could not be opened; falling back on stderr.')
+                print("/dev/log could not be opened; falling back on stderr.")
                 # Omitting an argument to StreamHandler results in sys.stderr being
                 # used.
                 handler = logging.StreamHandler()
-            format_str = (os.path.basename(sys.argv[0]) +
-                          '[%(process)d]: %(levelname)s %(message)s')
+            format_str = (
+                os.path.basename(sys.argv[0])
+                + "[%(process)d]: %(levelname)s %(message)s"
+            )
             fmt = logging.Formatter(format_str)
             handler.setFormatter(fmt)
             handler.setLevel(level=logging.INFO)
@@ -116,32 +123,37 @@ class NssCacheApp(object):
         # OptionParser is from standard python module optparse
         OptionParser
         """
-        usage = ('nsscache synchronises a local NSS cache against a '
-                 'remote data source.\n'
-                 '\n'
-                 'Usage: nsscache [global options] command [command options]\n'
-                 '\n'
-                 'commands:\n')
+        usage = (
+            "nsscache synchronises a local NSS cache against a "
+            "remote data source.\n"
+            "\n"
+            "Usage: nsscache [global options] command [command options]\n"
+            "\n"
+            "commands:\n"
+        )
         command_descriptions = []
         for (name, cls) in list(command.__dict__.items()):
             # skip the command base object
-            if name == 'Command':
+            if name == "Command":
                 continue
-            if hasattr(cls, 'Help'):
+            if hasattr(cls, "Help"):
                 short_help = cls().Help(short=True)
-                command_descriptions.append('  %-21s %.40s' %
-                                            (name.lower(), short_help.lower()))
+                command_descriptions.append(
+                    "  %-21s %.40s" % (name.lower(), short_help.lower())
+                )
 
-        usage += '\n'.join(command_descriptions)
-        version_string = ('nsscache ' + nss_cache.__version__ + '\n'
-                          '\n'
-                          'Copyright (c) 2007 Google, Inc.\n'
-                          'This is free software; see the source for copying '
-                          'conditions.  There is NO\n'
-                          'warranty; not even for MERCHANTABILITY or FITNESS '
-                          'FOR A PARTICULAR PURPOSE.\n'
-                          '\n'
-                          'Written by Jamie Wilkinson and Vasilios Hoffman.')
+        usage += "\n".join(command_descriptions)
+        version_string = (
+            "nsscache " + nss_cache.__version__ + "\n"
+            "\n"
+            "Copyright (c) 2007 Google, Inc.\n"
+            "This is free software; see the source for copying "
+            "conditions.  There is NO\n"
+            "warranty; not even for MERCHANTABILITY or FITNESS "
+            "FOR A PARTICULAR PURPOSE.\n"
+            "\n"
+            "Written by Jamie Wilkinson and Vasilios Hoffman."
+        )
 
         parser = optparse.OptionParser(usage, version=version_string)
 
@@ -150,19 +162,19 @@ class NssCacheApp(object):
 
         # Add options.
         parser.set_defaults(verbose=False, debug=False)
-        parser.add_option('-v',
-                          '--verbose',
-                          action='store_true',
-                          help='enable verbose output')
-        parser.add_option('-d',
-                          '--debug',
-                          action='store_true',
-                          help='enable debugging output')
-        parser.add_option('-c',
-                          '--config-file',
-                          type='string',
-                          help='read configuration from FILE',
-                          metavar='FILE')
+        parser.add_option(
+            "-v", "--verbose", action="store_true", help="enable verbose output"
+        )
+        parser.add_option(
+            "-d", "--debug", action="store_true", help="enable debugging output"
+        )
+        parser.add_option(
+            "-c",
+            "--config-file",
+            type="string",
+            help="read configuration from FILE",
+            metavar="FILE",
+        )
 
         # filthy monkeypatch hack to remove the prepended 'usage: '
         # TODO(jaq): we really ought to subclass OptionParser instead...
@@ -214,22 +226,21 @@ class NssCacheApp(object):
         if options.config_file:
             conf.config_file = options.config_file
 
-        self.log.info('using nss_cache library, version %s',
-                      nss_cache.__version__)
-        self.log.debug('library path is %r', nss_cache.__file__)
+        self.log.info("using nss_cache library, version %s", nss_cache.__version__)
+        self.log.debug("library path is %r", nss_cache.__file__)
 
         # Identify the command to dispatch.
         if not args:
-            print('No command given')
+            print("No command given")
             self.parser.print_help()
             return os.EX_USAGE
         # print global help if command is 'help' with no argument
-        if len(args) == 1 and args[0] == 'help':
+        if len(args) == 1 and args[0] == "help":
             self.parser.print_help()
             return os.EX_OK
-        self.log.debug('args: %r' % args)
+        self.log.debug("args: %r" % args)
         command_name = args.pop(0)
-        self.log.debug('command: %r' % command_name)
+        self.log.debug("command: %r" % command_name)
 
         # Load the configuration from file.
         config.LoadConfig(conf)
@@ -238,15 +249,15 @@ class NssCacheApp(object):
         try:
             command_callable = getattr(command, command_name.capitalize())
         except AttributeError:
-            self.log.warning('%s is not implemented', command_name)
-            print(('command %r is not implemented' % command_name))
+            self.log.warning("%s is not implemented", command_name)
+            print(("command %r is not implemented" % command_name))
             self.parser.print_help()
             return os.EX_SOFTWARE
 
         try:
             retval = command_callable().Run(conf=conf, args=args)
         except error.SourceUnavailable as e:
-            self.log.error('Problem with configured data source: %s', e)
+            self.log.error("Problem with configured data source: %s", e)
             return os.EX_TEMPFAIL
 
         return retval

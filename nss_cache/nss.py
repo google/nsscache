@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """NSS utility library."""
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 import pwd
 import grp
@@ -30,7 +30,7 @@ from nss_cache.maps import shadow
 
 # TODO(v): this should be a config option someday, but it's as standard
 # as libc so at the moment we'll leave it be for simplicity.
-GETENT = '/usr/bin/getent'
+GETENT = "/usr/bin/getent"
 
 
 def GetMap(map_name):
@@ -75,7 +75,7 @@ def GetGroupMap():
         map_entry.gid = nss_entry[2]
         map_entry.members = nss_entry[3]
         if not map_entry.members:
-            map_entry.members = ['']
+            map_entry.members = [""]
         group_map.Add(map_entry)
 
     return group_map
@@ -91,42 +91,42 @@ def GetShadowMap():
     shadow_map = shadow.ShadowMap()
 
     for line in getent_stdout.split():
-        line = line.decode('utf-8')
-        nss_entry = line.strip().split(':')
+        line = line.decode("utf-8")
+        nss_entry = line.strip().split(":")
         map_entry = shadow.ShadowMapEntry()
         map_entry.name = nss_entry[0]
         map_entry.passwd = nss_entry[1]
-        if nss_entry[2] != '':
+        if nss_entry[2] != "":
             map_entry.lstchg = int(nss_entry[2])
-        if nss_entry[3] != '':
+        if nss_entry[3] != "":
             map_entry.min = int(nss_entry[3])
-        if nss_entry[4] != '':
+        if nss_entry[4] != "":
             map_entry.max = int(nss_entry[4])
-        if nss_entry[5] != '':
+        if nss_entry[5] != "":
             map_entry.warn = int(nss_entry[5])
-        if nss_entry[6] != '':
+        if nss_entry[6] != "":
             map_entry.inact = int(nss_entry[6])
-        if nss_entry[7] != '':
+        if nss_entry[7] != "":
             map_entry.expire = int(nss_entry[7])
-        if nss_entry[8] != '':
+        if nss_entry[8] != "":
             map_entry.flag = int(nss_entry[8])
         shadow_map.Add(map_entry)
 
     if getent_stderr:
-        logging.debug('captured error %s', getent_stderr)
+        logging.debug("captured error %s", getent_stderr)
 
     retval = getent.returncode
 
     if retval != 0:
-        logging.warning('%s returned error code: %d', GETENT, retval)
+        logging.warning("%s returned error code: %d", GETENT, retval)
 
     return shadow_map
 
 
 def _SpawnGetent(map_name):
     """Run 'getent map' in a subprocess for reading NSS data."""
-    getent = subprocess.Popen([GETENT, map_name],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+    getent = subprocess.Popen(
+        [GETENT, map_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
 
     return getent

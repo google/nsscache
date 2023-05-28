@@ -15,8 +15,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Factory for data source implementations."""
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 _source_implementations = {}
 
@@ -40,7 +42,7 @@ def RegisterImplementation(source):
       RuntimeError: no 'name' entry in this source.
     """
     global _source_implementations
-    if 'name' not in source.__dict__:
+    if "name" not in source.__dict__:
         raise RuntimeError("'name' not defined in Source %r" % (source,))
 
     _source_implementations[source.name] = source
@@ -49,30 +51,35 @@ def RegisterImplementation(source):
 # Discover all the known implementations of sources.
 try:
     from nss_cache.sources import httpsource
+
     httpsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
     pass
 
 try:
     from nss_cache.sources import ldapsource
+
     ldapsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
     pass
 
 try:
     from nss_cache.sources import consulsource
+
     consulsource.RegisterImplementation(RegisterImplementation)
 except ImportError:
     pass
 
 try:
     from nss_cache.sources import s3source
+
     s3source.RegisterImplementation(RegisterImplementation)
 except ImportError:
     pass
 
 try:
     from nss_cache.sources import gcssource
+
     gcssource.RegisterImplementation(RegisterImplementation)
 except ImportError:
     pass
@@ -93,11 +100,11 @@ def Create(conf):
     """
     global _source_implementations
     if not _source_implementations:
-        raise RuntimeError('no source implementations exist')
+        raise RuntimeError("no source implementations exist")
 
-    source_name = conf['name']
+    source_name = conf["name"]
 
     if source_name not in list(_source_implementations.keys()):
-        raise RuntimeError('source not implemented: %r' % (source_name,))
+        raise RuntimeError("source not implemented: %r" % (source_name,))
 
     return _source_implementations[source_name](conf)

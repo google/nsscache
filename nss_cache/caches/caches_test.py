@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for caches/caches.py."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = "jaq@google.com (Jamie Wilkinson)"
 
 import os
 import platform
@@ -30,7 +30,7 @@ from nss_cache.caches import caches
 
 class FakeCacheCls(caches.Cache):
 
-    CACHE_FILENAME = 'shadow'
+    CACHE_FILENAME = "shadow"
 
     def __init__(self, config, map_name):
         super(FakeCacheCls, self).__init__(config, map_name)
@@ -39,15 +39,14 @@ class FakeCacheCls(caches.Cache):
         return 0
 
     def GetCacheFilename(self):
-        return os.path.join(self.output_dir, self.CACHE_FILENAME + '.test')
+        return os.path.join(self.output_dir, self.CACHE_FILENAME + ".test")
 
 
 class TestCls(unittest.TestCase):
-
     def setUp(self):
         self.workdir = tempfile.mkdtemp()
-        self.config = {'dir': self.workdir}
-        if platform.system() == 'FreeBSD':
+        self.config = {"dir": self.workdir}
+        if platform.system() == "FreeBSD":
             # FreeBSD doesn't have a shadow file
             self.shadow = config.MAP_PASSWORD
         else:
@@ -57,7 +56,7 @@ class TestCls(unittest.TestCase):
         os.rmdir(self.workdir)
 
     def testCopyOwnerMissing(self):
-        expected = os.stat(os.path.join('/etc', self.shadow))
+        expected = os.stat(os.path.join("/etc", self.shadow))
         expected = stat.S_IMODE(expected.st_mode)
         cache = FakeCacheCls(config=self.config, map_name=self.shadow)
         cache._Begin()
@@ -67,7 +66,7 @@ class TestCls(unittest.TestCase):
         os.unlink(cache.GetCacheFilename())
 
     def testCopyOwnerPresent(self):
-        expected = os.stat(os.path.join('/etc/', self.shadow))
+        expected = os.stat(os.path.join("/etc/", self.shadow))
         expected = stat.S_IMODE(expected.st_mode)
         cache = FakeCacheCls(config=self.config, map_name=self.shadow)
         cache._Begin()
@@ -78,17 +77,15 @@ class TestCls(unittest.TestCase):
 
 
 class TestCache(unittest.TestCase):
-
     def testWriteMap(self):
         cache_map = caches.Cache({}, config.MAP_PASSWORD, None)
-        with mock.patch.object(cache_map, 'Write') as write, mock.patch.object(
-                cache_map,
-                'Verify') as verify, mock.patch.object(cache_map,
-                                                       '_Commit') as commit:
-            write.return_value = 'entries_written'
+        with mock.patch.object(cache_map, "Write") as write, mock.patch.object(
+            cache_map, "Verify"
+        ) as verify, mock.patch.object(cache_map, "_Commit") as commit:
+            write.return_value = "entries_written"
             verify.return_value = True
-            self.assertEqual(0, cache_map.WriteMap('writable_map'))
+            self.assertEqual(0, cache_map.WriteMap("writable_map"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,7 @@ Map:  Abstract class representing a basic NSS map.
 MapEntry:  Abstract class representing an entry in a NSS map.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 import logging
 
@@ -69,7 +69,7 @@ class Map(object):
           TypeError: If the objects in the iterable are of the wrong type.
         """
         if self.__class__ is Map:
-            raise TypeError('Map is an abstract class.')
+            raise TypeError("Map is an abstract class.")
         self._data = {}
         # The index preserves the order that entries are returned from the source
         # (e.g. the LDAP server.)  It is not a set as sets are unordered.
@@ -107,7 +107,7 @@ class Map(object):
         return len(self._data)
 
     def __repr__(self):
-        return '<%s: %r>' % (self.__class__.__name__, self._data)
+        return "<%s: %r>" % (self.__class__.__name__, self._data)
 
     def Add(self, entry):
         """Add a MapEntry object to the Map and verify it (overwrites).
@@ -124,11 +124,11 @@ class Map(object):
 
         # Correct type?
         if not isinstance(entry, MapEntry):
-            raise TypeError('Not instance of MapEntry')
+            raise TypeError("Not instance of MapEntry")
 
         # Entry okay?
         if not entry.Verify():
-            self.log.info('refusing to add entry, verify failed')
+            self.log.info("refusing to add entry, verify failed")
             return False
 
         # Add to index if not already there.
@@ -136,8 +136,9 @@ class Map(object):
             self._index.append(entry.Key())
         else:
             self.log.warning(
-                'duplicate key detected when adding to map: %r, overwritten',
-                entry.Key())
+                "duplicate key detected when adding to map: %r, overwritten",
+                entry.Key(),
+            )
 
         self._data[entry.Key()] = entry
         return True
@@ -175,24 +176,27 @@ class Map(object):
         """
         if type(self) != type(other):
             raise TypeError(
-                'Attempt to Merge() differently typed Maps: %r != %r' %
-                (type(self), type(other)))
+                "Attempt to Merge() differently typed Maps: %r != %r"
+                % (type(self), type(other))
+            )
 
         if other.GetModifyTimestamp() and self.GetModifyTimestamp():
             if other.GetModifyTimestamp() < self.GetModifyTimestamp():
                 raise error.InvalidMerge(
-                    'Attempt to Merge a map with an older modify time into a newer one: '
-                    'other: %s, self: %s' %
-                    (other.GetModifyTimestamp(), self.GetModifyTimestamp()))
+                    "Attempt to Merge a map with an older modify time into a newer one: "
+                    "other: %s, self: %s"
+                    % (other.GetModifyTimestamp(), self.GetModifyTimestamp())
+                )
 
         if other.GetUpdateTimestamp() and self.GetUpdateTimestamp():
             if other.GetUpdateTimestamp() < self.GetUpdateTimestamp():
                 raise error.InvalidMerge(
-                    'Attempt to Merge a map with an older update time into a newer one: '
-                    'other: %s, self: %s' %
-                    (other.GetUpdateTimestamp(), self.GetUpdateTimestamp()))
+                    "Attempt to Merge a map with an older update time into a newer one: "
+                    "other: %s, self: %s"
+                    % (other.GetUpdateTimestamp(), self.GetUpdateTimestamp())
+                )
 
-        self.log.info('merging from a map of %d entries', len(other))
+        self.log.info("merging from a map of %d entries", len(other))
 
         merge_count = 0
         for their_entry in other:
@@ -201,8 +205,7 @@ class Map(object):
                 if self.Add(their_entry):
                     merge_count += 1
 
-        self.log.info('%d of %d entries were new or modified', merge_count,
-                      len(other))
+        self.log.info("%d of %d entries were new or modified", merge_count, len(other))
 
         if merge_count > 0:
             self.SetModifyTimestamp(other.GetModifyTimestamp())
@@ -240,7 +243,7 @@ class Map(object):
         if value is None or isinstance(value, int):
             self._last_modification_timestamp = value
         else:
-            raise TypeError('timestamp can only be int or None, not %r' % value)
+            raise TypeError("timestamp can only be int or None, not %r" % value)
 
     def GetModifyTimestamp(self):
         """Return last modification timestamp of this map.
@@ -262,7 +265,7 @@ class Map(object):
         if value is None or isinstance(value, int):
             self._last_update_timestamp = value
         else:
-            raise TypeError('timestamp can only be int or None, not %r', value)
+            raise TypeError("timestamp can only be int or None, not %r", value)
 
     def GetUpdateTimestamp(self):
         """Return last update timestamp of this map.
@@ -283,8 +286,9 @@ class MapEntry(object):
     Attributes:
       log: A logging.Logger instance used for output.
     """
+
     # Using slots saves us over 2x memory on large maps.
-    __slots__ = ('_KEY', '_ATTRS', 'log')
+    __slots__ = ("_KEY", "_ATTRS", "log")
     # Overridden in the derived classes
     _KEY: str
     _ATTRS: set()
@@ -300,7 +304,7 @@ class MapEntry(object):
         """
 
         if self.__class__ is MapEntry:
-            raise TypeError('MapEntry is an abstract class.')
+            raise TypeError("MapEntry is an abstract class.")
 
         # Initialize from dict, if passed.
         if data is None:
@@ -322,10 +326,10 @@ class MapEntry(object):
 
     def __repr__(self):
         """String representation."""
-        rep = ''
+        rep = ""
         for key in self._ATTRS:
-            rep = '%r:%r %s' % (key, getattr(self, key), rep)
-        return '<%s : %r>' % (self.__class__.__name__, rep.rstrip())
+            rep = "%r:%r %s" % (key, getattr(self, key), rep)
+        return "<%s : %r>" % (self.__class__.__name__, rep.rstrip())
 
     def Key(self):
         """Return unique identifier for this MapEntry object.

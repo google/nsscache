@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Base class of cache for nsscache."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = "jaq@google.com (Jamie Wilkinson)"
 
 import errno
 import logging
@@ -70,7 +70,7 @@ class Cache(object):
         self.log = logging.getLogger(__name__)
         # Store config info
         self.conf = conf
-        self.output_dir = conf.get('dir', '.')
+        self.output_dir = conf.get("dir", ".")
         self.automount_mountpoint = automount_mountpoint
         self.map_name = map_name
 
@@ -88,31 +88,35 @@ class Cache(object):
         elif map_name == config.MAP_AUTOMOUNT:
             self.data = automount.AutomountMap()
         else:
-            raise error.UnsupportedMap('Cache does not support %s' % map_name)
+            raise error.UnsupportedMap("Cache does not support %s" % map_name)
 
     def _Begin(self):
         """Start a write transaction."""
-        self.log.debug('Output dir: %s', self.output_dir)
-        self.log.debug('CWD: %s', os.getcwd())
+        self.log.debug("Output dir: %s", self.output_dir)
+        self.log.debug("CWD: %s", os.getcwd())
         try:
             self.temp_cache_file = tempfile.NamedTemporaryFile(
                 delete=False,
-                prefix='nsscache-cache-file-',
-                dir=os.path.join(os.getcwd(), self.output_dir))
+                prefix="nsscache-cache-file-",
+                dir=os.path.join(os.getcwd(), self.output_dir),
+            )
             self.temp_cache_filename = self.temp_cache_file.name
-            self.log.debug('opened temporary cache filename %r',
-                           self.temp_cache_filename)
+            self.log.debug(
+                "opened temporary cache filename %r", self.temp_cache_filename
+            )
         except OSError as e:
             if e.errno == errno.EACCES:
                 self.log.info(
-                    'Got OSError (%s) when trying to create temporary file', e)
-                raise error.PermissionDenied('OSError: ' + str(e))
+                    "Got OSError (%s) when trying to create temporary file", e
+                )
+                raise error.PermissionDenied("OSError: " + str(e))
             raise
 
     def _Rollback(self):
         """Rollback a write transaction."""
-        self.log.debug('rolling back, deleting temp cache file %r',
-                       self.temp_cache_filename)
+        self.log.debug(
+            "rolling back, deleting temp cache file %r", self.temp_cache_filename
+        )
         self.temp_cache_file.close()
         # Safe file remove (ignore "no such file or directory" errors):
         try:
@@ -140,7 +144,7 @@ class Cache(object):
             os.fsync(self.temp_cache_file.fileno())
             self.temp_cache_file.close()
         else:
-            self.log.debug('temp cache file was already closed before Commit')
+            self.log.debug("temp cache file was already closed before Commit")
         # We emulate the permissions of our source map to avoid bugs where
         # permissions may differ (usually w/shadow map)
         # Catch the case where the source file may not exist for some reason and
@@ -153,15 +157,21 @@ class Cache(object):
             os.chown(self.temp_cache_filename, uid, gid)
         except OSError as e:
             if e.errno == errno.ENOENT:
-                if self.map_name == 'sshkey':
-                    os.chmod(self.temp_cache_filename,
-                             stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+                if self.map_name == "sshkey":
+                    os.chmod(
+                        self.temp_cache_filename,
+                        stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH,
+                    )
                 else:
                     os.chmod(
-                        self.temp_cache_filename, stat.S_IRUSR | stat.S_IWUSR |
-                        stat.S_IRGRP | stat.S_IROTH)
-        self.log.debug('committing temporary cache file %r to %r',
-                       self.temp_cache_filename, self.GetCacheFilename())
+                        self.temp_cache_filename,
+                        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH,
+                    )
+        self.log.debug(
+            "committing temporary cache file %r to %r",
+            self.temp_cache_filename,
+            self.GetCacheFilename(),
+        )
         os.rename(self.temp_cache_filename, self.GetCacheFilename())
         return True
 
@@ -172,7 +182,7 @@ class Cache(object):
     def GetCompatFilename(self):
         """Return the filename where the normal (not-cache) map would be."""
         # TODO(jaq): Probably shouldn't hard code '/etc' here.
-        return os.path.join('/etc', self.map_name)
+        return os.path.join("/etc", self.map_name)
 
     def GetMap(self, cache_filename=None):
         """Returns the map from the cache.
@@ -185,8 +195,9 @@ class Cache(object):
         Raises:
           NotImplementedError:  We should have been implemented by child.
         """
-        raise NotImplementedError('%s must implement this method!' %
-                                  self.__class__.__name__)
+        raise NotImplementedError(
+            "%s must implement this method!" % self.__class__.__name__
+        )
 
     def GetMapLocation(self):
         """Return the location of the Map in this cache.
@@ -197,8 +208,9 @@ class Cache(object):
         Raises:
           NotImplementedError:  We should have been implemented by child.
         """
-        raise NotImplementedError('%s must implement this method!' %
-                                  self.__class__.__name__)
+        raise NotImplementedError(
+            "%s must implement this method!" % self.__class__.__name__
+        )
 
     def WriteMap(self, map_data=None, force_write=False):
         """Write a map to disk.
@@ -220,10 +232,10 @@ class Cache(object):
 
         # N.B. Write is destructive, len(writable_map) == 0 now.
         # Asserting this isn't good for the unit tests, though.
-        #assert 0 == len(writable_map), "self.Write should be destructive."
+        # assert 0 == len(writable_map), "self.Write should be destructive."
 
         if entries_written is None:
-            self.log.warning('cache write failed, exiting')
+            self.log.warning("cache write failed, exiting")
             return 1
 
         if force_write or self.Verify(entries_written):
@@ -234,7 +246,7 @@ class Cache(object):
             self.WriteIndex()
             return 0
 
-        self.log.warning('verification failed, exiting')
+        self.log.warning("verification failed, exiting")
         return 1
 
     def WriteIndex(self):

@@ -19,8 +19,10 @@ Since these are abstract classes, the bulk of the functionality in
 base.py is specifically tested in passwd_test.py instead.
 """
 
-__author__ = ('jaq@google.com (Jamie Wilkinson)',
-              'vasilios@google.com (Vasilios Hoffman)')
+__author__ = (
+    "jaq@google.com (Jamie Wilkinson)",
+    "vasilios@google.com (Vasilios Hoffman)",
+)
 
 import time
 import unittest
@@ -36,7 +38,6 @@ class TestMap(unittest.TestCase):
         self.assertRaises(TypeError, maps.Map)
 
     def testModifyTimestamp(self):
-
         class StubMap(maps.Map):
             pass
 
@@ -49,7 +50,6 @@ class TestMap(unittest.TestCase):
         self.assertEqual(None, foo.GetModifyTimestamp())
 
     def testUpdateTimestamp(self):
-
         class StubMap(maps.Map):
             pass
 
@@ -70,5 +70,5 @@ class TestMapEntry(unittest.TestCase):
         self.assertRaises(TypeError, maps.MapEntry)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

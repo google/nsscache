@@ -1,6 +1,6 @@
 """An implementation of a consul data source for nsscache."""
 
-__author__ = 'hexedpackets@gmail.com (William Huba)'
+__author__ = "hexedpackets@gmail.com (William Huba)"
 
 import base64
 import collections
@@ -21,26 +21,26 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
     """Source for data fetched via Consul."""
 
     # Consul defaults
-    DATACENTER = 'dc1'
-    TOKEN = ''
+    DATACENTER = "dc1"
+    TOKEN = ""
 
     # for registration
-    name = 'consul'
+    name = "consul"
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
 
         super(ConsulFilesSource, self)._SetDefaults(configuration)
 
-        if 'token' not in configuration:
-            configuration['token'] = self.TOKEN
-        if 'datacenter' not in configuration:
-            configuration['datacenter'] = self.DATACENTER
+        if "token" not in configuration:
+            configuration["token"] = self.TOKEN
+        if "datacenter" not in configuration:
+            configuration["datacenter"] = self.DATACENTER
 
-        for url in ['passwd_url', 'group_url', 'shadow_url']:
-            configuration[url] = '{}?recurse&token={}&dc={}'.format(
-                configuration[url], configuration['token'],
-                configuration['datacenter'])
+        for url in ["passwd_url", "group_url", "shadow_url"]:
+            configuration[url] = "{}?recurse&token={}&dc={}".format(
+                configuration[url], configuration["token"], configuration["datacenter"]
+            )
 
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
@@ -52,8 +52,7 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
         Returns:
           instance of passwd.PasswdMap
         """
-        return PasswdUpdateGetter().GetUpdates(self, self.conf['passwd_url'],
-                                               since)
+        return PasswdUpdateGetter().GetUpdates(self, self.conf["passwd_url"], since)
 
     def GetGroupMap(self, since=None):
         """Return the group map from this source.
@@ -65,8 +64,7 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
         Returns:
           instance of group.GroupMap
         """
-        return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'],
-                                              since)
+        return GroupUpdateGetter().GetUpdates(self, self.conf["group_url"], since)
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
@@ -78,8 +76,7 @@ class ConsulFilesSource(httpsource.HttpFilesSource):
         Returns:
           instance of shadow.ShadowMap
         """
-        return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'],
-                                               since)
+        return ShadowUpdateGetter().GetUpdates(self, self.conf["shadow_url"], since)
 
 
 class PasswdUpdateGetter(httpsource.UpdateGetter):
@@ -139,8 +136,8 @@ class ConsulMapParser(object):
 
         entries = collections.defaultdict(dict)
         for line in json.loads(cache_info.read()):
-            key = line.get('Key', '').split('/')
-            value = line.get('Value', '')
+            key = line.get("Key", "").split("/")
+            value = line.get("Value", "")
             if not value or not key:
                 continue
             value = base64.b64decode(value)
@@ -152,13 +149,15 @@ class ConsulMapParser(object):
             map_entry = self._ReadEntry(name, entry)
             if map_entry is None:
                 self.log.warning(
-                    'Could not create entry from line %r in cache, skipping',
-                    entry)
+                    "Could not create entry from line %r in cache, skipping", entry
+                )
                 continue
             if not data.Add(map_entry):
                 self.log.warning(
-                    'Could not add entry %r read from line %r in cache',
-                    map_entry, entry)
+                    "Could not add entry %r read from line %r in cache",
+                    map_entry,
+                    entry,
+                )
         return data
 
 
@@ -171,17 +170,17 @@ class ConsulPasswdMapParser(ConsulMapParser):
         map_entry = passwd.PasswdMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', 'x')
+        map_entry.passwd = entry.get("passwd", "x")
 
         try:
-            map_entry.uid = int(entry['uid'])
-            map_entry.gid = int(entry['gid'])
+            map_entry.uid = int(entry["uid"])
+            map_entry.gid = int(entry["gid"])
         except (ValueError, KeyError):
             return None
 
-        map_entry.gecos = entry.get('comment', '')
-        map_entry.dir = entry.get('home', '/home/{}'.format(name))
-        map_entry.shell = entry.get('shell', '/bin/bash')
+        map_entry.gecos = entry.get("comment", "")
+        map_entry.dir = entry.get("home", "/home/{}".format(name))
+        map_entry.shell = entry.get("shell", "/bin/bash")
 
         return map_entry
 
@@ -195,17 +194,17 @@ class ConsulGroupMapParser(ConsulMapParser):
         map_entry = group.GroupMapEntry()
         # map entries expect strict typing, so convert as appropriate
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', 'x')
+        map_entry.passwd = entry.get("passwd", "x")
 
         try:
-            map_entry.gid = int(entry['gid'])
+            map_entry.gid = int(entry["gid"])
         except (ValueError, KeyError):
             return None
 
         try:
-            members = entry.get('members', '').split('\n')
+            members = entry.get("members", "").split("\n")
         except (ValueError, TypeError):
-            members = ['']
+            members = [""]
         map_entry.members = members
         return map_entry
 
@@ -219,11 +218,11 @@ class ConsulShadowMapParser(ConsulMapParser):
         map_entry = shadow.ShadowMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
         map_entry.name = name
-        map_entry.passwd = entry.get('passwd', '*')
+        map_entry.passwd = entry.get("passwd", "*")
         if isinstance(map_entry.passwd, bytes):
-            map_entry.passwd = map_entry.passwd.decode('ascii')
+            map_entry.passwd = map_entry.passwd.decode("ascii")
 
-        for attr in ['lstchg', 'min', 'max', 'warn', 'inact', 'expire']:
+        for attr in ["lstchg", "min", "max", "warn", "inact", "expire"]:
             try:
                 setattr(map_entry, attr, int(entry[attr]))
             except (ValueError, KeyError):

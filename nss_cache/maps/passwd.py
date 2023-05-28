@@ -21,7 +21,7 @@ class.
 PasswdMapEntry:  A passwd map entry based on the MapEntry class.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 from nss_cache.maps import maps
 
@@ -52,10 +52,11 @@ class PasswdMap(maps.Map):
 
 class PasswdMapEntry(maps.MapEntry):
     """This class represents NSS passwd map entries."""
+
     # Using slots saves us over 2x memory on large maps.
-    __slots__ = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
-    _KEY = 'name'
-    _ATTRS = ('name', 'uid', 'gid', 'passwd', 'gecos', 'dir', 'shell')
+    __slots__ = ("name", "uid", "gid", "passwd", "gecos", "dir", "shell")
+    _KEY = "name"
+    _ATTRS = ("name", "uid", "gid", "passwd", "gecos", "dir", "shell")
 
     def __init__(self, data=None):
         """Construct a PasswdMapEntry, setting reasonable defaults."""
@@ -71,10 +72,10 @@ class PasswdMapEntry(maps.MapEntry):
 
         # Seed data with defaults if still empty
         if self.passwd is None:
-            self.passwd = 'x'
+            self.passwd = "x"
         if self.gecos is None:
-            self.gecos = ''
+            self.gecos = ""
         if self.dir is None:
-            self.dir = ''
+            self.dir = ""
         if self.shell is None:
-            self.shell = ''
+            self.shell = ""

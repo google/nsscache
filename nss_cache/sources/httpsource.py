@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """An implementation of an http data source for nsscache."""
 
-__author__ = ('blaedd@google.com (David MacKinnon',)
+__author__ = ("blaedd@google.com (David MacKinnon",)
 
 import bz2
 import calendar
@@ -44,19 +44,20 @@ def RegisterImplementation(registration_callback):
 
 class HttpFilesSource(source.Source):
     """Source for data fetched via HTTP."""
+
     # HTTP defaults
-    PASSWD_URL = ''
-    SHADOW_URL = ''
-    GROUP_URL = ''
-    AUTOMOUNT_BASE_URL = ''
-    NETGROUP_URL = ''
-    SSHKEY_URL = ''
+    PASSWD_URL = ""
+    SHADOW_URL = ""
+    GROUP_URL = ""
+    AUTOMOUNT_BASE_URL = ""
+    NETGROUP_URL = ""
+    SSHKEY_URL = ""
     RETRY_DELAY = 5
     RETRY_MAX = 3
-    TLS_CACERTFILE = '/etc/ssl/certs/ca-certificates.crt'
+    TLS_CACERTFILE = "/etc/ssl/certs/ca-certificates.crt"
 
     # for registration
-    name = 'http'
+    name = "http"
 
     def __init__(self, conf, conn=None):
         """Initialise the HTTP Data Source.
@@ -73,34 +74,34 @@ class HttpFilesSource(source.Source):
             conn.setopt(pycurl.NOSIGNAL, 1)
             # Don't hang on to connections from broken servers indefinitely.
             conn.setopt(pycurl.TIMEOUT, 60)
-            conn.setopt(pycurl.USERAGENT, 'nsscache')
-            if self.conf['http_proxy']:
-                conn.setopt(pycurl.PROXY, self.conf['http_proxy'])
+            conn.setopt(pycurl.USERAGENT, "nsscache")
+            if self.conf["http_proxy"]:
+                conn.setopt(pycurl.PROXY, self.conf["http_proxy"])
 
         self.conn = conn
 
     def _SetDefaults(self, configuration):
         """Set defaults if necessary."""
-        if 'automount_base_url' not in configuration:
-            configuration['automount_base_url'] = self.AUTOMOUNT_BASE_URL
-        if 'passwd_url' not in configuration:
-            configuration['passwd_url'] = self.PASSWD_URL
-        if 'shadow_url' not in configuration:
-            configuration['shadow_url'] = self.SHADOW_URL
-        if 'group_url' not in configuration:
-            configuration['group_url'] = self.GROUP_URL
-        if 'netgroup_url' not in configuration:
-            configuration['netgroup_url'] = self.GROUP_URL
-        if 'sshkey_url' not in configuration:
-            configuration['sshkey_url'] = self.SSHKEY_URL
-        if 'retry_delay' not in configuration:
-            configuration['retry_delay'] = self.RETRY_DELAY
-        if 'retry_max' not in configuration:
-            configuration['retry_max'] = self.RETRY_MAX
-        if 'tls_cacertfile' not in configuration:
-            configuration['tls_cacertfile'] = self.TLS_CACERTFILE
-        if 'http_proxy' not in configuration:
-            configuration['http_proxy'] = None
+        if "automount_base_url" not in configuration:
+            configuration["automount_base_url"] = self.AUTOMOUNT_BASE_URL
+        if "passwd_url" not in configuration:
+            configuration["passwd_url"] = self.PASSWD_URL
+        if "shadow_url" not in configuration:
+            configuration["shadow_url"] = self.SHADOW_URL
+        if "group_url" not in configuration:
+            configuration["group_url"] = self.GROUP_URL
+        if "netgroup_url" not in configuration:
+            configuration["netgroup_url"] = self.GROUP_URL
+        if "sshkey_url" not in configuration:
+            configuration["sshkey_url"] = self.SSHKEY_URL
+        if "retry_delay" not in configuration:
+            configuration["retry_delay"] = self.RETRY_DELAY
+        if "retry_max" not in configuration:
+            configuration["retry_max"] = self.RETRY_MAX
+        if "tls_cacertfile" not in configuration:
+            configuration["tls_cacertfile"] = self.TLS_CACERTFILE
+        if "http_proxy" not in configuration:
+            configuration["http_proxy"] = None
 
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
@@ -112,8 +113,7 @@ class HttpFilesSource(source.Source):
         Returns:
           instance of passwd.PasswdMap
         """
-        return PasswdUpdateGetter().GetUpdates(self, self.conf['passwd_url'],
-                                               since)
+        return PasswdUpdateGetter().GetUpdates(self, self.conf["passwd_url"], since)
 
     def GetShadowMap(self, since=None):
         """Return the shadow map from this source.
@@ -125,8 +125,7 @@ class HttpFilesSource(source.Source):
         Returns:
           instance of shadow.ShadowMap
         """
-        return ShadowUpdateGetter().GetUpdates(self, self.conf['shadow_url'],
-                                               since)
+        return ShadowUpdateGetter().GetUpdates(self, self.conf["shadow_url"], since)
 
     def GetGroupMap(self, since=None):
         """Return the group map from this source.
@@ -138,8 +137,7 @@ class HttpFilesSource(source.Source):
         Returns:
           instance of group.GroupMap
         """
-        return GroupUpdateGetter().GetUpdates(self, self.conf['group_url'],
-                                              since)
+        return GroupUpdateGetter().GetUpdates(self, self.conf["group_url"], since)
 
     def GetNetgroupMap(self, since=None):
         """Return the netgroup map from this source.
@@ -151,9 +149,7 @@ class HttpFilesSource(source.Source):
         Returns:
           instance of netgroup.NetgroupMap
         """
-        return NetgroupUpdateGetter().GetUpdates(self,
-                                                 self.conf['netgroup_url'],
-                                                 since)
+        return NetgroupUpdateGetter().GetUpdates(self, self.conf["netgroup_url"], since)
 
     def GetAutomountMap(self, since=None, location=None):
         """Return an automount map from this source.
@@ -175,10 +171,9 @@ class HttpFilesSource(source.Source):
           EmptyMap:
         """
         if location is None:
-            self.log.error(
-                'A location is required to retrieve an automount map!')
+            self.log.error("A location is required to retrieve an automount map!")
             raise error.EmptyMap
-        automount_url = urljoin(self.conf['automount_base_url'], location)
+        automount_url = urljoin(self.conf["automount_base_url"], location)
         return AutomountUpdateGetter().GetUpdates(self, automount_url, since)
 
     def GetAutomountMasterMap(self):
@@ -187,10 +182,10 @@ class HttpFilesSource(source.Source):
         Returns:
           an instance of automount.AutomountMap
         """
-        master_map = self.GetAutomountMap(location='auto.master')
+        master_map = self.GetAutomountMap(location="auto.master")
         for map_entry in master_map:
             map_entry.location = os.path.split(map_entry.location)[1]
-            self.log.debug('master map has: %s' % map_entry.location)
+            self.log.debug("master map has: %s" % map_entry.location)
         return master_map
 
     def GetSshkeyMap(self, since=None):
@@ -203,8 +198,7 @@ class HttpFilesSource(source.Source):
         Returns:
           instance of sshkey.SshkeyMap
         """
-        return SshkeyUpdateGetter().GetUpdates(self, self.conf['sshkey_url'],
-                                               since)
+        return SshkeyUpdateGetter().GetUpdates(self, self.conf["sshkey_url"], since)
 
 
 class UpdateGetter(object):
@@ -222,7 +216,7 @@ class UpdateGetter(object):
           HTTP format timestamp string
         """
         ts = time.gmtime(ts)
-        return time.strftime('%a, %d %b %Y %H:%M:%S GMT', ts)
+        return time.strftime("%a, %d %b %Y %H:%M:%S GMT", ts)
 
     def FromHttpToTimestamp(self, http_ts_string):
         """Converts HTTP timestamp string to internal nss_cache timestamp.
@@ -232,7 +226,7 @@ class UpdateGetter(object):
         Returns:
           number of seconds since epoch
         """
-        t = time.strptime(http_ts_string, '%a, %d %b %Y %H:%M:%S GMT')
+        t = time.strptime(http_ts_string, "%a, %d %b %Y %H:%M:%S GMT")
         return int(calendar.timegm(t))
 
     def GetUpdates(self, source, url, since):
@@ -250,27 +244,26 @@ class UpdateGetter(object):
           ValueError: an object in the source map is malformed
           ConfigurationError:
         """
-        proto = url.split(':')[0]
+        proto = url.split(":")[0]
         # Newer libcurl allow you to disable protocols there. Unfortunately
         # it's not in dapper or hardy.
-        if proto not in ('http', 'https'):
-            raise error.ConfigurationError('Unsupported protocol %s' % proto)
+        if proto not in ("http", "https"):
+            raise error.ConfigurationError("Unsupported protocol %s" % proto)
 
         conn = source.conn
         conn.setopt(pycurl.OPT_FILETIME, 1)
-        conn.setopt(pycurl.ENCODING, 'bzip2, gzip')
+        conn.setopt(pycurl.ENCODING, "bzip2, gzip")
         if since is not None:
             conn.setopt(pycurl.TIMEVALUE, int(since))
             conn.setopt(pycurl.TIMECONDITION, pycurl.TIMECONDITION_IFMODSINCE)
 
         retry_count = 0
         resp_code = 500
-        while retry_count < source.conf['retry_max']:
+        while retry_count < source.conf["retry_max"]:
             try:
-                source.log.debug('fetching %s', url)
-                (resp_code, headers,
-                 body_bytes) = curl.CurlFetch(url, conn, self.log)
-                self.log.debug('response code: %s', resp_code)
+                source.log.debug("fetching %s", url)
+                (resp_code, headers, body_bytes) = curl.CurlFetch(url, conn, self.log)
+                self.log.debug("response code: %s", resp_code)
             finally:
                 if resp_code < 400:
                     # Not modified-since
@@ -279,43 +272,43 @@ class UpdateGetter(object):
                     if resp_code == 200:
                         break
                 retry_count += 1
-                self.log.warning('Failed connection: attempt #%s.', retry_count)
-                if retry_count == source.conf['retry_max']:
-                    self.log.debug('max retries hit')
-                    raise error.SourceUnavailable('Max retries exceeded.')
-                time.sleep(source.conf['retry_delay'])
+                self.log.warning("Failed connection: attempt #%s.", retry_count)
+                if retry_count == source.conf["retry_max"]:
+                    self.log.debug("max retries hit")
+                    raise error.SourceUnavailable("Max retries exceeded.")
+                time.sleep(source.conf["retry_delay"])
 
-        headers = headers.split('\r\n')
+        headers = headers.split("\r\n")
         last_modified = conn.getinfo(pycurl.INFO_FILETIME)
-        self.log.debug('last modified: %s', last_modified)
+        self.log.debug("last modified: %s", last_modified)
         if last_modified == -1:
             for header in headers:
-                if header.lower().startswith('last-modified'):
-                    self.log.debug('%s', header)
-                    http_ts_string = header[header.find(':') + 1:].strip()
+                if header.lower().startswith("last-modified"):
+                    self.log.debug("%s", header)
+                    http_ts_string = header[header.find(":") + 1 :].strip()
                     last_modified = self.FromHttpToTimestamp(http_ts_string)
                     break
             else:
-                http_ts_string = ''
+                http_ts_string = ""
         else:
             http_ts_string = self.FromTimestampToHttp(last_modified)
 
-        self.log.debug('Last-modified is: %s', http_ts_string)
+        self.log.debug("Last-modified is: %s", http_ts_string)
 
         # curl (on Ubuntu hardy at least) will handle gzip, but not bzip2
         try:
             body_bytes = bz2.decompress(body_bytes)
-            self.log.debug('bzip encoding found')
+            self.log.debug("bzip encoding found")
         except IOError:
-            self.log.debug('bzip encoding not found')
+            self.log.debug("bzip encoding not found")
 
         # Wrap in a stringIO so that it can be looped on by newlines in the parser
-        response = StringIO(body_bytes.decode('utf-8'))
+        response = StringIO(body_bytes.decode("utf-8"))
 
         data_map = self.GetMap(cache_info=response)
         if http_ts_string:
             http_ts = self.FromHttpToTimestamp(http_ts_string)
-            self.log.debug('setting last modified to: %s', http_ts)
+            self.log.debug("setting last modified to: %s", http_ts)
             data_map.SetModifyTimestamp(http_ts)
 
         return data_map

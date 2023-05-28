@@ -19,33 +19,33 @@ These classes perform command line and file-based configuration loading
 and parsing for the nss_cache module.
 """
 
-__author__ = 'vasilios@google.com (Vasilios Hoffman)'
+__author__ = "vasilios@google.com (Vasilios Hoffman)"
 
 from configparser import ConfigParser
 import logging
 import re
 
 # known nss map types.
-MAP_PASSWORD = 'passwd'
-MAP_GROUP = 'group'
-MAP_SHADOW = 'shadow'
-MAP_NETGROUP = 'netgroup'
-MAP_AUTOMOUNT = 'automount'
-MAP_SSHKEY = 'sshkey'
+MAP_PASSWORD = "passwd"
+MAP_GROUP = "group"
+MAP_SHADOW = "shadow"
+MAP_NETGROUP = "netgroup"
+MAP_AUTOMOUNT = "automount"
+MAP_SSHKEY = "sshkey"
 
 # accepted commands.
-CMD_HELP = 'help'
-CMD_REPAIR = 'repair'
-CMD_STATUS = 'status'
-CMD_UPDATE = 'update'
-CMD_VERIFY = 'verify'
+CMD_HELP = "help"
+CMD_REPAIR = "repair"
+CMD_STATUS = "status"
+CMD_UPDATE = "update"
+CMD_VERIFY = "verify"
 
 # default file locations
-FILE_NSSWITCH = '/etc/nsswitch.conf'
+FILE_NSSWITCH = "/etc/nsswitch.conf"
 
 # update method types
-UPDATER_FILE = 'file'
-UPDATER_MAP = 'map'
+UPDATER_FILE = "file"
+UPDATER_MAP = "map"
 
 
 class Config(object):
@@ -63,14 +63,14 @@ class Config(object):
     """
 
     # default config file.
-    NSSCACHE_CONFIG = '/etc/nsscache.conf'
+    NSSCACHE_CONFIG = "/etc/nsscache.conf"
 
     # known config file option names
-    OPT_SOURCE = 'source'
-    OPT_CACHE = 'cache'
-    OPT_MAPS = 'maps'
-    OPT_LOCKFILE = 'lockfile'
-    OPT_TIMESTAMP_DIR = 'timestamp_dir'
+    OPT_SOURCE = "source"
+    OPT_CACHE = "cache"
+    OPT_MAPS = "maps"
+    OPT_LOCKFILE = "lockfile"
+    OPT_TIMESTAMP_DIR = "timestamp_dir"
 
     def __init__(self, env):
         """Initialize defaults for data we hold.
@@ -79,8 +79,8 @@ class Config(object):
           env: dictionary of environment variables (typically os.environ)
         """
         # override constants based on ENV vars
-        if 'NSSCACHE_CONFIG' in env:
-            self.config_file = env['NSSCACHE_CONFIG']
+        if "NSSCACHE_CONFIG" in env:
+            self.config_file = env["NSSCACHE_CONFIG"]
         else:
             self.config_file = self.NSSCACHE_CONFIG
 
@@ -98,13 +98,19 @@ class Config(object):
         # self.options is of variable length so we are forced to do
         # some fugly concatenation here to print our config in a
         # readable fashion.
-        string = (('<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r'
-                   '\n\tlockfile=%r\n\ttimestamp_dir=%s') %
-                  (self.command, self.help_command, self.maps, self.lockfile,
-                   self.timestamp_dir))
+        string = (
+            "<Config:\n\tcommand=%r\n\thelp_command=%r\n\tmaps=%r"
+            "\n\tlockfile=%r\n\ttimestamp_dir=%s"
+        ) % (
+            self.command,
+            self.help_command,
+            self.maps,
+            self.lockfile,
+            self.timestamp_dir,
+        )
         for key in self.options:
-            string = '%s\n\t%s=%r' % (string, key, self.options[key])
-        return '%s\n>' % string
+            string = "%s\n\t%s=%r" % (string, key, self.options[key])
+        return "%s\n>" % string
 
 
 class MapOptions(object):
@@ -121,7 +127,7 @@ class MapOptions(object):
 
     def __repr__(self):
         """String representation of this object."""
-        return '<MapOptions cache=%r source=%r>' % (self.cache, self.source)
+        return "<MapOptions cache=%r source=%r>" % (self.cache, self.source)
 
 
 #
@@ -140,24 +146,25 @@ def LoadConfig(configuration):
     parser = ConfigParser()
 
     # load config file
-    configuration.log.debug('Attempting to parse configuration file: %s',
-                            configuration.config_file)
+    configuration.log.debug(
+        "Attempting to parse configuration file: %s", configuration.config_file
+    )
     parser.read(configuration.config_file)
 
     # these are required, and used as defaults for each section
-    default = 'DEFAULT'
+    default = "DEFAULT"
     default_source = FixValue(parser.get(default, Config.OPT_SOURCE))
     default_cache = FixValue(parser.get(default, Config.OPT_CACHE))
 
     # this is also required, but global only
     # TODO(v): make this default to /var/lib/nsscache before next release
     configuration.timestamp_dir = FixValue(
-        parser.get(default, Config.OPT_TIMESTAMP_DIR))
+        parser.get(default, Config.OPT_TIMESTAMP_DIR)
+    )
 
     # optional defaults
     if parser.has_option(default, Config.OPT_LOCKFILE):
-        configuration.lockfile = FixValue(
-            parser.get(default, Config.OPT_LOCKFILE))
+        configuration.lockfile = FixValue(parser.get(default, Config.OPT_LOCKFILE))
 
     if not configuration.maps:
         # command line did not override
@@ -165,7 +172,7 @@ def LoadConfig(configuration):
         # special case for empty string, or split(',') will return a
         # non-empty list
         if maplist:
-            configuration.maps = [m.strip() for m in maplist.split(',')]
+            configuration.maps = [m.strip() for m in maplist.split(",")]
         else:
             configuration.maps = []
 
@@ -196,16 +203,15 @@ def LoadConfig(configuration):
             map_options.cache.update(options)
 
         # used to instantiate the specific cache/source
-        map_options.source['name'] = source
-        map_options.cache['name'] = cache
+        map_options.source["name"] = source
+        map_options.cache["name"] = cache
 
         # save final MapOptions() in the parent config object
         configuration.options[map_name] = map_options
 
-    configuration.log.info('Configured maps are: %s',
-                           ', '.join(configuration.maps))
+    configuration.log.info("Configured maps are: %s", ", ".join(configuration.maps))
 
-    configuration.log.debug('loaded configuration: %r', configuration)
+    configuration.log.debug("loaded configuration: %r", configuration)
 
 
 def Options(items, name):
@@ -222,7 +228,7 @@ def Options(items, name):
       dictionary of option:value pairs
     """
     options = {}
-    option_re = re.compile(r'^%s_(.+)' % name)
+    option_re = re.compile(r"^%s_(.+)" % name)
     for item in items:
         match = option_re.match(item[0])
         if match:
@@ -244,8 +250,9 @@ def FixValue(value):
       fixed value
     """
     # Strip quotes if necessary.
-    if ((value.startswith('"') and value.endswith('"')) or
-        (value.startswith('\'') and value.endswith('\''))):
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
         value = value[1:-1]
 
     # Convert to float if necessary.  Python converts between floats and ints
@@ -276,11 +283,11 @@ def ParseNSSwitchConf(nsswitch_filename):
       a dictionary keyed by map names and containing a list of sources
       for each map.
     """
-    with open(nsswitch_filename, 'r') as nsswitch_file:
+    with open(nsswitch_filename, "r") as nsswitch_file:
 
         nsswitch = {}
 
-        map_re = re.compile(r'^([a-z]+): *(.*)$')
+        map_re = re.compile(r"^([a-z]+): *(.*)$")
         for line in nsswitch_file:
             match = map_re.match(line)
             if match:
@@ -306,31 +313,37 @@ def VerifyConfiguration(conf, nsswitch_filename=FILE_NSSWITCH):
     """
     (warnings, errors) = (0, 0)
     if not conf.maps:
-        logging.error('No maps are configured.')
+        logging.error("No maps are configured.")
         errors += 1
 
     # Verify that at least one supported module is configured in nsswitch.conf.
     nsswitch = ParseNSSwitchConf(nsswitch_filename)
     for configured_map in conf.maps:
-        if configured_map == 'sshkey':
+        if configured_map == "sshkey":
             continue
-        if conf.options[configured_map].cache['name'] == 'nssdb':
-            logging.error('nsscache no longer supports nssdb cache')
+        if conf.options[configured_map].cache["name"] == "nssdb":
+            logging.error("nsscache no longer supports nssdb cache")
             errors += 1
-        if conf.options[configured_map].cache['name'] == 'files':
-            nss_module_name = 'files'
-            if ('cache_filename_suffix' in conf.options[configured_map].cache
-                    and
-                    conf.options[configured_map].cache['cache_filename_suffix']
-                    == 'cache'):
+        if conf.options[configured_map].cache["name"] == "files":
+            nss_module_name = "files"
+            if (
+                "cache_filename_suffix" in conf.options[configured_map].cache
+                and conf.options[configured_map].cache["cache_filename_suffix"]
+                == "cache"
+            ):
                 # We are configured for libnss-cache for this map.
-                nss_module_name = 'cache'
+                nss_module_name = "cache"
         else:
-            nss_module_name = 'cache'
+            nss_module_name = "cache"
 
         if nss_module_name not in nsswitch[configured_map]:
-            logging.warning(('nsscache is configured to build maps for %r, '
-                             'but NSS is not configured (in %r) to use it'),
-                            configured_map, nsswitch_filename)
+            logging.warning(
+                (
+                    "nsscache is configured to build maps for %r, "
+                    "but NSS is not configured (in %r) to use it"
+                ),
+                configured_map,
+                nsswitch_filename,
+            )
             warnings += 1
     return (warnings, errors)

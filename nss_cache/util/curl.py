@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """Minor curl methods."""
 
-__author__ = 'blaedd@google.com (David MacKinnon)'
+__author__ = "blaedd@google.com (David MacKinnon)"
 
 import logging
 import pycurl
@@ -42,8 +42,7 @@ def CurlFetch(url, conn=None, logger=None):
         HandleCurlError(e, logger)
         raise error.Error(e)
     resp_code = conn.getinfo(pycurl.RESPONSE_CODE)
-    return (resp_code, conn.headers.getvalue().decode('utf-8'),
-            conn.body.getvalue())
+    return (resp_code, conn.headers.getvalue().decode("utf-8"), conn.body.getvalue())
 
 
 def HandleCurlError(e, logger=None):
@@ -68,18 +67,29 @@ def HandleCurlError(e, logger=None):
     msg = e.args[1]
 
     # Config errors
-    if code in (pycurl.E_UNSUPPORTED_PROTOCOL, pycurl.E_URL_MALFORMAT,
-                pycurl.E_SSL_ENGINE_NOTFOUND, pycurl.E_SSL_ENGINE_SETFAILED,
-                pycurl.E_SSL_CACERT_BADFILE):
+    if code in (
+        pycurl.E_UNSUPPORTED_PROTOCOL,
+        pycurl.E_URL_MALFORMAT,
+        pycurl.E_SSL_ENGINE_NOTFOUND,
+        pycurl.E_SSL_ENGINE_SETFAILED,
+        pycurl.E_SSL_CACERT_BADFILE,
+    ):
         raise error.ConfigurationError(msg)
 
     # Possibly transient errors, try again
-    if code in (pycurl.E_FAILED_INIT, pycurl.E_COULDNT_CONNECT,
-                pycurl.E_PARTIAL_FILE, pycurl.E_WRITE_ERROR,
-                pycurl.E_READ_ERROR, pycurl.E_OPERATION_TIMEOUTED,
-                pycurl.E_SSL_CONNECT_ERROR, pycurl.E_COULDNT_RESOLVE_PROXY,
-                pycurl.E_COULDNT_RESOLVE_HOST, pycurl.E_GOT_NOTHING):
-        logger.debug('Possibly transient error: %s', msg)
+    if code in (
+        pycurl.E_FAILED_INIT,
+        pycurl.E_COULDNT_CONNECT,
+        pycurl.E_PARTIAL_FILE,
+        pycurl.E_WRITE_ERROR,
+        pycurl.E_READ_ERROR,
+        pycurl.E_OPERATION_TIMEOUTED,
+        pycurl.E_SSL_CONNECT_ERROR,
+        pycurl.E_COULDNT_RESOLVE_PROXY,
+        pycurl.E_COULDNT_RESOLVE_HOST,
+        pycurl.E_GOT_NOTHING,
+    ):
+        logger.debug("Possibly transient error: %s", msg)
         return
 
     # SSL issues

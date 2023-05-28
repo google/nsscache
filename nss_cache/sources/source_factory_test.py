@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Unit tests for sources/source.py."""
 
-__author__ = 'jaq@google.com (Jamie Wilkinson)'
+__author__ = "jaq@google.com (Jamie Wilkinson)"
 
 import unittest
 
@@ -31,39 +31,38 @@ class TestSourceFactory(unittest.TestCase):
         number_of_sources = len(source_factory._source_implementations)
 
         class DummySource(source.Source):
-            name = 'dummy'
+            name = "dummy"
 
         source_factory.RegisterImplementation(DummySource)
 
-        self.assertEqual(number_of_sources + 1,
-                         len(source_factory._source_implementations))
-        self.assertEqual(DummySource,
-                         source_factory._source_implementations['dummy'])
+        self.assertEqual(
+            number_of_sources + 1, len(source_factory._source_implementations)
+        )
+        self.assertEqual(DummySource, source_factory._source_implementations["dummy"])
 
     def testRegisterWithoutName(self):
-
         class DummySource(source.Source):
             pass
 
-        self.assertRaises(RuntimeError, source_factory.RegisterImplementation,
-                          DummySource)
+        self.assertRaises(
+            RuntimeError, source_factory.RegisterImplementation, DummySource
+        )
 
     def testCreateWithNoImplementations(self):
         source_factory._source_implementations = {}
         self.assertRaises(RuntimeError, source_factory.Create, {})
 
     def testCreate(self):
-
         class DummySource(source.Source):
-            name = 'dummy'
+            name = "dummy"
 
         source_factory.RegisterImplementation(DummySource)
 
-        dummy_config = {'name': 'dummy'}
+        dummy_config = {"name": "dummy"}
         dummy_source = source_factory.Create(dummy_config)
 
         self.assertEqual(DummySource, type(dummy_source))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
