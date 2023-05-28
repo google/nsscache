@@ -17,8 +17,6 @@
 
 __author__ = "vasilios@google.com (Vasilios Hoffman)"
 
-import grp
-import pwd
 import subprocess
 import unittest
 from unittest import mock
@@ -39,16 +37,17 @@ class TestNSS(unittest.TestCase):
         """that GetMap is calling the right GetFooMap routines."""
 
         # stub, retval, arg
-        maps = (
-            ("nss.GetPasswdMap", "TEST_PASSWORD", config.MAP_PASSWORD),
-            ("nss.GetGroupMap", "TEST_GROUP", config.MAP_GROUP),
-            ('nss.GetShadowMap, "TEST_SHADOW', config.MAP_SHADOW),
-        )
+        maps = [
+            ("GetPasswdMap", "TEST_PASSWORD", config.MAP_PASSWORD),
+            ("GetGroupMap", "TEST_GROUP", config.MAP_GROUP),
+            ("GetShadowMap", "TEST_SHADOW", config.MAP_SHADOW),
+        ]
 
-        for map_type, retval, arg in maps:
-            with mock.patch(map_type) as mock_map:
+        for (fn, retval, arg) in maps:
+            with mock.patch.object(nss, fn) as mock_map:
                 mock_map.return_value = retval
                 self.assertEqual(retval, nss.GetMap(arg))
+                mock_map.assert_called_once()
 
     def testGetMapException(self):
         """GetMap throws error.UnsupportedMap for unsupported maps."""
@@ -120,12 +119,12 @@ class TestNSS(unittest.TestCase):
         entry2 = shadow.ShadowMapEntry()
         entry2.name = "bar"
 
-        with mock.patch("nss._SpawnGetent") as mock_getent:
+        with mock.patch.object(nss, "_SpawnGetent") as mock_getent:
             # stub
             mock_process = mock.create_autospec(subprocess.Popen)
             mock_getent.return_value = mock_process
             mock_process.communicate.return_value = [b"\n".join([line1, line2]), b""]
-            mock_process.return_code = 0
+            mock_process.returncode = 0
             # test
             shadow_map = nss.GetShadowMap()
             self.assertTrue(isinstance(shadow_map, shadow.ShadowMap))
