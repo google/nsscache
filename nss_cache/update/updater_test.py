@@ -23,13 +23,13 @@ import shutil
 import tempfile
 import time
 import unittest
-from mox3 import mox
+from unittest import mock
 
 from nss_cache import config
 from nss_cache.update import updater
 
 
-class TestUpdater(mox.MoxTestBase):
+class TestUpdater(unittest.TestCase):
     """Unit tests for the Updater class."""
 
     def setUp(self):
@@ -109,10 +109,11 @@ class TestUpdater(mox.MoxTestBase):
         update_file = open(update_obj.update_file, 'w')
         update_obj.WriteUpdateTimestamp(update_time)
         update_file.close()
-        self.mox.StubOutWithMock(update_obj, '_GetCurrentTime')
-        update_obj._GetCurrentTime().AndReturn(expected_time)
-        self.mox.ReplayAll()
-        self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
+
+        with mock.patch.object(update_obj,
+                               '_GetCurrentTime',
+                               return_value=expected_time) as ct:
+            self.assertEqual(expected_time, update_obj.GetUpdateTimestamp())
 
 
 if __name__ == '__main__':
