@@ -22,6 +22,7 @@ import time
 import unittest
 import pycurl
 from mox3 import mox
+from unittest import mock
 from io import BytesIO
 
 from nss_cache import error
@@ -85,7 +86,13 @@ class TestHttpSource(unittest.TestCase):
         self.assertEqual(source.conf["http_proxy"], "HTTP_PROXY")
 
 
-class TestHttpUpdateGetter(mox.MoxTestBase):
+class TestHttpUpdateGetter(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        curl_patcher = mock.patch.object(pycurl, "Curl")
+        self.addCleanup(curl_patcher.stop)
+        self.curl_mock = curl_patcher.start()
+
     def testFromTimestampToHttp(self):
         ts = 1259641025
         expected_http_ts = "Tue, 01 Dec 2009 04:17:05 GMT"
@@ -101,47 +108,35 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
         )
 
     def testAcceptHttpProtocol(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform()
+        mock_conn = mock.Mock()
         # We use code 304 since it basically shortcuts to the end of the method.
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.ReplayAll()
+        mock_conn.getinfo.return_value = 304
+        self.curl_mock.return_value = mock_conn
         config = {}
         source = httpsource.HttpFilesSource(config)
-        result = httpsource.UpdateGetter().GetUpdates(source, "http://TEST_URL", None)
-        self.assertEqual([], result)
+
+        self.assertEqual(
+            [], httpsource.UpdateGetter().GetUpdates(source, "http://TEST_URL", None)
+        )
 
     def testAcceptHttpsProtocol(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform()
+        mock_conn = mock.Mock()
         # We use code 304 since it basically shortcuts to the end of the method.
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.ReplayAll()
+        mock_conn.getinfo.return_value = 304
+        self.curl_mock.return_value = mock_conn
         config = {}
         source = httpsource.HttpFilesSource(config)
-        result = httpsource.UpdateGetter().GetUpdates(source, "https://TEST_URL", None)
-        self.assertEqual([], result)
+
+        self.assertEqual(
+            [], httpsource.UpdateGetter().GetUpdates(source, "https://TEST_URL", None)
+        )
 
     def testRaiseConfigurationErrorOnUnsupportedProtocol(self):
         # connection should never be used in this case.
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.ReplayAll()
+        mock_conn = mock.Mock()
+        self.curl_mock.return_value = mock_conn
         source = httpsource.HttpFilesSource({})
+
         self.assertRaises(
             error.ConfigurationError,
             httpsource.UpdateGetter().GetUpdates,
@@ -151,82 +146,56 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
         )
 
     def testNoUpdatesForTemporaryFailure(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform()
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(304)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.ReplayAll()
+        mock_conn = mock.Mock()
+        mock_conn.getinfo.return_value = 304
+        self.curl_mock.return_value = mock_conn
         config = {}
         source = httpsource.HttpFilesSource(config)
-        result = httpsource.UpdateGetter().GetUpdates(source, "https://TEST_URL", 37)
-        self.assertEqual(result, [])
+
+        self.assertEqual(
+            [], httpsource.UpdateGetter().GetUpdates(source, "https://TEST_URL", 37)
+        )
 
     def testGetUpdatesIfTimestampNotMatch(self):
         ts = 1259641025
-
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform()
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(200)
-        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(ts)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        mock_map = self.mox.CreateMockAnything()
-        mock_map.SetModifyTimestamp(ts)
-
+        mock_conn = mock.Mock()
+        mock_conn.getinfo.side_effect = [200, ts]
+        self.curl_mock.return_value = mock_conn
+        mock_map = mock.Mock()
         getter = httpsource.UpdateGetter()
-        self.mox.StubOutWithMock(getter, "GetMap")
-        getter.GetMap(cache_info=mox.IgnoreArg()).AndReturn(mock_map)
-
-        self.mox.ReplayAll()
+        getter.GetMap = mock.Mock(return_value=mock_map)
         config = {}
         source = httpsource.HttpFilesSource(config)
-        result = getter.GetUpdates(source, "https://TEST_URL", 1)
-        self.assertEqual(mock_map, result)
+
+        self.assertEqual(mock_map, getter.GetUpdates(source, "https://TEST_URL", 1))
+
+        mock_conn.getinfo.assert_has_calls(
+            [mock.call(pycurl.RESPONSE_CODE), mock.call(pycurl.INFO_FILETIME)]
+        )
+        mock_map.SetModifyTimestamp.assert_called_with(ts)
 
     def testGetUpdatesWithoutTimestamp(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform()
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).AndReturn(200)
-        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        mock_map = self.mox.CreateMockAnything()
-
+        mock_conn = mock.Mock()
+        mock_conn.getinfo.side_effect = [200, -1]
+        self.curl_mock.return_value = mock_conn
+        mock_map = mock.Mock()
         getter = httpsource.UpdateGetter()
-        self.mox.StubOutWithMock(getter, "GetMap")
-        getter.GetMap(cache_info=mox.IgnoreArg()).AndReturn(mock_map)
-
-        self.mox.ReplayAll()
+        getter.GetMap = mock.Mock(return_value=mock_map)
         config = {}
         source = httpsource.HttpFilesSource(config)
         result = getter.GetUpdates(source, "https://TEST_URL", 1)
         self.assertEqual(mock_map, result)
+
+        mock_conn.getinfo.assert_has_calls(
+            [mock.call(pycurl.RESPONSE_CODE), mock.call(pycurl.INFO_FILETIME)]
+        )
 
     def testRetryOnErrorCodeResponse(self):
         config = {"retry_delay": 5, "retry_max": 3}
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.perform().MultipleTimes()
-        mock_conn.getinfo(pycurl.RESPONSE_CODE).MultipleTimes().AndReturn(400)
-
-        self.mox.StubOutWithMock(time, "sleep")
-        time.sleep(5)
-        time.sleep(5)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.ReplayAll()
+        mock_conn = mock.Mock()
+        mock_conn.getinfo.return_value = 400
+        self.curl_mock.return_value = mock_conn
+        time.sleep = mock.Mock()
         source = httpsource.HttpFilesSource(config)
 
         self.assertRaises(
@@ -236,6 +205,8 @@ class TestHttpUpdateGetter(mox.MoxTestBase):
             url="https://TEST_URL",
             since=None,
         )
+
+        time.sleep.assert_has_calls([mock.call(5), mock.call(5)])
 
 
 class TestPasswdUpdateGetter(unittest.TestCase):
