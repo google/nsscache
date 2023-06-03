@@ -8,7 +8,11 @@ from io import StringIO
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-from nss_cache.sources import s3source
+
+try:
+    from nss_cache.sources import s3source
+except Exception as e:
+    raise unittest.SkipTest("s3source unable to be imported: {}".format(e))
 
 
 class TestS3Source(unittest.TestCase):
