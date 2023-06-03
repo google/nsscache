@@ -8,9 +8,13 @@ from unittest import mock
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
-from nss_cache.sources import gcssource
 from nss_cache.util import file_formats
 from nss_cache.util import timestamps
+
+try:
+    from nss_cache.sources import gcssource
+except Exception as e:
+    raise unittest.SkipTest("`gcssource` unabled to be imported: {}".format(e))
 
 
 class TestGcsSource(unittest.TestCase):

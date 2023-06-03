@@ -21,9 +21,7 @@ import base64
 import time
 import unittest
 import pycurl
-from mox3 import mox
 from unittest import mock
-from io import BytesIO
 
 from nss_cache import error
 from nss_cache.maps import automount
@@ -224,10 +222,13 @@ class TestPasswdUpdateGetter(unittest.TestCase):
         self.assertTrue(isinstance(self.updater.CreateMap(), passwd.PasswdMap))
 
 
-class TestShadowUpdateGetter(mox.MoxTestBase):
+class TestShadowUpdateGetter(unittest.TestCase):
     def setUp(self):
         super(TestShadowUpdateGetter, self).setUp()
         self.updater = httpsource.ShadowUpdateGetter()
+        curl_patcher = mock.patch.object(curl, "CurlFetch")
+        self.addCleanup(curl_patcher.stop)
+        self.curl_fetch_mock = curl_patcher.start()
 
     def testGetParser(self):
         parser = self.updater.GetParser()
@@ -239,28 +240,14 @@ class TestShadowUpdateGetter(mox.MoxTestBase):
         self.assertTrue(isinstance(self.updater.CreateMap(), shadow.ShadowMap))
 
     def testShadowGetUpdatesWithContent(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.StubOutWithMock(curl, "CurlFetch")
-
-        curl.CurlFetch("https://TEST_URL", mock_conn, self.updater.log).AndReturn(
-            [
-                200,
-                "",
-                BytesIO(
-                    b"""usera:x:::::::
+        self.curl_fetch_mock.return_value = (
+            200,
+            "",
+            b"""usera:x:::::::
 userb:x:::::::
-"""
-                ).getvalue(),
-            ]
+""",
         )
 
-        self.mox.ReplayAll()
         config = {}
         source = httpsource.HttpFilesSource(config)
         result = self.updater.GetUpdates(source, "https://TEST_URL", 1)
@@ -268,28 +255,14 @@ userb:x:::::::
         self.assertEqual(len(result), 2)
 
     def testShadowGetUpdatesWithBz2Content(self):
-        mock_conn = self.mox.CreateMockAnything()
-        mock_conn.setopt(mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes()
-        mock_conn.getinfo(pycurl.INFO_FILETIME).AndReturn(-1)
-
-        self.mox.StubOutWithMock(pycurl, "Curl")
-        pycurl.Curl().AndReturn(mock_conn)
-
-        self.mox.StubOutWithMock(curl, "CurlFetch")
-
-        curl.CurlFetch("https://TEST_URL", mock_conn, self.updater.log).AndReturn(
-            [
-                200,
-                "",
-                BytesIO(
-                    base64.b64decode(
-                        "QlpoOTFBWSZTWfm+rXYAAAvJgAgQABAyABpAIAAhKm1GMoQAwRSpHIXejGQgz4u5IpwoSHzfVrsA"
-                    )
-                ).getvalue(),
-            ]
+        self.curl_fetch_mock.return_value = (
+            200,
+            "",
+            base64.b64decode(
+                "QlpoOTFBWSZTWfm+rXYAAAvJgAgQABAyABpAIAAhKm1GMoQAwRSpHIXejGQgz4u5IpwoSHzfVrsA"
+            ),
         )
 
-        self.mox.ReplayAll()
         config = {}
         source = httpsource.HttpFilesSource(config)
         result = self.updater.GetUpdates(source, "https://TEST_URL", 1)
