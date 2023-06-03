@@ -202,6 +202,9 @@ class ConsulGroupMapParser(ConsulMapParser):
             return None
 
         try:
+            s = entry.get("members", "").decode("utf-8")
+            members = s.split("\n")
+        except AttributeError:
             members = entry.get("members", "").split("\n")
         except (ValueError, TypeError):
             members = [""]

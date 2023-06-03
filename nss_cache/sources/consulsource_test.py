@@ -106,7 +106,6 @@ class TestConsulGroupMapParser(unittest.TestCase):
         self.good_entry.members = ["foo", "bar"]
         self.parser = consulsource.ConsulGroupMapParser()
 
-    @unittest.skip("broken")
     def testGetMap(self):
         group_map = group.GroupMap()
         cache_info = StringIO(
