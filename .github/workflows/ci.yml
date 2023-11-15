@@ -38,7 +38,7 @@ jobs:
              echo ${{ github.sha }} > test-results/sha-number
           fi
           python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v3
         if: always()
       - name: Install
         run: pip install --user .
