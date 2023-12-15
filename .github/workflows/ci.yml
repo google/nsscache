@@ -46,7 +46,7 @@ jobs:
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
