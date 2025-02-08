@@ -743,7 +743,7 @@ class UpdateGetter(object):
                 try:
                     obj_ts = self.FromLdapToTimestamp(obj["modifyTimestamp"][0])
                 except KeyError:
-                    obj_ts = self.FromLdapToTimestamp(obj["modifyTimeStamp"][0])
+                    obj_ts = 0
 
             if max_ts is None or obj_ts > max_ts:
                 max_ts = obj_ts
