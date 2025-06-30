@@ -20,6 +20,7 @@
 import json
 import logging
 import pycurl
+import os
 
 from nss_cache import error
 from nss_cache.maps import group
@@ -39,6 +40,7 @@ class ScimSource(source.Source):
     # SCIM defaults
     USERS_ENDPOINT = "Users"
     GROUPS_ENDPOINT = "Groups"
+    AUTH_TOKEN = ""
     TIMEOUT = 60
     VERIFY_SSL = True
     RETRY_DELAY = 5
@@ -90,7 +92,8 @@ class ScimSource(source.Source):
             configuration["retry_max"] = self.RETRY_MAX
         if "default_shell" not in configuration:
             configuration["default_shell"] = self.DEFAULT_SHELL
-
+        if "auth_token" not in configuration:
+            configuration["auth_token"] = os.environ.get('NSSCACHE_SCIM_AUTH_TOKEN', self.AUTH_TOKEN)
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
 
@@ -135,12 +138,12 @@ class UpdateGetter(HttpUpdateGetter):
 
     def GetUpdates(self, source, url, since):
         """Get updates from a SCIM source.
-        
+
         This extends the HTTP GetUpdates to add SCIM-specific headers.
         """
         # Store the source for parser creation
         self.source = source
-        
+
         # Set SCIM-specific headers before calling the parent method
         conn = source.conn
         headers = [
@@ -149,7 +152,7 @@ class UpdateGetter(HttpUpdateGetter):
             'Accept: application/scim+json'
         ]
         conn.setopt(pycurl.HTTPHEADER, headers)
-        
+
         # Call the parent HTTP implementation for everything else
         return super().GetUpdates(source, url, since)
 
@@ -176,7 +179,7 @@ class PasswdUpdateGetter(UpdateGetter):
 
         if not scim_path_gid or not scim_path_uid or not scim_path_username or not scim_path_home_directory or not scim_path_login_shell:
             raise error.ConfigurationError("The following configuration (scim_path_username, scim_path_uid, scim_path_gid, scim_path_home_directory, scim_path_login_shell) is required for the passwd map but not set in [passwd] section")
-    
+
         return passwd.PasswdMap()
 
 class GroupUpdateGetter(UpdateGetter):
@@ -198,7 +201,7 @@ class GroupUpdateGetter(UpdateGetter):
 
         if not scim_path_gid:
             raise error.ConfigurationError("scim_path_gid configuration is required for group id extraction but not set in [group] section")
-        
+
         return group.GroupMap()
 
 class SshkeyUpdateGetter(UpdateGetter):
@@ -220,7 +223,7 @@ class SshkeyUpdateGetter(UpdateGetter):
 
         if not ssh_keys_path:
             raise error.ConfigurationError("scim_path_ssh_keys configuration is required for SSH key extraction but not set in [sshkey] section")
-        
+
         return sshkey.SshkeyMap()
 
 class ScimMapParser(object):
@@ -232,45 +235,45 @@ class ScimMapParser(object):
 
     def _GetMapConfig(self, key, default=None):
         """Get configuration value from map-specific section, fallback to [DEFAULT].
-        
+
         Args:
             key: Configuration key to look up (e.g., "scim_path_username")
             default: Default value if key not found
-            
+
         Returns:
             Configuration value or default
         """
         if not (self.source and hasattr(self.source, 'conf')):
             return default
-            
+
         # The config system strips the "scim_" prefix from keys in per-map sections
         # So "scim_path_username" becomes "path_username"
         stripped_key = key.replace("scim_", "", 1) if key.startswith("scim_") else key
-        
+
         # First try map-specific config section (source config has map-specific values)
         if stripped_key in self.source.conf:
             return self.source.conf[stripped_key]
-            
+
         # Then try the exact key name in case it's in the source config
         if key in self.source.conf:
             return self.source.conf[key]
-            
+
         return default
 
     def _ExtractFromPath(self, data, path, default=None):
         """Extract value from SCIM data using a configurable path.
-        
+
         Args:
             data: The SCIM resource data
             path: Slash-separated path like 'userName' or 'urn:enterprise:2.0:User/employeeNumber'
             default: Default value if path not found
-            
+
         Returns:
             Extracted value or default
         """
         if not path:
             return default
-            
+
         try:
             current = data
             for part in path.split('/'):
@@ -296,17 +299,17 @@ class ScimMapParser(object):
         try:
             # Parse the SCIM JSON response
             scim_response = json.loads(cache_info.read())
-            
+
             # SCIM responses have a "Resources" array
             resources = scim_response.get("Resources", [])
-            
+
             for resource in resources:
                 map_entries = self._ReadEntry(resource)
-                
+
                 # Handle both single entries and lists of entries
                 if not isinstance(map_entries, list):
                     map_entries = [map_entries] if map_entries is not None else []
-                
+
                 for map_entry in map_entries:
                     if map_entry is None:
                         continue
@@ -316,10 +319,10 @@ class ScimMapParser(object):
                             map_entry,
                             resource,
                         )
-            
+
             self.log.info("Created %s map with %d entries", self.__class__.__name__, len(data))
             return data
-            
+
         except json.JSONDecodeError as e:
             self.log.error("Failed to parse SCIM JSON response: %s", e)
             return data
@@ -375,7 +378,7 @@ class ScimPasswdMapParser(ScimMapParser):
     def _ExtractUid(self, user_data):
         """Extract UID using configurable path."""
         uid_path = self._GetMapConfig("scim_path_uid", "id")
-        
+
         # Try the configured path first
         value = self._ExtractFromPath(user_data, uid_path)
         if value is not None:
@@ -383,14 +386,14 @@ class ScimPasswdMapParser(ScimMapParser):
                 return int(value)
             except (ValueError, TypeError):
                 pass
-        
+
         # Fallback to standard SCIM locations
         fallback_sources = [
             lambda d: d.get("id"),
             lambda d: d.get("externalId"),
             lambda d: d.get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User", {}).get("employeeNumber"),
         ]
-        
+
         for extractor in fallback_sources:
             try:
                 value = extractor(user_data)
@@ -398,13 +401,14 @@ class ScimPasswdMapParser(ScimMapParser):
                     return int(value)
             except (ValueError, TypeError):
                 continue
-                
+
         return None
 
     def _ExtractGid(self, user_data):
         """Extract GID using configurable path."""
         gid_path = self._GetMapConfig("scim_path_gid", "")
 
+        # Try the configured path first
         if gid_path:
             value = self._ExtractFromPath(user_data, gid_path)
             if value is not None:
@@ -421,7 +425,7 @@ class ScimPasswdMapParser(ScimMapParser):
         if isinstance(name_data, dict):
             if name_data.get("formatted"):
                 return name_data["formatted"]
-            
+
             # Build from parts
             name_parts = []
             if name_data.get("givenName"):
@@ -430,29 +434,29 @@ class ScimPasswdMapParser(ScimMapParser):
                 name_parts.append(name_data["familyName"])
             if name_parts:
                 return " ".join(name_parts)
-        
+
         # Fallback to displayName
         if user_data.get("displayName"):
             return user_data["displayName"]
-            
+
         return ""
 
     def _ExtractHomeDir(self, user_data):
         """Extract home directory using configurable path."""
         home_path = self._GetMapConfig("scim_path_home_directory", "")
-        
+
         # Try the configured path first
         if home_path:
             home_dir = self._ExtractFromPath(user_data, home_path)
             if home_dir:
                 return home_dir
-        
+
         # Fallback to enterprise extension
         enterprise_ext = user_data.get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User", {})
         home_dir = enterprise_ext.get("homeDirectory")
         if home_dir:
             return home_dir
-            
+
         # Default to /home/username
         username = self._ExtractUsername(user_data)
         return f"/home/{username}" if username else "/home/unknown"
@@ -461,19 +465,19 @@ class ScimPasswdMapParser(ScimMapParser):
         """Extract shell using configurable path."""
         shell_path = self._GetMapConfig("scim_path_login_shell", "")
         default_shell = self._GetMapConfig("scim_default_shell", "/bin/bash")
-        
+
         # Try the configured path first
         if shell_path:
             shell = self._ExtractFromPath(user_data, shell_path)
             if shell:
                 return shell
-        
+
         # Fallback to enterprise extension
         enterprise_ext = user_data.get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User", {})
         shell = enterprise_ext.get("loginShell")
         if shell:
             return shell
-            
+
         # Return the configured default shell
         return default_shell
 
@@ -488,29 +492,29 @@ class ScimSshkeyMapParser(ScimMapParser):
     def _ReadEntry(self, user_data):
         """Return SshkeyMapEntry instances from a SCIM user resource."""
         entries = []
-        
+
         # Extract username using configurable path
         username_path = self._GetMapConfig("scim_path_username", "userName")
         username = self._ExtractFromPath(user_data, username_path) or user_data.get("userName")
-        
+
         if not username:
             self.log.warning("SCIM user missing userName, skipping SSH key extraction")
             return entries
-            
+
         # Extract SSH keys using strictly config-driven path
         ssh_keys_path = self._GetMapConfig("scim_path_ssh_keys")
         if not ssh_keys_path:
             self.log.debug("No scim_path_ssh_keys configured, skipping SSH key extraction for user %s", username)
             return entries
-            
+
         ssh_keys = self._ExtractFromPath(user_data, ssh_keys_path, [])
-        
+
         # Ensure ssh_keys is a list
         if isinstance(ssh_keys, str):
             ssh_keys = [ssh_keys]
         elif not isinstance(ssh_keys, list):
             ssh_keys = []
-        
+
         # Create an entry for each SSH key
         for ssh_key in ssh_keys:
             if ssh_key and ssh_key.strip():
@@ -518,10 +522,10 @@ class ScimSshkeyMapParser(ScimMapParser):
                 map_entry.name = username
                 map_entry.sshkey = ssh_key.strip()
                 entries.append(map_entry)
-                
+
         if ssh_keys:
             self.log.debug("Extracted %d SSH keys for user %s", len(ssh_keys), username)
-        
+
         return entries
 
 
@@ -536,10 +540,10 @@ class ScimGroupMapParser(ScimMapParser):
         """Return a GroupMapEntry from a SCIM group resource."""
 
         # Use displayName or fallback to other name fields
-        group_name = (group_data.get("displayName") or 
+        group_name = (group_data.get("displayName") or
                      group_data.get("name") or
                      group_data.get("id"))
-                     
+
         if not group_name:
             self.log.warning("SCIM group missing name, skipping")
             return None
@@ -564,7 +568,7 @@ class ScimGroupMapParser(ScimMapParser):
     def _ExtractGroupGid(self, group_data):
         """Extract GID from SCIM group data using configurable path."""
         gid_path = self._GetMapConfig("scim_path_gid", "")
-        
+
         # Try the configured path first
         if gid_path:
             value = self._ExtractFromPath(group_data, gid_path)
@@ -573,7 +577,7 @@ class ScimGroupMapParser(ScimMapParser):
                     return int(value)
                 except (ValueError, TypeError):
                     pass
-                
+
         return None
 
     # TODO: This could probably be improved with the proper reponse that is gotten
@@ -581,7 +585,7 @@ class ScimGroupMapParser(ScimMapParser):
         """Extract group members from SCIM group data using configurable path."""
         members_path = self._GetMapConfig("scim_path_username", "members")
         members = []
-        
+
         # Try the configured path first
         if members_path:
             # Handle different member path configurations
@@ -602,7 +606,7 @@ class ScimGroupMapParser(ScimMapParser):
                             members.append(member)
                         elif isinstance(member, dict):
                             # Try common member fields
-                            username = (member.get("displayName") or 
+                            username = (member.get("displayName") or
                                        member.get("value") or
                                        member.get("userName"))
                             if username:
@@ -615,12 +619,12 @@ class ScimGroupMapParser(ScimMapParser):
             for member in group_members:
                 if isinstance(member, dict):
                     # Member can have different formats
-                    username = (member.get("displayName") or 
+                    username = (member.get("displayName") or
                                member.get("value") or
                                member.get("$ref", "").split("/")[-1])
                     if username:
                         members.append(username)
                 elif isinstance(member, str):
                     members.append(member)
-                
+
         return members

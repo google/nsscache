@@ -26,6 +26,7 @@ import time
 import ldap
 import ldap.sasl
 import re
+import os
 from binascii import b2a_hex
 from packaging import version
 from urllib.parse import quote
@@ -207,7 +208,7 @@ class LdapSource(source.Source):
         if "bind_dn" not in configuration:
             configuration["bind_dn"] = self.BIND_DN
         if "bind_password" not in configuration:
-            configuration["bind_password"] = self.BIND_PASSWORD
+            configuration["bind_password"] = os.environ.get('NSSCACHE_LDAP_BIND_PASSWORD', self.BIND_PASSWORD)
         if "retry_delay" not in configuration:
             configuration["retry_delay"] = self.RETRY_DELAY
         if "retry_max" not in configuration:
