@@ -1,26 +1,10 @@
-# Copyright 2025 Google Inc.
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """An implementation of a SCIM data source for nsscache."""
-
-# __author__ =
 
 import json
 import logging
 import pycurl
 import os
+from io import StringIO
 
 from nss_cache import error
 from nss_cache.maps import group
@@ -28,6 +12,7 @@ from nss_cache.maps import passwd
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
 from nss_cache.sources.httpsource import UpdateGetter as HttpUpdateGetter
+from nss_cache.util import curl
 
 
 def RegisterImplementation(registration_callback):
@@ -137,14 +122,14 @@ class UpdateGetter(HttpUpdateGetter):
     """SCIM-specific update getter that extends HTTP functionality."""
 
     def GetUpdates(self, source, url, since):
-        """Get updates from a SCIM source.
-
-        This extends the HTTP GetUpdates to add SCIM-specific headers.
+        """Get updates from a SCIM source with pagination support.
+        
+        Fetches all pages using SCIM pagination.
         """
         # Store the source for parser creation
         self.source = source
 
-        # Set SCIM-specific headers before calling the parent method
+        # Set SCIM-specific headers
         conn = source.conn
         headers = [
             f'Authorization: Bearer {source.conf["auth_token"]}',
@@ -153,8 +138,39 @@ class UpdateGetter(HttpUpdateGetter):
         ]
         conn.setopt(pycurl.HTTPHEADER, headers)
 
-        # Call the parent HTTP implementation for everything else
-        return super().GetUpdates(source, url, since)
+        # Initialize the parser with the source
+        parser = self.GetParser()
+        
+        # Initialize pagination variables
+        current_start_index = 1
+        page_map = self.CreateMap()
+        
+        # Use do-while pattern to fetch all pages
+        while True:
+            # Build URL with pagination parameters
+            separator = "&" if "?" in url else "?"
+            paginated_url = f"{url}{separator}startIndex={current_start_index}"
+
+            # Fetch current page
+            scim_body_bytes, _ = self.FetchUrlData(source, paginated_url, since)
+            
+            # Parse this page and add to existing map
+            page_map = parser.GetMap(cache_info=scim_body_bytes, data=page_map)
+            
+            # Get pagination metadata from the parser
+            pagination_metadata = parser._pagination_metadata
+            total_results = pagination_metadata.get('totalResults', 0)
+            items_per_page = pagination_metadata.get('itemsPerPage', 0)
+            current_start_index = pagination_metadata.get('startIndex', 1)
+            
+            # Check if we have more pages to fetch
+            if current_start_index + items_per_page - 1 >= total_results:
+                break
+            
+            # Move to next page
+            current_start_index = current_start_index + items_per_page
+
+        return page_map or self.CreateMap()
 
 class PasswdUpdateGetter(UpdateGetter):
     """Get passwd updates."""
@@ -232,6 +248,8 @@ class ScimMapParser(object):
     def __init__(self, source=None):
         self.log = logging.getLogger(__name__)
         self.source = source
+        self._store_pagination_metadata = True
+        self._pagination_metadata = {}
 
     def _GetMapConfig(self, key, default=None):
         """Get configuration value from map-specific section, fallback to [DEFAULT].
@@ -299,6 +317,13 @@ class ScimMapParser(object):
         try:
             # Parse the SCIM JSON response
             scim_response = json.loads(cache_info.read())
+
+            # Store pagination metadata
+            self._pagination_metadata = {
+                'totalResults': scim_response.get('totalResults', 0),
+                'itemsPerPage': scim_response.get('itemsPerPage', 0),
+                'startIndex': scim_response.get('startIndex', 1),
+            }
 
             # SCIM responses have a "Resources" array
             resources = scim_response.get("Resources", [])
@@ -580,51 +605,38 @@ class ScimGroupMapParser(ScimMapParser):
 
         return None
 
-    # TODO: This could probably be improved with the proper reponse that is gotten
     def _ExtractGroupMembers(self, group_data):
         """Extract group members from SCIM group data using configurable path."""
-        members_path = self._GetMapConfig("scim_path_username", "members")
+        username_path = self._GetMapConfig("scim_path_username", "userName")
         members = []
 
-        # Try the configured path first
-        if members_path:
-            # Handle different member path configurations
-            if members_path == "members/value":
-                # Special case for members array with value field
-                group_members = group_data.get("members", [])
-                for member in group_members:
-                    if isinstance(member, dict):
-                        username = member.get("value")
-                        if username:
-                            members.append(username)
-            else:
-                # General path extraction
-                member_data = self._ExtractFromPath(group_data, members_path, [])
-                if isinstance(member_data, list):
-                    for member in member_data:
-                        if isinstance(member, str):
-                            members.append(member)
-                        elif isinstance(member, dict):
-                            # Try common member fields
-                            username = (member.get("displayName") or
-                                       member.get("value") or
-                                       member.get("userName"))
-                            if username:
-                                members.append(username)
-                elif isinstance(member_data, str):
-                    members.append(member_data)
-        else:
-            # Fallback to standard SCIM members structure
-            group_members = group_data.get("members", [])
+        # Parse the username path to handle nested structures like "members/userName"
+        if "/" in username_path:
+            parts = username_path.split("/", 1)
+            members_key = parts[0]
+            username_key = parts[1]
+            
+            # Get the members array from the group data
+            group_members = group_data.get(members_key, [])
+            
             for member in group_members:
                 if isinstance(member, dict):
-                    # Member can have different formats
-                    username = (member.get("displayName") or
-                               member.get("value") or
-                               member.get("$ref", "").split("/")[-1])
+                    # Extract username using the remaining path
+                    username = self._ExtractFromPath(member, username_key)
+                    if username:
+                        members.append(username)
+        else:
+            # Handle simple case where username_path is just a field name
+            group_members = group_data.get("members", [])
+            
+            for member in group_members:
+                if isinstance(member, dict):
+                    # Extract username using the configured path
+                    username = self._ExtractFromPath(member, username_path)
                     if username:
                         members.append(username)
                 elif isinstance(member, str):
+                    # If member is already a string, use it directly
                     members.append(member)
 
         return members

@@ -228,9 +228,9 @@ class UpdateGetter(object):
         """
         t = time.strptime(http_ts_string, "%a, %d %b %Y %H:%M:%S GMT")
         return int(calendar.timegm(t))
-
-    def GetUpdates(self, source, url, since):
-        """Get updates from a source.
+    
+    def FetchUrlData(self, source, url, since=None):
+        """Get HTTP response from a url.
 
         Args:
           source: A data source
@@ -305,6 +305,18 @@ class UpdateGetter(object):
         # Wrap in a stringIO so that it can be looped on by newlines in the parser
         response = StringIO(body_bytes.decode("utf-8"))
 
+        return response, http_ts_string
+
+    def ParseUrlResponse(self, response, http_ts_string):
+        """Parse the response from the HTTP request.
+
+        Args:
+          response: file-like object containing the data to parse
+          http_ts_string: HTTP timestamp string
+
+        Returns:
+          A tuple containing the map of updates and a maximum timestamp
+        """
         data_map = self.GetMap(cache_info=response)
         if http_ts_string:
             http_ts = self.FromHttpToTimestamp(http_ts_string)
@@ -312,6 +324,25 @@ class UpdateGetter(object):
             data_map.SetModifyTimestamp(http_ts)
 
         return data_map
+
+    def GetUpdates(self, source, url, since):
+        """Get updates from a source.
+
+        Args:
+          source: A data source
+          url: url to the data we want
+          since: a timestamp representing the last change (None to force-get)
+
+        Returns:
+          A tuple containing the map of updates and a maximum timestamp
+
+        Raises:
+          ValueError: an object in the source map is malformed
+          ConfigurationError:
+        """
+        response, http_ts_string = self.FetchUrlData(source, url, since)
+
+        return self.ParseUrlResponse(response, http_ts_string)
 
     def GetParser(self):
         """Return the appropriate parser.
