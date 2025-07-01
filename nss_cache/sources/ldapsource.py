@@ -843,7 +843,7 @@ class PasswdUpdateGetter(UpdateGetter):
         elif "loginShell" in obj:
             pw.shell = obj["loginShell"][0]
         else:
-            pw.shell = ""
+            pw.shell = self.conf.get("default_shell", "")
 
         if self.conf.get("ad"):
             # use the user's RID for uid and gid to have

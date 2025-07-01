@@ -219,6 +219,12 @@ useful on bastion hosts or to ensure uniformity. Enable for
 Active Directory since the attribute (loginShell) is not default.
 
 .TP
+.B ldap_default_shell
+Set a default shell for all users if not specified.
+ldap_override_shell nd loginShell attributes will
+take precedence over this value.
+
+.TP
 .B ldap_home_dir
 Set a home directory for all users in passwd. If enabled (set to 1),
 all users will have their home directory in
