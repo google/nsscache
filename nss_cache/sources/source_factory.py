@@ -84,6 +84,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from nss_cache.sources import scimsource
+
+    scimsource.RegisterImplementation(RegisterImplementation)
+except ImportError:
+    pass
+
 
 def Create(conf):
     """Source creation factory method.

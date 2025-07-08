@@ -52,7 +52,7 @@ A complete list of configuration options follows.
 Specifies the source to use to retrieve NSS data from.
 
 Valid Options:
-.I ldap, s3, http, gcs
+.I ldap, s3, http, gcs, scim
 
 .TP
 .B cache
@@ -219,6 +219,12 @@ useful on bastion hosts or to ensure uniformity. Enable for
 Active Directory since the attribute (loginShell) is not default.
 
 .TP
+.B ldap_default_shell
+Set a default shell for all users if not specified.
+ldap_override_shell and loginShell attributes will
+take precedence over this value.
+
+.TP
 .B ldap_home_dir
 Set a home directory for all users in passwd. If enabled (set to 1),
 all users will have their home directory in
@@ -322,6 +328,87 @@ URL for an HTTP endpoint that returns a file containing
 .B sshkey
 records in the standard format. E.g.
 .I root:ssh-rsa ...
+
+.SH scim SOURCE OPTIONS
+
+These options configure the behaviour of the
+.I scim
+source.
+
+.TP
+.B scim_base_url
+The base URL for the SCIM server endpoint. This is the root URL that will be
+combined with the users and groups endpoints to form complete URLs.
+
+.TP
+.B scim_auth_token
+Authentication token (Bearer token) for SCIM API access. Can also be provided
+via the NSSCACHE_SCIM_AUTH_TOKEN environment variable.
+
+.TP
+.B scim_users_endpoint
+The SCIM endpoint path for retrieving user data. Defaults to
+.I Users
+
+.TP
+.B scim_groups_endpoint
+The SCIM endpoint path for retrieving group data. Defaults to
+.I Groups
+
+.TP
+.B scim_timeout
+Timeout in seconds for SCIM requests. Defaults to 60.
+
+.TP
+.B scim_verify_ssl
+Whether to verify SSL certificates when making SCIM requests. Set to false to
+disable SSL verification. Defaults to true.
+
+.TP
+.B scim_retry_delay
+Delay in seconds between retry attempts on failed requests. Defaults to 5.
+
+.TP
+.B ldap_retry_max
+Number of retries on soft failures before giving up.  Defaults to 3.
+
+.TP
+.B scim_default_shell
+Default shell to assign to users if not specified in SCIM data. Defaults to
+.I /bin/bash
+
+The following path configuration options allow customization of how data is
+extracted from SCIM responses. These can be set per-map in
+[passwd], [group], or [sshkey] sections:
+
+.TP
+.B scim_path_username
+Path within SCIM user/group resources to extract the username. Defaults to
+.I userName
+
+.TP
+.B scim_path_uid
+Path within SCIM user resources to extract the user ID (UID). Defaults to
+.I id
+
+.TP
+.B scim_path_gid
+Path within SCIM user/group resources to extract the group ID (GID).
+
+.TP
+.B scim_path_home_directory
+Path within SCIM user resources to extract the home directory. If not specified,
+defaults to /home/username format.
+
+.TP
+.B scim_path_login_shell
+Path within SCIM user resources to extract the login shell. If not specified,
+uses the scim_default_shell value.
+
+.TP
+.B scim_path_ssh_keys
+Path within SCIM user resources to extract SSH public keys. Should point to
+an array of SSH key strings or a single SSH key string.
 
 .SH files CACHE OPTIONS
 These options configure the behaviour of the
