@@ -148,20 +148,47 @@ class TestScimUpdateGetter(unittest.TestCase):
             
             getter = scimsource.UpdateGetter()
             getter.source = source
-            getter.GetParser = mock.Mock(return_value=mock.Mock())
-            getter.CreateMap = mock.Mock()
             
-            # Mock the GetMap method to return mock maps
+            # Mock the parser and its pagination metadata
+            mock_parser = mock.Mock()
+            
+            # Mock the first map returned by GetMap 
             mock_first_map = mock.Mock()
-            mock_first_map.Add = mock.Mock(return_value=True)
             mock_first_map.__len__ = mock.Mock(return_value=50)
-            mock_first_map.__iter__ = mock.Mock(return_value=iter([mock.Mock() for _ in range(50)]))
             
+            # Mock the second map returned by GetMap
             mock_second_map = mock.Mock()
-            mock_second_map.__len__ = mock.Mock(return_value=25)
-            mock_second_map.__iter__ = mock.Mock(return_value=iter([mock.Mock() for _ in range(25)]))
+            mock_second_map.__len__ = mock.Mock(return_value=75)  # Total items after both pages
             
-            getter.GetMap = mock.Mock(side_effect=[mock_first_map, mock_second_map])
+            # Track which call we're on
+            call_count = 0
+            
+            # Configure GetMap to return the mocked maps and update pagination metadata
+            def mock_get_map(cache_info, data):
+                nonlocal call_count
+                call_count += 1
+                
+                if call_count == 1:
+                    # First page
+                    mock_parser._pagination_metadata = {
+                        'totalResults': 75,
+                        'itemsPerPage': 50,
+                        'startIndex': 1
+                    }
+                    return mock_first_map
+                else:
+                    # Second page  
+                    mock_parser._pagination_metadata = {
+                        'totalResults': 75,
+                        'itemsPerPage': 25,
+                        'startIndex': 51
+                    }
+                    return mock_second_map
+            
+            mock_parser.GetMap = mock.Mock(side_effect=mock_get_map)
+            
+            getter.GetParser = mock.Mock(return_value=mock_parser)
+            getter.CreateMap = mock.Mock(return_value=mock.Mock())
             
             result = getter.GetUpdates(source, "https://api.example.com/scim/Users", None)
             
@@ -169,12 +196,12 @@ class TestScimUpdateGetter(unittest.TestCase):
             self.assertEqual(mock_curl_fetch.call_count, 2)
             
             # Should call GetMap twice (first page + second page)  
-            self.assertEqual(getter.GetMap.call_count, 2)
+            self.assertEqual(mock_parser.GetMap.call_count, 2)
             
             # Verify the URLs include pagination parameters
             call_args = mock_curl_fetch.call_args_list
-            self.assertIn("startIndex=1", call_args[0][0][0])
-            self.assertIn("startIndex=51", call_args[1][0][0])
+            self.assertIn("Users", call_args[0][0][0])  # First call should be to base URL
+            self.assertIn("startIndex=51", call_args[1][0][0])  # Second call should have pagination
 
 
 class TestScimPasswdUpdateGetter(unittest.TestCase):

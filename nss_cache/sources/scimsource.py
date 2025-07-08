@@ -12,7 +12,6 @@ from nss_cache.maps import passwd
 from nss_cache.maps import sshkey
 from nss_cache.sources import source
 from nss_cache.sources.httpsource import UpdateGetter as HttpUpdateGetter
-from nss_cache.util import curl
 
 
 def RegisterImplementation(registration_callback):
