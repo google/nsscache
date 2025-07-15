@@ -356,6 +356,18 @@ The SCIM endpoint path for retrieving group data. Defaults to
 .I Groups
 
 .TP
+.B scim_users_parameters
+Optional url parameters for the users endpoint to be added. 
+Special characters (spaces, quotes, etc.) will be automatically URL encoded.
+Example: 'groups=admin&filter=active eq true'
+
+.TP
+.B scim_groups_parameters
+Optional url parameters for the groups endpoint to be added. 
+Special characters (spaces, quotes, etc.) will be automatically URL encoded.
+Example: 'filter=displayName eq users or displayName eq admin'
+
+.TP
 .B scim_timeout
 Timeout in seconds for SCIM requests. Defaults to 60.
 

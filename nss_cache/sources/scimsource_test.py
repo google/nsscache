@@ -104,6 +104,61 @@ class TestScimSource(unittest.TestCase):
             mock_conn.setopt.assert_any_call(pycurl.SSL_VERIFYPEER, 0)
             mock_conn.setopt.assert_any_call(pycurl.SSL_VERIFYHOST, 0)
 
+    def testBuildUrlWithParameters(self):
+        """Test that URL parameters are properly handled."""
+        config = {
+            "base_url": "https://api.example.com/scim",
+            "auth_token": "test_token"
+        }
+        source = scimsource.ScimSource(config)
+        
+        # Test with no parameters
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Users", "")
+        self.assertEqual(url, "https://api.example.com/scim/Users")
+        
+        # Test with simple parameters (comma gets URL encoded)
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Users", "groups=users,admin")
+        self.assertEqual(url, "https://api.example.com/scim/Users?groups=users%2Cadmin")
+        
+        # Test with parameters that have leading ? or &
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Users", "?groups=users,admin")
+        self.assertEqual(url, "https://api.example.com/scim/Users?groups=users%2Cadmin")
+        
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Users", "&groups=users,admin")
+        self.assertEqual(url, "https://api.example.com/scim/Users?groups=users%2Cadmin")
+        
+        # Test with complex SCIM filter that needs encoding
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Groups", 'filter=displayName eq "users"')
+        self.assertEqual(url, "https://api.example.com/scim/Groups?filter=displayName+eq+%22users%22")
+        
+        # Test with multiple parameters
+        url = source._BuildUrlWithParameters("https://api.example.com/scim/Users", "groups=admin,metrics&filter=active eq \"true\"")
+        self.assertEqual(url, "https://api.example.com/scim/Users?groups=admin%2Cmetrics&filter=active+eq+%22true%22")
+
+    def testParametersConfiguration(self):
+        """Test that users_parameters and groups_parameters are configured properly."""
+        config = {
+            "base_url": "https://api.example.com/scim",
+            "auth_token": "test_token",
+            "users_parameters": "groups=users,admin&filter=active",
+            "groups_parameters": "type=security"
+        }
+        source = scimsource.ScimSource(config)
+        
+        self.assertEqual(source.conf["users_parameters"], "groups=users,admin&filter=active")
+        self.assertEqual(source.conf["groups_parameters"], "type=security")
+
+    def testParametersDefaultsToEmpty(self):
+        """Test that parameters default to empty strings."""
+        config = {
+            "base_url": "https://api.example.com/scim",
+            "auth_token": "test_token"
+        }
+        source = scimsource.ScimSource(config)
+        
+        self.assertEqual(source.conf["users_parameters"], "")
+        self.assertEqual(source.conf["groups_parameters"], "")
+
 
 class TestScimUpdateGetter(unittest.TestCase):
     def setUp(self):
@@ -202,6 +257,103 @@ class TestScimUpdateGetter(unittest.TestCase):
             call_args = mock_curl_fetch.call_args_list
             self.assertIn("Users", call_args[0][0][0])  # First call should be to base URL
             self.assertIn("startIndex=51", call_args[1][0][0])  # Second call should have pagination
+
+    def testGetUpdatesWithPaginationAndCustomParameters(self):
+        """Test that pagination works correctly with custom URL parameters."""
+        mock_conn = mock.Mock()
+        mock_conn.getinfo.return_value = 200
+        self.curl_mock.return_value = mock_conn
+        
+        config = {
+            "base_url": "https://api.example.com/scim",
+            "auth_token": "test_token"
+        }
+        source = scimsource.ScimSource(config)
+        
+        # Mock the first page response with pagination info
+        first_page_response = {
+            "totalResults": 75,
+            "itemsPerPage": 50,
+            "startIndex": 1,
+            "Resources": [{"id": str(i), "userName": f"user{i}"} for i in range(1, 51)]
+        }
+        
+        # Mock the second page response
+        second_page_response = {
+            "totalResults": 75,
+            "itemsPerPage": 25,
+            "startIndex": 51,
+            "Resources": [{"id": str(i), "userName": f"user{i}"} for i in range(51, 76)]
+        }
+        
+        with mock.patch.object(curl, 'CurlFetch') as mock_curl_fetch:
+            mock_curl_fetch.side_effect = [
+                (200, "", json.dumps(first_page_response).encode('utf-8')),
+                (200, "", json.dumps(second_page_response).encode('utf-8'))
+            ]
+            
+            getter = scimsource.UpdateGetter()
+            getter.source = source
+            
+            # Mock the parser and its pagination metadata
+            mock_parser = mock.Mock()
+            
+            # Mock the first map returned by GetMap 
+            mock_first_map = mock.Mock()
+            mock_first_map.__len__ = mock.Mock(return_value=50)
+            
+            # Mock the second map returned by GetMap
+            mock_second_map = mock.Mock()
+            mock_second_map.__len__ = mock.Mock(return_value=75)  # Total items after both pages
+            
+            # Track which call we're on
+            call_count = 0
+            
+            # Configure GetMap to return the mocked maps and update pagination metadata
+            def mock_get_map(cache_info, data):
+                nonlocal call_count
+                call_count += 1
+                
+                if call_count == 1:
+                    # First page
+                    mock_parser._pagination_metadata = {
+                        'totalResults': 75,
+                        'itemsPerPage': 50,
+                        'startIndex': 1
+                    }
+                    return mock_first_map
+                else:
+                    # Second page  
+                    mock_parser._pagination_metadata = {
+                        'totalResults': 75,
+                        'itemsPerPage': 25,
+                        'startIndex': 51
+                    }
+                    return mock_second_map
+            
+            mock_parser.GetMap = mock.Mock(side_effect=mock_get_map)
+            
+            getter.GetParser = mock.Mock(return_value=mock_parser)
+            getter.CreateMap = mock.Mock(return_value=mock.Mock())
+            
+            # Test with URL that has custom parameters
+            result = getter.GetUpdates(source, "https://api.example.com/scim/Users?groups=users,admin", None)
+            
+            # Should call CurlFetch twice (first page + second page)
+            self.assertEqual(mock_curl_fetch.call_count, 2)
+            
+            # Should call GetMap twice (first page + second page)  
+            self.assertEqual(mock_parser.GetMap.call_count, 2)
+            
+            # Verify the URLs include both custom parameters and pagination parameters
+            call_args = mock_curl_fetch.call_args_list
+            # First call should include custom parameters and startIndex=1
+            self.assertIn("groups=users,admin", call_args[0][0][0])
+            self.assertIn("startIndex=1", call_args[0][0][0])
+            
+            # Second call should include custom parameters and startIndex=51
+            self.assertIn("groups=users,admin", call_args[1][0][0])
+            self.assertIn("startIndex=51", call_args[1][0][0])
 
 
 class TestScimPasswdUpdateGetter(unittest.TestCase):
