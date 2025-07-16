@@ -5,6 +5,7 @@ import logging
 import pycurl
 import os
 from io import StringIO
+from urllib.parse import urlencode
 
 from nss_cache import error
 from nss_cache.maps import group
@@ -66,6 +67,10 @@ class ScimSource(source.Source):
             configuration["users_endpoint"] = self.USERS_ENDPOINT
         if "groups_endpoint" not in configuration:
             configuration["groups_endpoint"] = self.GROUPS_ENDPOINT
+        if "users_parameters" not in configuration:
+            configuration["users_parameters"] = ""
+        if "groups_parameters" not in configuration:
+            configuration["groups_parameters"] = ""
         if "timeout" not in configuration:
             configuration["timeout"] = self.TIMEOUT
         if "verify_ssl" not in configuration:
@@ -78,6 +83,42 @@ class ScimSource(source.Source):
             configuration["default_shell"] = self.DEFAULT_SHELL
         if "auth_token" not in configuration:
             configuration["auth_token"] = os.environ.get('NSSCACHE_SCIM_AUTH_TOKEN', self.AUTH_TOKEN)
+
+    def _BuildUrlWithParameters(self, base_url, parameters):
+        """Build URL with custom parameters, handling proper encoding.
+
+        Args:
+            base_url: The base URL (e.g., "https://api.example.com/scim/Users")
+            parameters: Parameter string (e.g., "groups=admin&filter=active eq \"true\"")
+
+        Returns:
+            URL with parameters properly encoded and appended
+        """
+        if not parameters or not parameters.strip():
+            return base_url
+
+        # Clean up parameters - remove leading ? or & if present
+        clean_params = parameters.strip().lstrip('?&')
+
+        if not clean_params:
+            return base_url
+
+        # Parse the parameters to properly encode them
+        # This preserves the original parameter structure while encoding special characters
+        params_dict = {}
+        for param in clean_params.split('&'):
+            if '=' in param:
+                key, value = param.split('=', 1)
+                params_dict[key] = value
+            else:
+                # Handle case where there's no = sign (shouldn't happen, but just in case)
+                params_dict[param] = ''
+
+        encoded_query = urlencode(params_dict)
+
+        # Add parameters to base URL
+        return f"{base_url}?{encoded_query}"
+
     def GetPasswdMap(self, since=None):
         """Return the passwd map from this source.
 
@@ -88,7 +129,8 @@ class ScimSource(source.Source):
         Returns:
           instance of passwd.PasswdMap
         """
-        users_url = f"{self.conf['base_url']}/{self.conf['users_endpoint']}"
+        base_users_url = f"{self.conf['base_url']}/{self.conf['users_endpoint']}"
+        users_url = self._BuildUrlWithParameters(base_users_url, self.conf.get('users_parameters', ''))
         return PasswdUpdateGetter(self.conf).GetUpdates(self, users_url, since)
 
     def GetGroupMap(self, since=None):
@@ -101,7 +143,8 @@ class ScimSource(source.Source):
         Returns:
           instance of group.GroupMap
         """
-        groups_url = f"{self.conf['base_url']}/{self.conf['groups_endpoint']}"
+        base_groups_url = f"{self.conf['base_url']}/{self.conf['groups_endpoint']}"
+        groups_url = self._BuildUrlWithParameters(base_groups_url, self.conf.get('groups_parameters', ''))
         return GroupUpdateGetter(self.conf).GetUpdates(self, groups_url, since)
 
     def GetSshkeyMap(self, since=None):
@@ -114,7 +157,8 @@ class ScimSource(source.Source):
         Returns:
           instance of sshkey.SshkeyMap
         """
-        users_url = f"{self.conf['base_url']}/{self.conf['users_endpoint']}"
+        base_users_url = f"{self.conf['base_url']}/{self.conf['users_endpoint']}"
+        users_url = self._BuildUrlWithParameters(base_users_url, self.conf.get('users_parameters', ''))
         return SshkeyUpdateGetter(self.conf).GetUpdates(self, users_url, since)
 
 class UpdateGetter(HttpUpdateGetter):
