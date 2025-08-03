@@ -89,7 +89,7 @@ class ScimSource(source.Source):
 
         Args:
             base_url: The base URL (e.g., "https://api.example.com/scim/Users")
-            parameters: Parameter string (e.g., "groups=admin&filter=active eq \"true\"")
+            parameters: Parameter string (e.g., "filter=active eq \"true\"")
 
         Returns:
             URL with parameters properly encoded and appended
