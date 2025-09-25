@@ -1,7 +1,7 @@
 pytest
 boto3
 google-cloud-storage
-pycurl==7.45.6
+pycurl==7.45.7
 python3-ldap
 python-ldap
 packaging
