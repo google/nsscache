@@ -91,7 +91,7 @@ class HttpFilesSource(source.Source):
         if "group_url" not in configuration:
             configuration["group_url"] = self.GROUP_URL
         if "netgroup_url" not in configuration:
-            configuration["netgroup_url"] = self.GROUP_URL
+            configuration["netgroup_url"] = self.NETGROUP_URL
         if "sshkey_url" not in configuration:
             configuration["sshkey_url"] = self.SSHKEY_URL
         if "retry_delay" not in configuration:
