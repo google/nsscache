@@ -1,6 +1,8 @@
 nsscache - Asynchronously synchronise local NSS databases with remote directory services
 ========================================================================================
 
+<!-- Test validation -->
+
 ![ci](https://github.com/google/nsscache/workflows/CI/badge.svg)
 [![codecov](https://codecov.io/gh/google/nsscache/branch/master/graph/badge.svg)](https://codecov.io/gh/google/nsscache)
 
