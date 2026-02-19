@@ -1,5 +1,5 @@
 pytest
-boto3
+boto3==1.42.50
 google-cloud-storage
 pycurl==7.45.6
 python3-ldap
