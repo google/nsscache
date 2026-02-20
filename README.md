@@ -51,3 +51,5 @@ For Compute Engine Instances to use the `gcs` source, their attached service
 account must have the _Storage Object Viewer_ role on the GCS bucket storing
 the `passwd`, `group`, and `shadow` objects, or on the objects themselves
 if using find-grained access controls.
+
+<!-- gate check -->
