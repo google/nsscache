@@ -14,7 +14,7 @@ DATE=$(date +%Y-%m-%d)
 
 sed -i "1c\.TH NSSCACHE 1 $DATE \"nsscache $NEW_VERSION\" \"User Commands\"" nsscache.1
 sed -i "1c\.TH NSSCACHE.CONF 5 $DATE \"nsscache $NEW_VERSION\" \"File formats\"" nsscache.conf.5
-sed -i "s/__version__ = '.*'/__version__ = '$NEW_VERSION'/" nss_cache/__init__.py
+sed -i "s/__version__ = \".*\"/__version__ = \"$NEW_VERSION\"/" nss_cache/__init__.py
 
 
 git commit -a -m "Mint version $NEW_VERSION"
