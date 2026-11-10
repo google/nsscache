@@ -827,7 +827,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def testGetSingleMapMetadataTimestampEpochFalse(self):
         # set the timezone so we get a consistent return value
-        os.environ["TZ"] = "MST"
+        os.environ["TZ"] = "MST7"
         time.tzset()
 
         c = command.Status()

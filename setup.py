@@ -54,8 +54,6 @@ as LDAP.""",
     scripts=["nsscache"],
     data_files=[("config", ["nsscache.conf"])],
     python_requires="~=3.4",
-    setup_requires=["pytest-runner"],
-    tests_require=["pytest", "mox3", "pytest-cov", "python-coveralls"],
     extras_require={
         "ldap": ["python3-ldap", "python-ldap"],
         "http": ["pycurl"],

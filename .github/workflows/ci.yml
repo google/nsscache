@@ -8,18 +8,16 @@ on:
   pull_request:
 
 permissions:
-  # none-all, which doesn't exist, but
-  # https://docs.github.com/en/actions/reference/authentication-in-a-workflow#using-the-github_token-in-a-workflow
-  # implies that the token still gets created.  Elsewhere we learn that any
-  # permission not mentioned here gets turned to `none`.
   actions: none
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           cache: 'pip'
       - name: install dependencies
@@ -28,17 +26,21 @@ jobs:
           sudo apt-get install -y libnss-db libdb-dev libcurl4-gnutls-dev libgnutls28-dev libldap2-dev libsasl2-dev
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest-github-actions-annotate-failures
+          pip install pytest-cov pytest-github-actions-annotate-failures
       - name: Test
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           mkdir -p test-results
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-             echo ${{ github.event.pull_request.head.sha }}  > test-results/sha-number
+          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
+             echo "${PR_HEAD_SHA}" > test-results/sha-number
           else
-             echo ${{ github.sha }} > test-results/sha-number
+             echo "${GITHUB_SHA}" > test-results/sha-number
           fi
-          python setup.py test --addopts "-v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache"
-      - uses: codecov/codecov-action@v7
+          pytest -v --durations=0 --junitxml=test-results/junit.xml --cov=nss_cache
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5
         if: always()
       - name: Install
         run: pip install --user .
@@ -46,7 +48,7 @@ jobs:
         run: |
           sudo apt-get install -y slapd ldap-utils libnss-db db-util
           tests/slapd-regtest
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: test-results
@@ -55,5 +57,4 @@ jobs:
         run: |
           pip install pylint
           pylint nsscache nss_cache
-        # TODO(jaq): eventually make this lint clean and remove this line
         continue-on-error: true
