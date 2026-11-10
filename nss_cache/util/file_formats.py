@@ -77,8 +77,11 @@ class FilesSshkeyMapParser(FilesMapParser):
         entry = entry.split(":")
         map_entry = sshkey.SshkeyMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
-        map_entry.name = entry[0]
-        map_entry.sshkey = entry[1]
+        try:
+            map_entry.name = entry[0]
+            map_entry.sshkey = entry[1]
+        except IndexError:
+            return None
         return map_entry
 
 
@@ -90,13 +93,16 @@ class FilesPasswdMapParser(FilesMapParser):
         entry = entry.split(":")
         map_entry = passwd.PasswdMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
-        map_entry.name = entry[0]
-        map_entry.passwd = entry[1]
-        map_entry.uid = int(entry[2])
-        map_entry.gid = int(entry[3])
-        map_entry.gecos = entry[4]
-        map_entry.dir = entry[5]
-        map_entry.shell = entry[6]
+        try:
+            map_entry.name = entry[0]
+            map_entry.passwd = entry[1]
+            map_entry.uid = int(entry[2])
+            map_entry.gid = int(entry[3])
+            map_entry.gecos = entry[4]
+            map_entry.dir = entry[5]
+            map_entry.shell = entry[6]
+        except (ValueError, IndexError):
+            return None
         return map_entry
 
 
@@ -108,10 +114,13 @@ class FilesGroupMapParser(FilesMapParser):
         line = line.split(":")
         map_entry = group.GroupMapEntry()
         # map entries expect strict typing, so convert as appropriate
-        map_entry.name = line[0]
-        map_entry.passwd = line[1]
-        map_entry.gid = int(line[2])
-        map_entry.members = line[3].split(",")
+        try:
+            map_entry.name = line[0]
+            map_entry.passwd = line[1]
+            map_entry.gid = int(line[2])
+            map_entry.members = line[3].split(",")
+        except (ValueError, IndexError):
+            return None
         return map_entry
 
 
@@ -123,22 +132,25 @@ class FilesShadowMapParser(FilesMapParser):
         line = line.split(":")
         map_entry = shadow.ShadowMapEntry()
         # map entries expect strict typing, so convert as appropriate
-        map_entry.name = line[0]
-        map_entry.passwd = line[1]
-        if line[2]:
-            map_entry.lstchg = int(line[2])
-        if line[3]:
-            map_entry.min = int(line[3])
-        if line[4]:
-            map_entry.max = int(line[4])
-        if line[5]:
-            map_entry.warn = int(line[5])
-        if line[6]:
-            map_entry.inact = int(line[6])
-        if line[7]:
-            map_entry.expire = int(line[7])
-        if line[8]:
-            map_entry.flag = int(line[8])
+        try:
+            map_entry.name = line[0]
+            map_entry.passwd = line[1]
+            if line[2]:
+                map_entry.lstchg = int(line[2])
+            if line[3]:
+                map_entry.min = int(line[3])
+            if line[4]:
+                map_entry.max = int(line[4])
+            if line[5]:
+                map_entry.warn = int(line[5])
+            if line[6]:
+                map_entry.inact = int(line[6])
+            if line[7]:
+                map_entry.expire = int(line[7])
+            if line[8]:
+                map_entry.flag = int(line[8])
+        except (ValueError, IndexError):
+            return None
         return map_entry
 
 
