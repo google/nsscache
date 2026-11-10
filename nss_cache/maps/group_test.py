@@ -109,6 +109,9 @@ class TestGroupMapEntry(unittest.TestCase):
         # Empty object should bomb
         self.assertFalse(entry.Verify())
 
+        entry.name = "group 04:03 PM PDT"
+        self.assertFalse(entry.Verify())
+
     def testKey(self):
         """Key() should return the value of the 'name' attribute."""
         entry = group.GroupMapEntry()

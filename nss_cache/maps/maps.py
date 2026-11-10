@@ -345,6 +345,11 @@ class MapEntry(object):
 
         Returns:
           True if the value in the attribute named by self._KEY for this class
-          is not None.  False otherwise.
+          is not None and does not contain invalid characters.  False otherwise.
         """
-        return getattr(self, self._KEY) is not None
+        key = getattr(self, self._KEY)
+        if key is None:
+            return False
+        if isinstance(key, str) and (":" in key or "\n" in key):
+            return False
+        return True
