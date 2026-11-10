@@ -22,6 +22,7 @@ __author__ = (
 
 import unittest
 
+from nss_cache.maps import group
 from nss_cache.util import file_formats
 
 
@@ -40,6 +41,12 @@ class TestFilesUtils(unittest.TestCase):
         self.assertEqual(map_entry.dir, "/root")
         self.assertEqual(map_entry.shell, "/bin/bash")
 
+    def testReadBadPasswdEntry(self):
+        """Invalid passwd entries return None instead of raising errors."""
+        parser = file_formats.FilesPasswdMapParser()
+        self.assertIsNone(parser._ReadEntry("root:x:bad:0:Rootsy:/root:/bin/bash"))
+        self.assertIsNone(parser._ReadEntry("root:x"))
+
     def testReadGroupEntry(self):
         """We correctly parse a typical entry in /etc/group format."""
         parser = file_formats.FilesGroupMapParser()
@@ -50,6 +57,20 @@ class TestFilesUtils(unittest.TestCase):
         self.assertEqual(map_entry.passwd, "x")
         self.assertEqual(map_entry.gid, 0)
         self.assertEqual(map_entry.members, ["zero_cool", "acid_burn"])
+
+    def testReadBadGroupEntry(self):
+        """Invalid group entries are skipped during GetMap."""
+        parser = file_formats.FilesGroupMapParser()
+        bad_entry = "imported_group 04:03 PM PDT:x:1001:user1"
+        self.assertIsNone(parser._ReadEntry(bad_entry))
+        self.assertIsNone(parser._ReadEntry("root:x"))
+
+        cache_lines = [
+            "root:x:0:zero_cool,acid_burn\n",
+            bad_entry + "\n",
+        ]
+        gmap = parser.GetMap(cache_lines, group.GroupMap())
+        self.assertEqual(1, len(gmap))
 
     def testReadShadowEntry(self):
         """We correctly parse a typical entry in /etc/shadow format."""
@@ -66,6 +87,17 @@ class TestFilesUtils(unittest.TestCase):
         self.assertEqual(map_entry.inact, None)
         self.assertEqual(map_entry.expire, None)
         self.assertEqual(map_entry.flag, None)
+
+    def testReadBadShadowEntry(self):
+        """Invalid shadow entries return None instead of raising errors."""
+        parser = file_formats.FilesShadowMapParser()
+        self.assertIsNone(parser._ReadEntry("root:$1$zomg:invalid::::::"))
+        self.assertIsNone(parser._ReadEntry("root:x"))
+
+    def testReadBadSshkeyEntry(self):
+        """Invalid sshkey entries return None instead of raising errors."""
+        parser = file_formats.FilesSshkeyMapParser()
+        self.assertIsNone(parser._ReadEntry("root"))
 
     def testReadNetgroupEntry(self):
         """We correctly parse a typical entry in /etc/netgroup format."""

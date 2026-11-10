@@ -253,6 +253,12 @@ class TestPasswdMapEntry(unittest.TestCase):
         # by leaving _KEY unset, we should bomb.
         self.assertFalse(entry.Verify())
 
+        entry.name = "bad:name"
+        self.assertFalse(entry.Verify())
+
+        entry.name = "bad\nname"
+        self.assertFalse(entry.Verify())
+
     def testKey(self):
         """Key() should return the value of the 'name' attribute."""
         entry = passwd.PasswdMapEntry()
