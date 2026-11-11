@@ -124,6 +124,12 @@ class ConsulMapParser(object):
     def __init__(self):
         self.log = logging.getLogger(__name__)
 
+    @staticmethod
+    def _DecodeValue(value):
+        if isinstance(value, bytes):
+            return value.decode("utf-8")
+        return value
+
     def GetMap(self, cache_info, data):
         """Returns a map from a cache.
 
@@ -136,11 +142,16 @@ class ConsulMapParser(object):
 
         entries = collections.defaultdict(dict)
         for line in json.loads(cache_info.read()):
-            key = line.get("Key", "").split("/")
+            raw_key = line.get("Key", "")
+            key = raw_key.split("/")
             value = line.get("Value", "")
-            if not value or not key:
+            if not value or len(key) < 2:
                 continue
-            value = base64.b64decode(value)
+            try:
+                value = base64.b64decode(value, validate=True).decode("utf-8")
+            except (TypeError, ValueError, UnicodeDecodeError):
+                self.log.warning("Invalid value for key %r, skipping", raw_key)
+                continue
             name = str(key[-2])
             entry_piece = key[-1]
             entries[name][entry_piece] = value
@@ -169,18 +180,17 @@ class ConsulPasswdMapParser(ConsulMapParser):
 
         map_entry = passwd.PasswdMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
-        map_entry.name = name
-        map_entry.passwd = entry.get("passwd", "x")
-
         try:
+            map_entry.name = self._DecodeValue(name)
+            map_entry.passwd = self._DecodeValue(entry.get("passwd", "x"))
             map_entry.uid = int(entry["uid"])
             map_entry.gid = int(entry["gid"])
-        except (ValueError, KeyError):
+            map_entry.gecos = self._DecodeValue(entry.get("comment", ""))
+            default_home = "/home/{}".format(map_entry.name)
+            map_entry.dir = self._DecodeValue(entry.get("home", default_home))
+            map_entry.shell = self._DecodeValue(entry.get("shell", "/bin/bash"))
+        except (ValueError, KeyError, TypeError):
             return None
-
-        map_entry.gecos = entry.get("comment", "")
-        map_entry.dir = entry.get("home", "/home/{}".format(name))
-        map_entry.shell = entry.get("shell", "/bin/bash")
 
         return map_entry
 
@@ -193,20 +203,16 @@ class ConsulGroupMapParser(ConsulMapParser):
 
         map_entry = group.GroupMapEntry()
         # map entries expect strict typing, so convert as appropriate
-        map_entry.name = name
-        map_entry.passwd = entry.get("passwd", "x")
-
         try:
+            map_entry.name = self._DecodeValue(name)
+            map_entry.passwd = self._DecodeValue(entry.get("passwd", "x"))
             map_entry.gid = int(entry["gid"])
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, TypeError):
             return None
 
         try:
-            s = entry.get("members", "").decode("utf-8")
-            members = s.split("\n")
-        except AttributeError:
-            members = entry.get("members", "").split("\n")
-        except (ValueError, TypeError):
+            members = self._DecodeValue(entry.get("members", "")).split("\n")
+        except (AttributeError, ValueError, TypeError):
             members = [""]
         map_entry.members = members
         return map_entry
@@ -220,15 +226,16 @@ class ConsulShadowMapParser(ConsulMapParser):
 
         map_entry = shadow.ShadowMapEntry()
         # maps expect strict typing, so convert to int as appropriate.
-        map_entry.name = name
-        map_entry.passwd = entry.get("passwd", "*")
-        if isinstance(map_entry.passwd, bytes):
-            map_entry.passwd = map_entry.passwd.decode("ascii")
+        try:
+            map_entry.name = self._DecodeValue(name)
+            map_entry.passwd = self._DecodeValue(entry.get("passwd", "*"))
+        except UnicodeDecodeError:
+            return None
 
         for attr in ["lstchg", "min", "max", "warn", "inact", "expire"]:
             try:
                 setattr(map_entry, attr, int(entry[attr]))
-            except (ValueError, KeyError):
+            except (ValueError, KeyError, TypeError):
                 continue
 
         return map_entry

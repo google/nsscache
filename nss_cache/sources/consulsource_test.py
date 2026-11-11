@@ -2,13 +2,21 @@
 
 __author__ = "hexedpackets@gmail.com (William Huba)"
 
-import unittest
+import base64
 from io import StringIO
+import json
+import tempfile
+import unittest
 
+from nss_cache.caches import files
 from nss_cache.maps import group
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
 from nss_cache.sources import consulsource
+
+
+def _EncodeValue(text):
+    return base64.b64encode(text.encode("utf-8")).decode("ascii")
 
 
 class TestConsulSource(unittest.TestCase):
@@ -51,9 +59,9 @@ class TestPasswdMapParser(unittest.TestCase):
         self.good_entry.passwd = "x"
         self.good_entry.uid = 10
         self.good_entry.gid = 10
-        self.good_entry.gecos = b"How Now Brown Cow"
-        self.good_entry.dir = b"/home/foo"
-        self.good_entry.shell = b"/bin/bash"
+        self.good_entry.gecos = "How Now Brown Cow"
+        self.good_entry.dir = "/home/foo"
+        self.good_entry.shell = "/bin/bash"
         self.parser = consulsource.ConsulPasswdMapParser()
 
     def testGetMap(self):
@@ -71,17 +79,55 @@ class TestPasswdMapParser(unittest.TestCase):
         self.parser.GetMap(cache_info, passwd_map)
         self.assertEqual(self.good_entry, passwd_map.PopItem())
 
+    def testGetMapAndWriteMapUtf8(self):
+        passwd_map = passwd.PasswdMap()
+        records = [
+            {"Key": "org/users/foo/passwd", "Value": _EncodeValue("!")},
+            {"Key": "org/users/foo/uid", "Value": _EncodeValue("10")},
+            {"Key": "org/users/foo/gid", "Value": _EncodeValue("10")},
+            {"Key": "org/users/foo/comment", "Value": _EncodeValue("José Cow")},
+            {"Key": "org/users/foo/home", "Value": _EncodeValue("/home/josé")},
+            {"Key": "org/users/foo/shell", "Value": _EncodeValue("/bin/zsh")},
+        ]
+        self.parser.GetMap(StringIO(json.dumps(records)), passwd_map)
+        with tempfile.TemporaryDirectory() as workdir:
+            handler = files.FilesPasswdMapHandler({"dir": workdir})
+            self.assertEqual(0, handler.WriteMap(passwd_map))
+            with open(handler.GetCacheFilename(), encoding="utf-8") as cache_file:
+                written = cache_file.read()
+        self.assertEqual("foo:!:10:10:José Cow:/home/josé:/bin/zsh\n", written)
+        self.assertNotIn("b'", written)
+
+    def testGetMapSkipsMalformedValues(self):
+        passwd_map = passwd.PasswdMap()
+        bad_utf8 = base64.b64encode(b"\xff\xfe").decode("ascii")
+        records = [
+            {"Key": "org/users/bad1/uid", "Value": "!!!"},
+            {"Key": "org/users/bad2/uid", "Value": bad_utf8},
+            {"Key": "org/users/foo/uid", "Value": _EncodeValue("10")},
+            {"Key": "org/users/foo/gid", "Value": _EncodeValue("10")},
+        ]
+        self.parser.GetMap(StringIO(json.dumps(records)), passwd_map)
+        entry = passwd_map.PopItem()
+        self.assertEqual("foo", entry.name)
+        self.assertEqual(0, len(passwd_map))
+
     def testReadEntry(self):
         data = {
-            "uid": "10",
-            "gid": "10",
+            "uid": b"10",
+            "gid": b"10",
             "comment": b"How Now Brown Cow",
             "shell": b"/bin/bash",
             "home": b"/home/foo",
-            "passwd": "x",
+            "passwd": b"x",
         }
-        entry = self.parser._ReadEntry("foo", data)
+        entry = self.parser._ReadEntry(b"foo", data)
         self.assertEqual(self.good_entry, entry)
+        self.assertIsInstance(entry.name, str)
+        self.assertIsInstance(entry.passwd, str)
+        self.assertIsInstance(entry.gecos, str)
+        self.assertIsInstance(entry.dir, str)
+        self.assertIsInstance(entry.shell, str)
 
     def testDefaultEntryValues(self):
         data = {"uid": "10", "gid": "10"}
@@ -118,10 +164,36 @@ class TestConsulGroupMapParser(unittest.TestCase):
         self.parser.GetMap(cache_info, group_map)
         self.assertEqual(self.good_entry, group_map.PopItem())
 
+    def testGetMapWithExplicitPasswdAndWriteMap(self):
+        group_map = group.GroupMap()
+        records = [
+            {"Key": "org/groups/foo/passwd", "Value": _EncodeValue("!")},
+            {"Key": "org/groups/foo/gid", "Value": _EncodeValue("10")},
+            {"Key": "org/groups/foo/members", "Value": _EncodeValue("josé\nbar")},
+        ]
+        self.parser.GetMap(StringIO(json.dumps(records)), group_map)
+        with tempfile.TemporaryDirectory() as workdir:
+            handler = files.FilesGroupMapHandler({"dir": workdir})
+            self.assertEqual(0, handler.WriteMap(group_map))
+            with open(handler.GetCacheFilename(), encoding="utf-8") as cache_file:
+                written = cache_file.read()
+        self.assertEqual("foo:!:10:josé,bar\n", written)
+        self.assertNotIn("b'", written)
+
     def testReadEntry(self):
         data = {"passwd": "x", "gid": "10", "members": "foo\nbar"}
         entry = self.parser._ReadEntry("foo", data)
         self.assertEqual(self.good_entry, entry)
+
+    def testReadEntryBytes(self):
+        data = {"passwd": b"!", "gid": b"10", "members": b"foo\nbar"}
+        entry = self.parser._ReadEntry(b"foo", data)
+        self.assertEqual("foo", entry.name)
+        self.assertEqual("!", entry.passwd)
+        self.assertEqual(10, entry.gid)
+        self.assertEqual(["foo", "bar"], entry.members)
+        self.assertIsInstance(entry.name, str)
+        self.assertIsInstance(entry.passwd, str)
 
     def testDefaultPasswd(self):
         data = {"gid": "10", "members": "foo\nbar"}
@@ -168,6 +240,21 @@ class TestConsulShadowMapParser(unittest.TestCase):
         data = {"passwd": "*", "lstchg": 17246, "min": 0, "max": 99999, "warn": 7}
         entry = self.parser._ReadEntry("foo", data)
         self.assertEqual(self.good_entry, entry)
+
+    def testReadEntryBytes(self):
+        data = {
+            "passwd": b"$6$salt$hash",
+            "lstchg": b"17246",
+            "min": b"0",
+            "max": b"99999",
+            "warn": b"7",
+        }
+        entry = self.parser._ReadEntry(b"foo", data)
+        self.assertEqual("foo", entry.name)
+        self.assertEqual("$6$salt$hash", entry.passwd)
+        self.assertEqual(17246, entry.lstchg)
+        self.assertIsInstance(entry.name, str)
+        self.assertIsInstance(entry.passwd, str)
 
     def testDefaultPasswd(self):
         data = {"lstchg": 17246, "min": 0, "max": 99999, "warn": 7}
