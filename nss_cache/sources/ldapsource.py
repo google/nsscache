@@ -629,6 +629,28 @@ class UpdateGetter(object):
         super(UpdateGetter, self).__init__()
         self.conf = conf
 
+    @staticmethod
+    def _GetAttribute(obj, name):
+        """Return the values of an attribute, matching its name without case.
+
+        LDAP attribute names are case-insensitive, and servers can return
+        operational attributes such as modifyTimestamp as modifyTimeStamp.
+
+        Args:
+          obj: a dict of attribute names to lists of values.
+          name: the attribute name to find.
+
+        Returns:
+          the list of values, or None if the attribute is not present.
+        """
+        if name in obj:
+            return obj[name]
+        name = name.lower()
+        for key, value in obj.items():
+            if key.lower() == name:
+                return value
+        return None
+
     def FromLdapToTimestamp(self, ldap_ts_string):
         """Transforms a LDAP timestamp into the nss_cache internal timestamp.
 
@@ -728,6 +750,8 @@ class UpdateGetter(object):
         # latest timestamp read, and if somehow a larger 'since' slips through
         # the checks in main(), we'd better catch it here.
         max_ts = None
+        missing_ts = False
+        ts_attr = "whenChanged" if self.conf.get("ad") else "modifyTimestamp"
 
         data_map = self.CreateMap()
 
@@ -737,16 +761,13 @@ class UpdateGetter(object):
                     logging.warn("invalid object passed: %r not in %r", field, obj)
                     raise ValueError("Invalid object passed: %r", obj)
 
-            if self.conf.get("ad"):
-                obj_ts = self.FromLdapToTimestamp(obj["whenChanged"][0])
+            ts_value = self._GetAttribute(obj, ts_attr)
+            if ts_value:
+                obj_ts = self.FromLdapToTimestamp(ts_value[0])
+                if max_ts is None or obj_ts > max_ts:
+                    max_ts = obj_ts
             else:
-                try:
-                    obj_ts = self.FromLdapToTimestamp(obj["modifyTimestamp"][0])
-                except KeyError:
-                    obj_ts = 0
-
-            if max_ts is None or obj_ts > max_ts:
-                max_ts = obj_ts
+                missing_ts = True
 
             try:
                 if not data_map.Add(self.Transform(obj)):
@@ -755,6 +776,14 @@ class UpdateGetter(object):
                 logging.warning("error %r, discarding malformed obj: %r", str(e), obj)
         # Perform some post processing on the data_map.
         self.PostProcess(data_map, source, search_filter, search_scope)
+
+        if missing_ts:
+            logging.info(
+                "some entries have no %s attribute; incremental updates are "
+                "disabled for this map",
+                ts_attr,
+            )
+            max_ts = None
 
         data_map.SetModifyTimestamp(max_ts)
 

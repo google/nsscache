@@ -1366,6 +1366,81 @@ class TestUpdateGetter(unittest.TestCase):
 
         self.assertEqual(automount.AutomountMap, type(data))
 
+    def _PasswdObj(self, name, uid, **extra):
+        obj = {
+            "uid": [name],
+            "cn": [name],
+            "uidNumber": [uid],
+            "gidNumber": [uid],
+            "homeDirectory": ["/home/%s" % name],
+            "loginShell": ["/bin/sh"],
+        }
+        obj.update(extra)
+        return obj
+
+    def testGetUpdatesSetsMaxModifyTimestamp(self):
+        """The map timestamp is the newest modifyTimestamp of all entries."""
+        self.source.extend(
+            [
+                self._PasswdObj("foo", 1000, modifyTimestamp=["20091201041705Z"]),
+                self._PasswdObj("bar", 1001, modifyTimeStamp=["20091201041706Z"]),
+            ]
+        )
+        getter = ldapsource.PasswdUpdateGetter({})
+
+        data = getter.GetUpdates(self.source, "TEST_BASE", "TEST_FILTER", "base", None)
+
+        self.assertEqual(2, len(data))
+        self.assertEqual(1259641026, data.GetModifyTimestamp())
+
+    def testGetUpdatesWithoutModifyTimestamp(self):
+        """No map timestamp is set if the server omits modifyTimestamp."""
+        self.source.extend(
+            [
+                self._PasswdObj("foo", 1000),
+                self._PasswdObj("bar", 1001),
+            ]
+        )
+        getter = ldapsource.PasswdUpdateGetter({})
+
+        data = getter.GetUpdates(self.source, "TEST_BASE", "TEST_FILTER", "base", None)
+
+        self.assertEqual(2, len(data))
+        self.assertIsNone(data.GetModifyTimestamp())
+
+    def testGetUpdatesWithPartialModifyTimestamp(self):
+        """No map timestamp is set if any entry omits modifyTimestamp."""
+        self.source.extend(
+            [
+                self._PasswdObj("foo", 1000, modifyTimestamp=["20091201041705Z"]),
+                self._PasswdObj("bar", 1001),
+            ]
+        )
+        getter = ldapsource.PasswdUpdateGetter({})
+
+        data = getter.GetUpdates(self.source, "TEST_BASE", "TEST_FILTER", "base", None)
+
+        self.assertEqual(2, len(data))
+        self.assertIsNone(data.GetModifyTimestamp())
+
+    def testGetUpdatesADWithoutWhenChanged(self):
+        """No map timestamp is set if AD entries omit whenChanged."""
+        self.source.append(
+            {
+                "sAMAccountName": ["testgroup"],
+                "objectSid": [
+                    b"\x01\x05\x00\x00\x00\x00\x00\x05\x15\x00\x00\x00\xa0e\xcf~xK\x9b_\xe7|\x87p\t\x1c\x01\x00"
+                ],
+                "member": [],
+            }
+        )
+        getter = ldapsource.GroupUpdateGetter({"ad": "1"})
+
+        data = getter.GetUpdates(self.source, "TEST_BASE", "TEST_FILTER", "base", None)
+
+        self.assertEqual(1, len(data))
+        self.assertIsNone(data.GetModifyTimestamp())
+
     def testBadScopeException(self):
         """Test that a bad scope raises a config.ConfigurationError."""
         # One of the getters is sufficient, they all inherit the
