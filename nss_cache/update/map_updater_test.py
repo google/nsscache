@@ -201,6 +201,24 @@ class SingleMapUpdaterTest(unittest.TestCase):
 
         updater.FullUpdateFromMap.assert_called_with(mock.ANY, "second map", False)
 
+    def testFullUpdateOnZeroTimestamp(self):
+        """We fault to a full update if our modify timestamp is the epoch."""
+        updater = map_updater.MapUpdater(
+            config.MAP_PASSWORD, self.workdir, {}, can_do_incremental=True
+        )
+        updater.WriteModifyTimestamp(0)
+
+        source_mock = mock.create_autospec(source.Source)
+        source_mock.GetMap.return_value = "full map"
+        updater.FullUpdateFromMap = mock.Mock(return_value=0)
+
+        self.assertEqual(
+            0, updater.UpdateCacheFromSource("cache", source_mock, True, False, None)
+        )
+
+        source_mock.GetMap.assert_called_once_with(config.MAP_PASSWORD, location=None)
+        updater.FullUpdateFromMap.assert_called_with(mock.ANY, "full map", False)
+
 
 class MapAutomountUpdaterTest(unittest.TestCase):
     """Unit tests for AutomountUpdater class."""
