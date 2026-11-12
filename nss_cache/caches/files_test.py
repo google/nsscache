@@ -20,6 +20,7 @@ __author__ = (
     "vasilios@google.com (Vasilios Hoffman)",
 )
 
+import io
 import os
 import shutil
 import tempfile
@@ -33,6 +34,7 @@ from nss_cache.maps import group
 from nss_cache.maps import netgroup
 from nss_cache.maps import passwd
 from nss_cache.maps import shadow
+from nss_cache.maps import sshkey
 from nss_cache.caches import files
 
 
@@ -58,6 +60,69 @@ class TestFilesCache(unittest.TestCase):
         self.assertTrue("foo" in written)
         self.assertFalse(entry in pmap)  # we emptied pmap to avoid mem leaks
         self.assertFalse(cache.temp_cache_file.closed)
+
+    def testWriteDataCountsUtf8Bytes(self):
+        cases = (
+            (
+                files.FilesPasswdMapHandler,
+                passwd.PasswdMapEntry(
+                    {"name": "alice", "uid": 1000, "gid": 1000, "gecos": "José"}
+                ),
+            ),
+            (
+                files.FilesGroupMapHandler,
+                group.GroupMapEntry(
+                    {"name": "staff", "gid": 1000, "members": ["josé"]}
+                ),
+            ),
+            (files.FilesShadowMapHandler, shadow.ShadowMapEntry({"name": "josé"})),
+            (
+                files.FilesSshkeyMapHandler,
+                sshkey.SshkeyMapEntry(
+                    {"name": "alice", "sshkey": "ssh-ed25519 AAAATEST José"}
+                ),
+            ),
+            (
+                files.FilesNetgroupMapHandler,
+                netgroup.NetgroupMapEntry({"name": "staff", "entries": "(-,josé,)"}),
+            ),
+            (
+                files.FilesAutomountMapHandler,
+                automount.AutomountMapEntry(
+                    {"key": "cafe", "location": "server:/café"}
+                ),
+            ),
+        )
+        for handler, entry in cases:
+            with self.subTest(handler=handler.__name__):
+                target = io.BytesIO()
+                written = handler(self.config)._WriteData(target, entry)
+                self.assertEqual(len(target.getvalue()), written)
+
+    def testIndexOffsetsAfterUtf8Entry(self):
+        cache = files.FilesPasswdMapHandler(self.config)
+        entries = [
+            passwd.PasswdMapEntry(
+                {"name": "alice", "uid": 1000, "gid": 1000, "gecos": "José"}
+            ),
+            passwd.PasswdMapEntry({"name": "bob", "uid": 1001, "gid": 1000}),
+        ]
+        try:
+            cache.Write(passwd.PasswdMap(entries))
+            cache.WriteIndex()
+            expected = {
+                "name": {b"alice": b"alice", b"bob": b"bob"},
+                "uid": {b"1000": b"alice", b"1001": b"bob"},
+            }
+            for index_name, keys in expected.items():
+                with open(cache.GetCacheFilename() + ".ix" + index_name, "rb") as index:
+                    for line in index:
+                        key, offset, unused_padding = line.split(b"\0", 2)
+                        cache.temp_cache_file.seek(int(offset))
+                        actual_name = cache.temp_cache_file.readline().split(b":", 1)[0]
+                        self.assertEqual(keys[key], actual_name)
+        finally:
+            cache._Rollback()
 
     def testCacheFilenameSuffixOption(self):
         new_config = {"cache_filename_suffix": "blarg"}

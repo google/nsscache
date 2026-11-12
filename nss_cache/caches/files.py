@@ -322,8 +322,7 @@ class FilesSshkeyMapHandler(FilesCache):
           Number of bytes written to the target.
         """
         sshkey_entry = "%s:%s" % (entry.name, entry.sshkey)
-        target.write(sshkey_entry.encode() + b"\n")
-        return len(sshkey_entry) + 1
+        return target.write(sshkey_entry.encode() + b"\n")
 
 
 class FilesPasswdMapHandler(FilesCache):
@@ -370,8 +369,7 @@ class FilesPasswdMapHandler(FilesCache):
             entry.dir,
             entry.shell,
         )
-        target.write(password_entry.encode() + b"\n")
-        return len(password_entry) + 1
+        return target.write(password_entry.encode() + b"\n")
 
 
 class FilesGroupMapHandler(FilesCache):
@@ -407,8 +405,7 @@ class FilesGroupMapHandler(FilesCache):
             entry.gid,
             ",".join(entry.members),
         )
-        target.write(group_entry.encode() + b"\n")
-        return len(group_entry) + 1
+        return target.write(group_entry.encode() + b"\n")
 
 
 class FilesShadowMapHandler(FilesCache):
@@ -449,8 +446,7 @@ class FilesShadowMapHandler(FilesCache):
             entry.expire or "",
             entry.flag or "",
         )
-        target.write(shadow_entry.encode() + b"\n")
-        return len(shadow_entry) + 1
+        return target.write(shadow_entry.encode() + b"\n")
 
 
 class FilesNetgroupMapHandler(FilesCache):
@@ -484,8 +480,7 @@ class FilesNetgroupMapHandler(FilesCache):
             netgroup_entry = "%s %s" % (entry.name, entry.entries)
         else:
             netgroup_entry = entry.name
-        target.write(netgroup_entry.encode() + b"\n")
-        return len(netgroup_entry) + 1
+        return target.write(netgroup_entry.encode() + b"\n")
 
 
 class FilesAutomountMapHandler(FilesCache):
@@ -533,8 +528,7 @@ class FilesAutomountMapHandler(FilesCache):
             automount_entry = "%s %s %s" % (entry.key, entry.options, entry.location)
         else:
             automount_entry = "%s %s" % (entry.key, entry.location)
-        target.write(automount_entry.encode() + b"\n")
-        return len(automount_entry) + 1
+        return target.write(automount_entry.encode() + b"\n")
 
     def GetMapLocation(self):
         """Get the location of this map for the automount master map."""
