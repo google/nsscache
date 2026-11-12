@@ -446,7 +446,7 @@ class FilesShadowMapHandler(FilesCache):
             entry.max or "",
             entry.warn or "",
             entry.inact or "",
-            entry.expire or "",
+            "" if entry.expire == -1 else entry.expire or "",
             entry.flag or "",
         )
         target.write(shadow_entry.encode() + b"\n")

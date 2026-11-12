@@ -20,6 +20,7 @@ __author__ = (
     "vasilios@google.com (Vasilios Hoffman)",
 )
 
+import io
 import os
 import shutil
 import tempfile
@@ -118,6 +119,23 @@ class TestFilesCache(unittest.TestCase):
 
         cache._WriteData(file_mock, map_entry)
         file_mock.write.assert_called_with(b"root:$1$zomgmd5support:::::::\n")
+
+    def testWriteShadowExpiration(self):
+        """A disabled account expiration is empty, not the LDAP sentinel -1."""
+        cache = files.FilesShadowMapHandler(self.config)
+        for expiration, expected in ((None, b""), (-1, b""), (20000, b"20000")):
+            with self.subTest(expiration=expiration):
+                entry = shadow.ShadowMapEntry({
+                    "name": "root",
+                    "passwd": "*",
+                    "expire": expiration
+                })
+                target = io.BytesIO()
+                written = cache._WriteData(target, entry)
+                self.assertEqual(b"root:*::::::" + expected + b":\n",
+                                 target.getvalue())
+                self.assertEqual(len(target.getvalue()), written)
+                self.assertEqual(expiration, entry.expire)
 
     def testWriteNetgroupEntry(self):
         """We correctly write a typical entry in /etc/netgroup format."""
