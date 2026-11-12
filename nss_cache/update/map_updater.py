@@ -53,7 +53,7 @@ class MapUpdater(updater.Updater):
         incremental = incremental and self.can_do_incremental
 
         timestamp = self.GetModifyTimestamp()
-        if timestamp is None and incremental is True:
+        if not timestamp and incremental is True:
             self.log.info("Missing previous timestamp, defaulting to a full sync.")
             incremental = False
 
