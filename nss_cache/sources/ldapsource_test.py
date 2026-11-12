@@ -1322,6 +1322,42 @@ class TestUpdateGetter(unittest.TestCase):
 
         self.assertEqual(shadow.ShadowMap, type(data))
 
+    def testShadowUidRegex(self):
+        for attribute in ("uid", "loginName"):
+            with self.subTest(attribute=attribute):
+                conf = {"uidregex": r"([^@]+)@example\.com"}
+                if attribute != "uid":
+                    conf["uidattr"] = attribute
+                obj = {"uid": ["unused"], attribute: ["alice@example.com"]}
+                entry = ldapsource.ShadowUpdateGetter(conf).Transform(obj)
+                self.assertEqual("alice", entry.name)
+                self.assertEqual("*", entry.passwd)
+
+                conf.pop("uidregex")
+                entry = ldapsource.ShadowUpdateGetter(conf).Transform(obj)
+                self.assertEqual("alice@example.com", entry.name)
+
+    def testSshkeyUidRegex(self):
+        for attribute in ("uid", "loginName"):
+            with self.subTest(attribute=attribute):
+                conf = {"uidregex": r"([^@]+)@example\.com"}
+                if attribute != "uid":
+                    conf["uidattr"] = attribute
+                keys = ["ssh-ed25519 AAAATEST alice@example.com"]
+                obj = {
+                    "uid": ["unused"],
+                    attribute: ["alice@example.com"],
+                    "sshPublicKey": keys,
+                }
+                entry = ldapsource.SshkeyUpdateGetter(conf).Transform(obj)
+                self.assertEqual("alice", entry.name)
+                self.assertEqual(keys, entry.sshkey)
+
+                conf.pop("uidregex")
+                entry = ldapsource.SshkeyUpdateGetter(conf).Transform(obj)
+                self.assertEqual("alice@example.com", entry.name)
+                self.assertEqual(keys, entry.sshkey)
+
     def testAutomountEmptySourceGetsUpdates(self):
         """Test that getUpdates on the AutomountUpdateGetter works."""
         getter = ldapsource.AutomountUpdateGetter({})

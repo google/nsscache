@@ -1056,7 +1056,7 @@ class ShadowUpdateGetter(UpdateGetter):
 
         if hasattr(self, "uidregex"):
             shadow_ent.name = "".join(
-                [x for x in self.uidregex.findall(shadow_end.name)]
+                [x for x in self.uidregex.findall(shadow_ent.name)]
             )
 
         # TODO(jaq): does nss_ldap check the contents of the userPassword
@@ -1184,7 +1184,7 @@ class SshkeyUpdateGetter(UpdateGetter):
             skey.name = obj["uid"][0]
 
         if hasattr(self, "uidregex"):
-            skey.name = "".join([x for x in self.uidregex.findall(pw.name)])
+            skey.name = "".join([x for x in self.uidregex.findall(skey.name)])
 
         if "sshPublicKey" in obj:
             skey.sshkey = obj["sshPublicKey"]
