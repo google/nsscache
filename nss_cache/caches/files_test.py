@@ -189,15 +189,12 @@ class TestFilesCache(unittest.TestCase):
         cache = files.FilesShadowMapHandler(self.config)
         for expiration, expected in ((None, b""), (-1, b""), (20000, b"20000")):
             with self.subTest(expiration=expiration):
-                entry = shadow.ShadowMapEntry({
-                    "name": "root",
-                    "passwd": "*",
-                    "expire": expiration
-                })
+                entry = shadow.ShadowMapEntry(
+                    {"name": "root", "passwd": "*", "expire": expiration}
+                )
                 target = io.BytesIO()
                 written = cache._WriteData(target, entry)
-                self.assertEqual(b"root:*::::::" + expected + b":\n",
-                                 target.getvalue())
+                self.assertEqual(b"root:*::::::" + expected + b":\n", target.getvalue())
                 self.assertEqual(len(target.getvalue()), written)
                 self.assertEqual(expiration, entry.expire)
 
