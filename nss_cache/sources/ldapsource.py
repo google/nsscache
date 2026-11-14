@@ -718,16 +718,12 @@ class UpdateGetter(object):
             self.attrs.append("modifyTimestamp")
 
         if since is not None:
-            ts = self.FromTimestampToLdap(since)
             # since openldap disallows modifyTimestamp "greater than" we have to
-            # increment by one second.
+            # increment by one second before formatting the calendar timestamp.
+            ts = self.FromTimestampToLdap(since + 1)
             if self.conf.get("ad"):
-                ts = int(ts.rstrip(".0Z")) + 1
-                ts = "%s.0Z" % ts
                 search_filter = "(&%s(whenChanged>=%s))" % (search_filter, ts)
             else:
-                ts = int(ts.rstrip("Z")) + 1
-                ts = "%sZ" % ts
                 search_filter = "(&%s(modifyTimestamp>=%s))" % (search_filter, ts)
 
         if search_scope == "base":
