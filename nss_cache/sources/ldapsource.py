@@ -825,7 +825,11 @@ class PasswdUpdateGetter(UpdateGetter):
                 self.attrs.append(self.conf["uidattr"])
             if "uidregex" in self.conf:
                 self.uidregex = re.compile(self.conf["uidregex"])
-            self.essential_fields = ["uid", "uidNumber", "gidNumber"]
+            self.essential_fields = [
+                self.conf.get("uidattr", "uid"),
+                "uidNumber",
+                "gidNumber",
+            ]
             if self.conf.get("use_rid"):
                 self.attrs.append("sambaSID")
                 self.essential_fields.append("sambaSID")
@@ -1064,7 +1068,7 @@ class ShadowUpdateGetter(UpdateGetter):
                 self.attrs.append(self.conf["uidattr"])
             if "uidregex" in self.conf:
                 self.uidregex = re.compile(self.conf["uidregex"])
-            self.essential_fields = ["uid"]
+            self.essential_fields = [self.conf.get("uidattr", "uid")]
         self.log = logging.getLogger(self.__class__.__name__)
 
     def CreateMap(self):
@@ -1194,7 +1198,7 @@ class SshkeyUpdateGetter(UpdateGetter):
             self.attrs.append(self.conf["uidattr"])
         if "uidregex" in self.conf:
             self.uidregex = re.compile(self.conf["uidregex"])
-        self.essential_fields = ["uid"]
+        self.essential_fields = [self.conf.get("uidattr", "uid")]
 
     def CreateMap(self):
         """Returns a new SshkeyMap instance to have SshkeyMapEntries added to
