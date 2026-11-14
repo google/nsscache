@@ -960,7 +960,8 @@ class GroupUpdateGetter(UpdateGetter):
         if "memberUid" in obj:
             if hasattr(self, "groupregex"):
                 members.extend(
-                    "".join([x for x in self.groupregex.findall(obj["memberUid"])])
+                    "".join(self.groupregex.findall(member_uid))
+                    for member_uid in obj["memberUid"]
                 )
             else:
                 members.extend(obj["memberUid"])
